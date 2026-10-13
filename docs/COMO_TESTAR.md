@@ -1,8 +1,8 @@
 # Como testar na sua máquina
 
-A API sobe primeiro (passos 1 a 5); depois o painel `web/` (passo 7). Enquanto
-o app das TVs (`player/`) não existe, o papel da TV é feito pelo roteiro
-`api/src/Atlas.Web/Indoor.http`.
+A API sobe primeiro (passos 1 a 5); depois o painel `web/` (passo 7) e o app
+das TVs `player/` (passo 8). Sem TV, o papel dela também pode ser feito pelo
+roteiro `api/src/Atlas.Web/Indoor.http`.
 
 ## 1. Pré-requisitos
 
@@ -152,4 +152,30 @@ da API).
    código: a tela passa a **Online** (a lista se atualiza a cada minuto).
 7. **Desvincular TV** na linha: a próxima sincronização da TV recebe 401 e a
    tela volta a *Aguardando pareamento*.
+
+## 8. App das TVs (`player/`)
+
+Pré-requisitos: Flutter (estável atual) e Android Studio com um emulador
+**Android TV** (Device Manager → *Television*), ou uma TV/TV box Android com
+depuração ADB ligada.
+
+```powershell
+cd player
+flutter pub get
+flutter test                                              # testes do app
+flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
+```
+
+1. No painel, gere o código da tela (passo 7, item 5).
+2. Na TV, digite o código e **Parear**. A TV baixa a grade e começa a tocar;
+   no painel a tela vira **Online**.
+3. Mude a grade no painel (tire um dia, troque a ordem): a TV pega na próxima
+   sincronização (até 5 min; para ver na hora, feche e abra o app).
+4. Desligue a rede do emulador: a TV continua tocando. **Desvincular TV** no
+   painel: a TV continua tocando e mostra "TV não pareada · pressione OK".
+5. Botão **OK** do controle (Enter no teclado do emulador) mostra o painel de
+   informações da TV.
+
+TV de verdade na rede: veja `player/README.md` (API ouvindo em `0.0.0.0`,
+endereço `https://<IP do PC>:7216`).
 

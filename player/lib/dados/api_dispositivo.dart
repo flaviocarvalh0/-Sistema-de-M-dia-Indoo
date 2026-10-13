@@ -1,0 +1,121 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
+
+import 'modelos.dart';
+
+/// Falhas da API das TVs, já traduzidas para o que o app faz com cada uma
+/// (tabela da seção 2 do contrato).
+sealed class FalhaApi implements Exception {
+  const FalhaApi(this.mensagem);
+  final String mensagem;
+
+  @override
+  String toString() => mensagem;
+}
+
+/// 400 no pareamento: código inválido, expirado, já usado, de tela inativa
+/// ou de parceiro bloqueado (a API não diz qual).
+class CodigoRecusado extends FalhaApi {
+  const CodigoRecusado() : super('Código inválido ou expirado. Gere outro no painel.');
+}
+
+/// 401 na sincronização: a TV foi desvinculada ou outra foi pareada no lugar.
+class CredencialRevogada extends FalhaApi {
+  const CredencialRevogada() : super('Esta TV foi desvinculada no painel.');
+}
+
+/// 403: tela inativa ou parceiro bloqueado. Continua tocando o que já tem.
+class AcessoSuspenso extends FalhaApi {
+  const AcessoSuspenso() : super('Tela inativa ou parceiro bloqueado no painel.');
+}
+
+/// 429: muitas tentativas.
+class MuitasTentativas extends FalhaApi {
+  const MuitasTentativas() : super('Muitas tentativas. Aguarde alguns minutos.');
+}
+
+/// Sem rede, tempo esgotado ou erro do servidor: tentar no próximo ciclo.
+class Indisponivel extends FalhaApi {
+  const Indisponivel([super.mensagem = 'Sem conexão com o servidor.']);
+}
+
+/// Cliente de `{api}/api/v1/dispositivo`.
+class ApiDispositivo {
+  ApiDispositivo(String urlBase, {Dio? dio})
+      : _dio = dio ??
+            Dio(BaseOptions(
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 30),
+            )) {
+    _dio.options.baseUrl = '${urlBase.replaceAll(RegExp(r'/+$'), '')}/api/v1/dispositivo';
+    if (aceitarCertificadoDeDesenvolvimento) {
+      _dio.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () => HttpClient()..badCertificateCallback = (_, __, ___) => true,
+      );
+    }
+  }
+
+  /// Em debug/profile a API local usa o certificado de desenvolvimento do
+  /// .NET (emitido para `localhost`, sem validade na TV). O APK de release
+  /// nunca aceita certificado inválido.
+  static bool get aceitarCertificadoDeDesenvolvimento => !kReleaseMode;
+
+  final Dio _dio;
+
+  /// Normaliza o que a pessoa digitou na TV: `ab12-cd34` = `AB12CD34`.
+  static String normalizarCodigo(String digitado) =>
+      digitado.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+
+  Future<Pareamento> autenticar({
+    required String codigo,
+    required String dispositivoId,
+    required String versaoApp,
+  }) async {
+    final resposta = await _enviar(() => _dio.post<Map<String, dynamic>>(
+          '/autenticar',
+          data: {
+            'codigoPareamento': normalizarCodigo(codigo),
+            'dispositivoId': dispositivoId,
+            'versaoApp': versaoApp,
+          },
+        ), pareamento: true);
+    return Pareamento.fromJson(resposta.data!);
+  }
+
+  Future<RespostaSincronizacao> sincronizar({
+    required String token,
+    String? versaoGrade,
+    String? versaoApp,
+    int? itensProntos,
+  }) async {
+    final resposta = await _enviar(() => _dio.get<Map<String, dynamic>>(
+          '/sincronizacao',
+          queryParameters: {
+            if (versaoGrade != null) 'versaoGrade': versaoGrade,
+            if (versaoApp != null) 'versaoApp': versaoApp,
+            if (itensProntos != null) 'itensProntos': itensProntos,
+          },
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        ));
+    return RespostaSincronizacao.fromJson(resposta.data!);
+  }
+
+  Future<Response<T>> _enviar<T>(Future<Response<T>> Function() chamada, {bool pareamento = false}) async {
+    try {
+      return await chamada();
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      throw switch (status) {
+        400 when pareamento => const CodigoRecusado(),
+        401 => const CredencialRevogada(),
+        403 => const AcessoSuspenso(),
+        429 => const MuitasTentativas(),
+        null => const Indisponivel(),
+        _ => Indisponivel('O servidor respondeu $status.'),
+      };
+    }
+  }
+}

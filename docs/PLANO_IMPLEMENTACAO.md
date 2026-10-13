@@ -140,12 +140,29 @@ build verde, testes passando e docs atualizadas.
 
 ## Etapa 7 — Player `player/` (Flutter, offline-first)
 
-- [ ] Pareamento (`flutter_secure_storage` para o token).
-- [ ] Sincronizador: `SyncApi` → `SyncDiff` → `MediaDownloader` (`dio`, `.part`
-  e renomeia) → `FileHasher` (SHA-256 em stream) → `MediaDao` (`sqflite`).
-- [ ] Reprodução só de arquivos locais (`VideoPlayerController.file`,
-  `Image.file`), loop infinito, refiltro local diário por dia/vigência.
-- [ ] Boot automático, wakelock e modo imersivo.
+- [x] Projeto Flutter para Android TV: launcher leanback com banner, paisagem,
+  tela cheia imersiva e tela sempre acesa (`wakelock_plus`).
+- [x] Pareamento por código (aceita minúsculas e hífen); token, id do
+  aparelho e endereço do servidor em `flutter_secure_storage`.
+- [x] Sincronizador: `ApiDispositivo` (dio, erros tipados) → `BaixadorMidia`
+  (`.part`, SHA-256 em blocos, renomeia; 3 tentativas com espera crescente)
+  → troca atômica da grade no `sqflite` → limpeza dos arquivos que saíram.
+  Arquivos nomeados pelo hash (mídia repetida não baixa de novo).
+- [x] 401 apaga o token e continua tocando com aviso "pressione OK para
+  parear"; 403/429/5xx/sem rede continuam tocando; URL vencida ou hash
+  errado mantêm a grade antiga e tentam de novo em 1 minuto; `novoToken`
+  renovado.
+- [x] Reprodução só de arquivos locais (`VideoPlayerController.file`,
+  `Image.file`), loop pela `ordem`, filtro do dia recalculado a cada item no
+  fuso do parceiro (dias da semana e período), arquivo que falha é pulado,
+  tela de espera com o nome da tela.
+- [x] Painel de informações no botão OK do controle (conexão, última
+  sincronização, itens de hoje, servidor, versão, "Parear de novo").
+- [x] Abertura automática ao ligar (`BOOT_COMPLETED`; Android 10+ pede
+  "Sobrepor a outros apps").
+- [x] Testes: filtro do dia, download (hash, tentativas, URL vencida,
+  limpeza) e sincronizador com API/storage falsos em `HttpServer` e SQLite
+  real; teste de ponta a ponta contra a API (pareia, sincroniza e baixa).
 
 ## Etapa 8 — Fechamento
 

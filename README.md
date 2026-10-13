@@ -9,7 +9,7 @@ que já têm.
 |---|---|---|
 | [`api/`](api/README.md) | Backend .NET 9 | Atlas Platform (`v0.4.0-alpha.1`) |
 | [`web/`](web/README.md) | Painel administrativo Angular | `@atlas/framework` |
-| `player/` | App das TVs (Android TV) | Flutter *(etapa 7)* |
+| [`player/`](player/README.md) | App das TVs (Android TV) | Flutter |
 
 - [Plano de implementação](docs/PLANO_IMPLEMENTACAO.md)
 - [Como testar na sua máquina](docs/COMO_TESTAR.md)
