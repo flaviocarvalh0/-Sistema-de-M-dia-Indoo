@@ -4,10 +4,10 @@
 # Arquivo so em ASCII: o Windows PowerShell 5.1 le .ps1 sem BOM como ANSI.
 #
 #   Local (padrao):
-#     .\docs\scripts\aplicar-script.ps1 .\docs\scripts\studio-rede.sql
+#     .\docs\scripts\aplicar-script.ps1 .\docs\scripts\studio-indoor.sql
 #
 #   Outro ambiente:
-#     .\docs\scripts\aplicar-script.ps1 .\docs\scripts\studio-rede.sql `
+#     .\docs\scripts\aplicar-script.ps1 .\docs\scripts\studio-indoor.sql `
 #         -Servidor db.exemplo.com.br -Porta 5432 -Banco indoor -Usuario indoor_admin
 param(
     [Parameter(Mandatory)] [string] $Arquivo,

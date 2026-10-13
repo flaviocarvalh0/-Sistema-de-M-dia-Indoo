@@ -52,11 +52,19 @@ A primeira subida cria o usuário `admin` (senha do passo 3), o catálogo de
 entidades, o histórico e o bucket `midias` no Supabase (confira em
 *Storage* no painel do Supabase).
 
-Depois aplique, uma vez, o script do Studio (módulos, menus e grupos):
+Com a API já tendo subido uma vez, aplique o script do Studio: módulos
+(launcher), entidades com rota e ícone, menus, grupos e RBAC. Ele pode ser
+rodado de novo a qualquer momento — só cria o que falta e corrige o que
+divergir — e termina listando as rotas e as permissões de cada grupo.
 
 ```powershell
-psql -h localhost -U postgres -d Indoor -f docs/scripts/studio-indoor.sql
+.\docs\scripts\aplicar-script.ps1 .\docs\scripts\studio-indoor.sql   # pede a senha; ajuste -Porta/-Psql se preciso
+# ou
+psql -h localhost -U postgres -d Indoor -v ON_ERROR_STOP=1 -f docs/scripts/studio-indoor.sql
 ```
+
+Depois saia e entre de novo no painel: as permissões e os menus são lidos
+no login.
 
 ## 6. Testar
 
