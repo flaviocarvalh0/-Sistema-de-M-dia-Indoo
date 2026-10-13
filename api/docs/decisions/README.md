@@ -1,0 +1,39 @@
+# Registros de Decisões Arquiteturais — Atlas
+
+Este diretório reúne os *Architecture Decision Records* (ADRs) da plataforma Atlas.
+
+Cada ADR registra uma decisão arquitetural relevante, seu contexto, as alternativas consideradas e as consequências aceitas. Os ADRs representam o histórico das decisões; por isso, uma decisão aceita não deve ser reescrita para ocultar mudanças posteriores. Quando uma decisão for substituída, um novo ADR deverá ser criado e o anterior marcado como **Superado por**.
+
+## Status permitidos
+
+- **Proposto:** decisão em avaliação;
+- **Aceito:** decisão aprovada e vigente;
+- **Rejeitado:** alternativa analisada e não adotada;
+- **Superado:** decisão substituída por outro ADR.
+
+## Índice
+
+| ADR | Título | Status |
+|---|---|---|
+| [ADR-001](ADR-001-Uso-EF-Core-Na-Camada-de-Aplicacao.md) | Uso do EF Core na Camada de Aplicação | Aceito |
+| [ADR-002](ADR-002-Referencia-MediatR-Contracts-No-Dominio.md) | Referência do MediatR.Contracts no Domínio | Aceito |
+| [ADR-003](ADR-003-Segregacao-Entre-Plataforma-e-Negocio.md) | Segregação Arquitetural entre Plataforma e Negócio | Aceito |
+| [ADR-004](ADR-004-Convencoes-de-Idioma-e-Nomenclatura.md) | Convenções de Idioma e Nomenclatura | Aceito |
+| [ADR-005](ADR-005-Estrategia-de-Schemas-No-PostgreSQL.md) | Estratégia de Schemas no PostgreSQL | Aceito |
+| [ADR-006](ADR-006-Contexto-Unico-e-Migrations-Unificadas.md) | Contexto Único e Migrations Unificadas | Aceito |
+| [ADR-007](ADR-007-Plataforma-Base-e-Evolucao-Dos-Produtos.md) | Plataforma-base e Evolução dos Produtos de Cliente | Aceito |
+| [ADR-008](ADR-008-Gestao-de-Configuracoes-e-Segredos.md) | Gestão de Configurações e Segredos | Aceito |
+| [ADR-009](ADR-009-Estrategia-de-Versionamento-Historico-de-Entidades.md) | Estratégia de Versionamento Histórico de Entidades | Aceito |
+| [ADR-010](ADR-010-Estrategia-de-Mensagens-e-Entrega-de-Emails.md) | Estratégia de Mensagens e Entrega de E-mails | Aceito |
+## Como criar um ADR
+
+1. Copie o arquivo [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md).
+2. Utilize o próximo número sequencial disponível.
+3. Escreva uma decisão autocontida, com contexto factual.
+4. Registre alternativas e consequências reais.
+5. Submeta o ADR à revisão da equipe.
+6. Atualize este índice após sua aprovação.
+
+## Origem
+
+Os ADRs 001 e 002 foram originalmente documentados por Jason Taylor no projeto *Clean Architecture Solution Template*. A Atlas adotou e traduziu essas decisões, preservando os créditos e distinguindo a data original da data de adoção.

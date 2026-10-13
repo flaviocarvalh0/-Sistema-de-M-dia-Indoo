@@ -1,0 +1,26 @@
+<!-- Consulte https://aka.ms/dotnet/msbuild/customize para mais detalhes sobre customização de builds -->
+<Project>
+  <PropertyGroup>
+    <!-- Define a versão padrão do ecossistema para .NET 9 -->
+    <TargetFramework>net9.0</TargetFramework>
+
+    <!-- Transforma warnings em erros -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!--
+      Centraliza os artefatos nos builds normais.
+
+      As ferramentas do Entity Framework podem definir AtlasEfTools=true
+      para utilizar temporariamente os diretórios bin/obj convencionais
+      de cada projeto.
+    -->
+    <ArtifactsPath Condition="'$(AtlasEfTools)' != 'true'">$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+    
+    <!-- Ativa os Usings Implícitos e Nullable -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Valida as regras do .editorconfig durante o build -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>

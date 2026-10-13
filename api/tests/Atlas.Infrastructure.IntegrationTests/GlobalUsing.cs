@@ -1,0 +1,10 @@
+﻿global using Atlas.Domain.Platform.Entities;
+global using Atlas.Infrastructure.Data;
+global using Atlas.Infrastructure.Data.History.Generation;
+global using Atlas.Infrastructure.Data.History.Inspection;
+global using Atlas.Infrastructure.Data.History.Modeling;
+global using Atlas.Infrastructure.IntegrationTests.Fixtures;
+global using FluentAssertions;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.EntityFrameworkCore.Metadata;
+global using Xunit;
