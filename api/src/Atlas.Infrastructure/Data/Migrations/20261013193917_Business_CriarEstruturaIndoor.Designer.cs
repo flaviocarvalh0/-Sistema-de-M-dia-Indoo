@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Atlas.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261013192657_Business_CriarEstruturaIndoor")]
+    [Migration("20261013193917_Business_CriarEstruturaIndoor")]
     partial class Business_CriarEstruturaIndoor
     {
         /// <inheritdoc />
@@ -456,8 +456,8 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnName("situacao");
 
                     b.Property<string>("Telefone")
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)")
+                        .HasMaxLength(11)
+                        .HasColumnType("character varying(11)")
                         .HasColumnName("telefone");
 
                     b.Property<uint>("Version")
@@ -480,7 +480,7 @@ namespace Atlas.Infrastructure.Data.Migrations
 
                             t.HasCheckConstraint("ck_parceiro_motivo_bloqueio", "situacao <> 2 OR motivo_bloqueio IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{12,13}$'");
+                            t.HasCheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{10,11}$'");
                         });
                 });
 

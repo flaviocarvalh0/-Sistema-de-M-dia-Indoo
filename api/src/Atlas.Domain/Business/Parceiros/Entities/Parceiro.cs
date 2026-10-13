@@ -19,7 +19,7 @@ public class Parceiro : BaseAuditableEntity
     public string? NomeResponsavel { get; set; }
     public string Email { get; set; } = null!;
 
-    /// <summary>Só dígitos, com DDI e DDD.</summary>
+    /// <summary>Só dígitos, com DDD: 10 (fixo) ou 11 (celular).</summary>
     public string? Telefone { get; set; }
 
     /// <summary>CPF (11) ou CNPJ (14) sem pontuação; CNPJ pode ser alfanumérico. Opcional.</summary>

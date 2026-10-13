@@ -38,16 +38,27 @@ build verde, testes passando e docs atualizadas.
   (constraints, cascata, índice filtrado, `DateOnly`).
 - [x] [Modelo de dados](../api/docs/MODELO_DADOS.md).
 
-## Etapa 2 — Rede: parceiros (operadora)
+## Etapa 2 — Rede: parceiros (operadora) ✅
 
-- [ ] `Rede/Parceiros`: `CriarParceiroCommand` (cria o parceiro, o usuário
-  responsável com senha temporária, o vínculo e o grupo
-  `Proprietário de Parceiro`), `AtualizarParceiroCommand` (com `Version`),
-  `BloquearParceiroCommand`/`DesbloquearParceiroCommand`, queries paginada e por id.
-- [ ] Endpoint `RedeParceiros` → `/api/v1/business/rede/parceiros`.
-- [ ] Teste de cobertura de autorização (todo request de negócio com
-  `[Authorize]` ou anônimo declarado) — volta quando houver requests.
-- [ ] Script do Studio (`docs/scripts/studio-indoor.sql`): módulo, menus e grupos.
+- [x] `Rede/Parceiros`: `CriarParceiroCommand` (cria o usuário do responsável
+  com senha temporária e troca obrigatória, o parceiro, o vínculo e o e-mail de
+  boas-vindas; usuário inativado se o resto falhar), `AtualizarParceiroCommand`
+  (com `Version`; o e-mail de acesso não muda), `BloquearParceiroCommand` /
+  `DesbloquearParceiroCommand`, `GetParceirosQuery` (busca, filtro por situação,
+  telas e armazenamento usado) e `GetParceiroByIdQuery`.
+- [x] Validação de CPF/CNPJ (inclusive alfanumérico), telefone com DDD, fuso
+  IANA e cota (1 a 1024 MB).
+- [x] Endpoint `RedeParceiros` → `/api/v1/business/rede/parceiros`.
+- [x] Teste de cobertura de autorização de todo request de negócio.
+- [x] `docs/scripts/studio-indoor.sql`: módulos Rede e Mídia Indoor, menus,
+  grupos Operadora e Proprietário de Parceiro com as permissões.
+- [x] Verificado ponta a ponta na API com PostgreSQL (login em modo Cookie).
+
+> **Pendência da plataforma:** na tag `v0.4.0-alpha.1` o login em modo
+> **Bearer** emite a claim `sub` duplicada e o próprio JwtBearer recusa o token
+> (401 em qualquer rota). A correção é o commit `ba81daf` da Atlas Platform,
+> posterior à tag. O painel usa modo Cookie e não é afetado; o token das TVs
+> (etapa 5) é emitido pelo próprio módulo e também não.
 
 ## Etapa 3 — Storage (Supabase)
 

@@ -41,7 +41,7 @@ business.parceiro ──< business.usuario_parceiro >── platform.user
 | `nome` | varchar(150) | obrigatório |
 | `nome_responsavel` | varchar(150) | |
 | `email` | varchar(254) | obrigatório |
-| `telefone` | varchar(13) | só dígitos com DDI e DDD |
+| `telefone` | varchar(11) | só dígitos com DDD (10 ou 11) |
 | `documento` | varchar(14) | CPF (11 dígitos) ou CNPJ (alfanumérico) |
 | `cidade` | varchar(100) | |
 | `fuso_horario` | varchar(64) | IANA, padrão `America/Sao_Paulo` |

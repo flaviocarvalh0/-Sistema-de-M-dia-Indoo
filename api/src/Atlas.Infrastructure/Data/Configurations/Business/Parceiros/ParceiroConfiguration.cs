@@ -19,7 +19,7 @@ public class ParceiroConfiguration : IEntityTypeConfiguration<Parceiro>
                 "ck_parceiro_documento",
                 "documento IS NULL OR documento ~ '^[0-9]{11}$' OR documento ~ '^[0-9A-Z]{12}[0-9]{2}$'");
 
-            table.HasCheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{12,13}$'");
+            table.HasCheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{10,11}$'");
 
             table.HasCheckConstraint("ck_parceiro_cota", "cota_armazenamento_mb BETWEEN 1 AND 1048576");
         });
@@ -29,7 +29,7 @@ public class ParceiroConfiguration : IEntityTypeConfiguration<Parceiro>
         builder.Property(p => p.Nome).HasMaxLength(150).IsRequired();
         builder.Property(p => p.NomeResponsavel).HasMaxLength(150);
         builder.Property(p => p.Email).HasMaxLength(254).IsRequired();
-        builder.Property(p => p.Telefone).HasMaxLength(13);
+        builder.Property(p => p.Telefone).HasMaxLength(11);
         builder.Property(p => p.Documento).HasMaxLength(14);
         builder.Property(p => p.Cidade).HasMaxLength(100);
         builder.Property(p => p.MotivoBloqueio).HasMaxLength(500);

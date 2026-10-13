@@ -29,6 +29,11 @@ Pré-requisitos: .NET SDK 9 e PostgreSQL.
 3. **Subir a API:** `dotnet run --project src/Atlas.Web --launch-profile https`
    → `https://localhost:7216` (documentação em `/scalar`). A primeira subida
    cria o `admin`, os metadados e o histórico.
+4. **Studio:** aplique `docs/scripts/studio-indoor.sql` com
+   `docs/scripts/aplicar-script.ps1` (pede a senha do banco no prompt). Cria os
+   módulos, os menus e os grupos `Operadora` e `Proprietário de Parceiro`.
+5. **Configuração:** `Indoor:UrlPainel` no appsettings é o endereço do painel
+   usado nos e-mails de boas-vindas.
 
 ### Testes
 

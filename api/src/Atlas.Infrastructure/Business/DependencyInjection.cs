@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Application.Common.Interfaces;
 using Atlas.Domain.Business.Constants;
@@ -21,6 +22,7 @@ public static class DependencyInjection
     public static void AddBusinessServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<IParceiroAtual, ParceiroAtual>();
+        builder.Services.AddSingleton<IConfiguracaoIndoor, ConfiguracaoIndoor>();
         builder.Services.AddBusinessAuthorization();
     }
 

@@ -28,7 +28,7 @@ namespace Atlas.Infrastructure.Data.Migrations
                     nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     nome_responsavel = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
-                    telefone = table.Column<string>(type: "character varying(13)", maxLength: 13, nullable: true),
+                    telefone = table.Column<string>(type: "character varying(11)", maxLength: 11, nullable: true),
                     documento = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: true),
                     cidade = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     fuso_horario = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, defaultValue: "America/Sao_Paulo"),
@@ -48,7 +48,7 @@ namespace Atlas.Infrastructure.Data.Migrations
                     table.CheckConstraint("ck_parceiro_cota", "cota_armazenamento_mb BETWEEN 1 AND 1048576");
                     table.CheckConstraint("ck_parceiro_documento", "documento IS NULL OR documento ~ '^[0-9]{11}$' OR documento ~ '^[0-9A-Z]{12}[0-9]{2}$'");
                     table.CheckConstraint("ck_parceiro_motivo_bloqueio", "situacao <> 2 OR motivo_bloqueio IS NOT NULL");
-                    table.CheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{12,13}$'");
+                    table.CheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{10,11}$'");
                 });
 
             migrationBuilder.CreateTable(
