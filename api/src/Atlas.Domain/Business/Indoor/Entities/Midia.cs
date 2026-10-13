@@ -1,4 +1,5 @@
 using Atlas.Domain.Business.Indoor.Enums;
+using Atlas.Domain.Business.Parceiros;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Platform.Attributes;
 
@@ -10,7 +11,7 @@ namespace Atlas.Domain.Business.Indoor.Entities;
 /// O arquivo nunca muda: trocar o conteúdo é enviar outra mídia.
 /// </summary>
 [MetadataConfiguration("Mídias")]
-public class Midia : BaseAuditableEntity
+public class Midia : BaseAuditableEntity, IDoParceiro
 {
     /// <summary>Limite por arquivo do plano gratuito do Supabase Storage.</summary>
     public const long TamanhoMaximoBytes = 50L * 1024 * 1024;

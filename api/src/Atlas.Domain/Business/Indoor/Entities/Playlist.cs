@@ -1,4 +1,5 @@
 using Atlas.Domain.Business.Indoor.Enums;
+using Atlas.Domain.Business.Parceiros;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Platform.Attributes;
 
@@ -10,7 +11,7 @@ namespace Atlas.Domain.Business.Indoor.Entities;
 /// playlist; a playlist não conhece as telas.
 /// </summary>
 [MetadataConfiguration("Playlists")]
-public class Playlist : BaseAuditableEntity
+public class Playlist : BaseAuditableEntity, IDoParceiro
 {
     public long ParceiroId { get; set; }
     public Parceiro Parceiro { get; set; } = null!;

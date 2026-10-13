@@ -77,21 +77,24 @@ build verde, testes passando e docs atualizadas.
   `Business_HashECodigoComoVarchar`) — o histórico da plataforma não lê
   `char(n)` e a API não subia pela segunda vez no mesmo banco.
 
-## Etapa 4 — CRUD do painel
+## Etapa 4 — CRUD do painel ✅
 
-- [ ] **Mídias:** `PrepararEnvioMidiaCommand` (valida tipo, tamanho e cota →
-  URL de envio), `CriarMidiaCommand` (confere no storage que o objeto existe e
-  tem o tamanho informado), `AtualizarMidiaCommand` (título, duração, período),
-  ativar/inativar, excluir (só fora de playlists; remove do storage), queries.
-- [ ] **Playlists:** criar/atualizar (com `Version`), `DefinirItensPlaylistCommand`
-  (lista inteira na ordem; mídias do mesmo parceiro), ativar/inativar, queries
-  (itens com título e tipo da mídia).
-- [ ] **Telas:** criar/atualizar (playlist do mesmo parceiro),
-  `GerarCodigoPareamentoCommand` (8 caracteres sem ambíguos, 24 h),
-  `DesvincularTelaCommand`, ativar/inativar, queries com situação calculada.
-- [ ] Endpoints `ParceiroMidias`, `ParceiroPlaylists`, `ParceiroTelas` →
-  `/api/v1/business/parceiro/...`.
-- [ ] Testes de integração de isolamento A × B para as três entidades.
+- [x] **Mídias** (`/api/v1/business/parceiro/midias`): `envio` (tipo, tamanho e
+  cota → URL assinada), `POST /` (a API lê o arquivo, confere tipo, tamanho e
+  SHA-256 e grava o hash calculado; arquivo recusado é apagado do storage),
+  edição (título, duração, período), ativar/inativar, excluir (só fora de
+  playlists; apaga o arquivo), lista, detalhe com URL de visualização e uso
+  da cota (`armazenamento`).
+- [x] **Playlists** (`/parceiro/playlists`): CRUD, `PUT /{id}/itens` (grade
+  inteira na ordem, só mídias do parceiro, com versão), ativar/inativar,
+  excluir (só fora de telas), detalhe com itens e duração do ciclo.
+- [x] **Telas** (`/parceiro/telas`): CRUD (playlist do mesmo parceiro),
+  `codigo-pareamento` (8 caracteres legíveis, 24 h), `desvincular`,
+  ativar/inativar, excluir; situação calculada no SQL.
+- [x] Isolamento: registro de outro parceiro dá 404; usuário sem parceiro, 403.
+- [x] Testes: unitários (regras e isolamento), integração no PostgreSQL
+  (tradução das consultas, concorrência por `xmin` nos itens) e roteiro de
+  ponta a ponta por HTTP. [Como testar](COMO_TESTAR.md) e `Indoor.http`.
 
 ## Etapa 5 — Dispositivo: autenticação e sincronização
 

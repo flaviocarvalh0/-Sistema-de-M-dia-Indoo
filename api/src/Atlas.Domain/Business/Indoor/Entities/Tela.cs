@@ -1,4 +1,5 @@
 using Atlas.Domain.Business.Indoor.Enums;
+using Atlas.Domain.Business.Parceiros;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Platform.Attributes;
 
@@ -15,11 +16,17 @@ namespace Atlas.Domain.Business.Indoor.Entities;
 /// registra só as mudanças feitas no painel e no pareamento.
 /// </remarks>
 [MetadataConfiguration("Telas")]
-public class Tela : BaseAuditableEntity
+public class Tela : BaseAuditableEntity, IDoParceiro
 {
     public const int TamanhoCodigoPareamento = 8;
 
     public static readonly TimeSpan ValidadeCodigoPareamento = TimeSpan.FromHours(24);
+
+    /// <summary>
+    /// Sem sincronizar há mais que isto, a tela aparece Offline no painel
+    /// (três vezes o intervalo padrão de sincronização do player, 5 min).
+    /// </summary>
+    public static readonly TimeSpan ToleranciaOffline = TimeSpan.FromMinutes(15);
 
     public long ParceiroId { get; set; }
     public Parceiro Parceiro { get; set; } = null!;
@@ -98,9 +105,17 @@ public class Tela : BaseAuditableEntity
     }
 
     public SituacaoTela Situacao(DateTimeOffset agora, TimeSpan toleranciaOffline) =>
-        !Pareada
+        CalcularSituacao(Pareada, Estado?.UltimaSincronizacao, agora, toleranciaOffline);
+
+    /// <summary>A regra da situação, também usada nas consultas que não carregam a entidade.</summary>
+    public static SituacaoTela CalcularSituacao(
+        bool pareada,
+        DateTimeOffset? ultimaSincronizacao,
+        DateTimeOffset agora,
+        TimeSpan toleranciaOffline) =>
+        !pareada
             ? SituacaoTela.AguardandoPareamento
-            : Estado?.UltimaSincronizacao is { } ultima && agora - ultima <= toleranciaOffline
+            : ultimaSincronizacao is { } ultima && agora - ultima <= toleranciaOffline
                 ? SituacaoTela.Online
                 : SituacaoTela.Offline;
 }

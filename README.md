@@ -12,4 +12,5 @@ que já têm.
 | `player/` | App das TVs (Android TV) | Flutter *(etapa 7)* |
 
 - [Plano de implementação](docs/PLANO_IMPLEMENTACAO.md)
+- [Como testar na sua máquina](docs/COMO_TESTAR.md)
 - [Modelo de dados](api/docs/MODELO_DADOS.md)

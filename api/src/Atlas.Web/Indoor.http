@@ -1,0 +1,160 @@
+# Roteiro de teste da Mídia Indoor (painel do parceiro).
+#
+# Funciona na extensão REST Client do VS Code (humao.rest-client) e no
+# Visual Studio 2022 17.12+. Rode as requisições de cima para baixo: cada uma
+# usa o resultado da anterior (# @name). O login é por cookie, por isso use o
+# endereço https (perfil "https" do launchSettings).
+#
+# Antes: API no ar, docs/scripts/studio-indoor.sql aplicado e um arquivo
+# video.mp4 (até 50 MB) e um imagem.png na mesma pasta deste arquivo.
+
+@api = https://localhost:7216
+@senhaAdmin = Temp@12345
+@emailDono = dono@academia.test
+@senhaNova = NovaSenha@123
+
+### 1. Login da operadora (admin)
+POST {{api}}/api/Auth/login
+Content-Type: application/json
+
+{ "userName": "admin", "password": "{{senhaAdmin}}", "mode": "Cookie" }
+
+### 2. Cadastrar parceiro (cria o usuário do dono e enfileira o e-mail com a senha temporária)
+# @name parceiro
+POST {{api}}/api/v1/business/rede/parceiros
+Content-Type: application/json
+
+{
+  "nome": "Academia Centro",
+  "nomeResponsavel": "Maria Souza",
+  "email": "{{emailDono}}",
+  "cidade": "Manaus",
+  "fusoHorario": "America/Manaus"
+}
+
+### 3. Senha temporária do dono
+# Sem SMTP configurado o e-mail fica na fila: copie a senha da tabela
+#   select html_body from platform.email_message order by id desc limit 1;
+# (procure "Senha temporária") e cole abaixo.
+@senhaTemporaria = COLE_AQUI
+
+### 4. Login do dono e troca de senha obrigatória
+POST {{api}}/api/Auth/login
+Content-Type: application/json
+
+{ "userName": "{{emailDono}}", "password": "{{senhaTemporaria}}", "mode": "Cookie" }
+
+###
+POST {{api}}/api/Auth/change-password
+Content-Type: application/json
+
+{ "currentPassword": "{{senhaTemporaria}}", "newPassword": "{{senhaNova}}", "confirmNewPassword": "{{senhaNova}}" }
+
+###
+POST {{api}}/api/Auth/login
+Content-Type: application/json
+
+{ "userName": "{{emailDono}}", "password": "{{senhaNova}}", "mode": "Cookie" }
+
+### 5. Espaço disponível
+GET {{api}}/api/v1/business/parceiro/midias/armazenamento
+
+### 6. Vídeo — passo 1: pedir a URL de envio (tamanhoBytes = tamanho do arquivo)
+# @name envioVideo
+POST {{api}}/api/v1/business/parceiro/midias/envio
+Content-Type: application/json
+
+{ "tipoConteudo": "video/mp4", "tamanhoBytes": 1000000 }
+
+### 6. Vídeo — passo 2: o arquivo vai direto ao Supabase (sem passar pela API)
+PUT {{envioVideo.response.body.urlEnvio}}
+Content-Type: video/mp4
+
+< ./video.mp4
+
+### 6. Vídeo — passo 3: a API confere o arquivo (tipo, tamanho, SHA-256) e cadastra
+# @name video
+POST {{api}}/api/v1/business/parceiro/midias
+Content-Type: application/json
+
+{
+  "titulo": "Promoção de inverno",
+  "chave": "{{envioVideo.response.body.chave}}",
+  "tipoConteudo": "video/mp4",
+  "duracaoSegundos": 30
+}
+
+### 7. Imagem (mesmos três passos)
+# @name envioImagem
+POST {{api}}/api/v1/business/parceiro/midias/envio
+Content-Type: application/json
+
+{ "tipoConteudo": "image/png", "tamanhoBytes": 100000 }
+
+###
+PUT {{envioImagem.response.body.urlEnvio}}
+Content-Type: image/png
+
+< ./imagem.png
+
+###
+# @name imagem
+POST {{api}}/api/v1/business/parceiro/midias
+Content-Type: application/json
+
+{
+  "titulo": "Horário de funcionamento",
+  "chave": "{{envioImagem.response.body.chave}}",
+  "tipoConteudo": "image/png",
+  "duracaoSegundos": 10
+}
+
+### 8. Mídias (o detalhe traz urlVisualizacao, válida por 1 h: abra no navegador)
+GET {{api}}/api/v1/business/parceiro/midias
+
+###
+GET {{api}}/api/v1/business/parceiro/midias/{{video.response.body.$}}
+
+### 9. Playlist
+# @name playlist
+POST {{api}}/api/v1/business/parceiro/playlists
+Content-Type: application/json
+
+{ "nome": "Grade principal" }
+
+###
+# @name grade
+GET {{api}}/api/v1/business/parceiro/playlists/{{playlist.response.body.$}}
+
+### 9. Itens na ordem do loop (diasSemana: domingo=1, segunda=2, ... sábado=64; 62 = seg a sex; 127 = todos)
+PUT {{api}}/api/v1/business/parceiro/playlists/{{playlist.response.body.$}}/itens
+Content-Type: application/json
+
+{
+  "id": {{playlist.response.body.$}},
+  "version": {{grade.response.body.version}},
+  "itens": [
+    { "midiaId": {{imagem.response.body.$}}, "diasSemana": 62 },
+    { "midiaId": {{video.response.body.$}}, "diasSemana": 127 }
+  ]
+}
+
+###
+GET {{api}}/api/v1/business/parceiro/playlists/{{playlist.response.body.$}}
+
+### 10. Tela com a playlist
+# @name tela
+POST {{api}}/api/v1/business/parceiro/telas
+Content-Type: application/json
+
+{ "nome": "Recepção", "localizacao": "Entrada", "playlistId": {{playlist.response.body.$}} }
+
+###
+# @name telaDetalhe
+GET {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}
+
+### 11. Código de pareamento para digitar na TV (a TV usa na etapa 5)
+POST {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}/codigo-pareamento?version={{telaDetalhe.response.body.version}}
+
+###
+GET {{api}}/api/v1/business/parceiro/telas
