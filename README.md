@@ -13,4 +13,5 @@ que já têm.
 
 - [Plano de implementação](docs/PLANO_IMPLEMENTACAO.md)
 - [Como testar na sua máquina](docs/COMO_TESTAR.md)
+- [Contrato do app das TVs](docs/CONTRATO_DISPOSITIVO.md)
 - [Modelo de dados](api/docs/MODELO_DADOS.md)

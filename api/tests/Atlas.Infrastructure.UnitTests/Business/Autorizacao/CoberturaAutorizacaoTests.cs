@@ -1,4 +1,6 @@
 using System.Reflection;
+using Atlas.Application.Business.Dispositivo.Autenticacao;
+using Atlas.Application.Business.Dispositivo.Sincronizacao;
 using Atlas.Application.Business.Rede.Parceiros.Queries;
 using Atlas.Application.Common.Security;
 using Atlas.Domain.Business.Constants;
@@ -16,8 +18,16 @@ namespace Atlas.Infrastructure.UnitTests.Business.Autorizacao;
 /// </summary>
 public class CoberturaAutorizacaoTests
 {
-    /// <summary>Os únicos anônimos. Por ora nenhum: a autenticação da TV entra na etapa do dispositivo.</summary>
-    private static readonly Type[] Anonimos = [];
+    /// <summary>
+    /// Sem <c>[Authorize]</c> de usuário, por decisão: o pareamento da TV é
+    /// anônimo (limite de tentativas por IP) e a sincronização exige o token
+    /// da TV (política <c>Dispositivo</c> no endpoint e <c>IDispositivoAtual</c> no handler).
+    /// </summary>
+    private static readonly Type[] Anonimos =
+    [
+        typeof(AutenticarDispositivoCommand),
+        typeof(GetSincronizacaoQuery),
+    ];
 
     private static List<Type> Requests() =>
         typeof(GetParceirosQuery).Assembly.GetTypes()

@@ -64,7 +64,9 @@ psql -h localhost -U postgres -d Indoor -f docs/scripts/studio-indoor.sql
 coloque um `video.mp4` e uma `imagem.png` na mesma pasta e execute as
 requisições de cima para baixo. O roteiro cadastra um parceiro, entra como o
 dono, envia vídeo e imagem ao Supabase, monta a playlist, cria a tela e gera
-o código de pareamento.
+o código de pareamento. Os passos 12 a 15 fazem o papel da TV: pareiam com o
+código, sincronizam (as `url` da resposta abrem o arquivo) e mostram a tela
+Online no painel. O contrato completo está em [CONTRATO_DISPOSITIVO.md](CONTRATO_DISPOSITIVO.md).
 
 **Pela documentação interativa:** `https://localhost:7216/scalar`. Faça o
 login em `POST /api/Auth/login` com `"mode": "Cookie"`; as demais chamadas
@@ -80,6 +82,8 @@ usam o cookie.
   tela, é recusado.
 - Salvar com uma `version` antiga devolve 409.
 - O `admin` não enxerga o painel de parceiro (403): ele não pertence a um parceiro.
+- Desvincular a TV no painel faz a sincronização dela responder 401; bloquear
+  o parceiro, 403.
 
 ### Testes automatizados
 

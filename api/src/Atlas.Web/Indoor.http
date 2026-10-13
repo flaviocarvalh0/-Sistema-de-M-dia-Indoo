@@ -158,3 +158,26 @@ POST {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}/codigo-pare
 
 ###
 GET {{api}}/api/v1/business/parceiro/telas
+
+### ===================== TV (etapa 5) =====================
+# Copie o código gerado no passo 11 (pode digitar em minúsculas e com hífen).
+@codigo = COLE_O_CODIGO
+
+### 12. A TV troca o código pelo token
+# @name tv
+POST {{api}}/api/v1/dispositivo/autenticar
+Content-Type: application/json
+
+{ "codigoPareamento": "{{codigo}}", "dispositivoId": "tv-teste-001", "versaoApp": "1.0.0" }
+
+### 13. A TV sincroniza (abra uma das urls no navegador: é o arquivo)
+# @name sincronizacao
+GET {{api}}/api/v1/dispositivo/sincronizacao?versaoApp=1.0.0&itensProntos=0
+Authorization: Bearer {{tv.response.body.token}}
+
+### 14. De novo, com a versão recebida: alterada=false, sem itens
+GET {{api}}/api/v1/dispositivo/sincronizacao?versaoGrade={{sincronizacao.response.body.versaoGrade}}
+Authorization: Bearer {{tv.response.body.token}}
+
+### 15. No painel a tela aparece Online
+GET {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}

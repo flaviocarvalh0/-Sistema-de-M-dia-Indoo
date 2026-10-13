@@ -6,6 +6,7 @@ using Atlas.Application.Common.Interfaces;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Constants;
 using Atlas.Infrastructure.Business.Armazenamento;
+using Atlas.Infrastructure.Business.Dispositivo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         builder.Services.AddScoped<IParceiroAtual, ParceiroAtual>();
         builder.Services.AddSingleton<IConfiguracaoIndoor, ConfiguracaoIndoor>();
         builder.AddArmazenamentoMidias();
+        builder.Services.AddAutenticacaoDispositivo(builder.Configuration);
         builder.Services.AddBusinessAuthorization();
     }
 

@@ -17,6 +17,15 @@ public interface IArmazenamentoMidias
     /// <summary>URL assinada para baixar o arquivo, válida pelo tempo informado.</summary>
     Task<Uri> GerarUrlLeituraAsync(string chave, TimeSpan validade, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// URLs assinadas de várias chaves numa chamada só (a sincronização das
+    /// TVs). Chave inexistente fica fora do resultado.
+    /// </summary>
+    Task<IReadOnlyDictionary<string, Uri>> GerarUrlsLeituraAsync(
+        IReadOnlyCollection<string> chaves,
+        TimeSpan validade,
+        CancellationToken cancellationToken);
+
     /// <summary>Metadados do objeto; <c>null</c> se ele não existe.</summary>
     Task<ObjetoArmazenado?> ObterAsync(string chave, CancellationToken cancellationToken);
 

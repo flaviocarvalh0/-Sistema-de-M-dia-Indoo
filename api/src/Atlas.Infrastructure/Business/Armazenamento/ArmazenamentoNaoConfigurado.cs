@@ -14,6 +14,7 @@ internal sealed class ArmazenamentoNaoConfigurado : IArmazenamentoMidias
 
     public Task<EnvioPreparado> PrepararEnvioAsync(string chave, CancellationToken cancellationToken) => throw Erro();
     public Task<Uri> GerarUrlLeituraAsync(string chave, TimeSpan validade, CancellationToken cancellationToken) => throw Erro();
+    public Task<IReadOnlyDictionary<string, Uri>> GerarUrlsLeituraAsync(IReadOnlyCollection<string> chaves, TimeSpan validade, CancellationToken cancellationToken) => throw Erro();
     public Task<ObjetoArmazenado?> ObterAsync(string chave, CancellationToken cancellationToken) => throw Erro();
     public Task<Stream?> AbrirLeituraAsync(string chave, CancellationToken cancellationToken) => throw Erro();
     public Task RemoverAsync(string chave, CancellationToken cancellationToken) => throw Erro();

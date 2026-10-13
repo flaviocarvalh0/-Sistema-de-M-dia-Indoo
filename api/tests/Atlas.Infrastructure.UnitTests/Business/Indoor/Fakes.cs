@@ -1,3 +1,4 @@
+using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Application.Common.Interfaces;
@@ -26,6 +27,16 @@ internal sealed class ArmazenamentoFake : IArmazenamentoMidias
 
     public Task<Uri> GerarUrlLeituraAsync(string chave, TimeSpan validade, CancellationToken cancellationToken) =>
         Task.FromResult(new Uri($"https://storage.test/leitura/{chave}?s={(int)validade.TotalSeconds}"));
+
+    public int ChamadasEmLote { get; private set; }
+
+    public Task<IReadOnlyDictionary<string, Uri>> GerarUrlsLeituraAsync(IReadOnlyCollection<string> chaves, TimeSpan validade, CancellationToken cancellationToken)
+    {
+        ChamadasEmLote++;
+        return Task.FromResult<IReadOnlyDictionary<string, Uri>>(chaves.ToDictionary(
+            c => c,
+            c => new Uri($"https://storage.test/leitura/{c}?s={(int)validade.TotalSeconds}")));
+    }
 
     public Task<ObjetoArmazenado?> ObterAsync(string chave, CancellationToken cancellationToken) =>
         Task.FromResult(Arquivos.TryGetValue(chave, out var a) ? new ObjetoArmazenado(a.Length, null) : null);
@@ -84,4 +95,12 @@ internal static class Arquivos
         inicio.CopyTo(dados, 0);
         return dados;
     }
+}
+
+internal sealed class ConfiguracaoIndoorFake : IConfiguracaoIndoor
+{
+    public string UrlPainel => "https://painel.indoor.test/";
+    public TimeSpan IntervaloSincronizacao => TimeSpan.FromMinutes(5);
+    public TimeSpan ValidadeTokenDispositivo => TimeSpan.FromDays(30);
+    public TimeSpan ValidadeUrlDownload => TimeSpan.FromHours(24);
 }

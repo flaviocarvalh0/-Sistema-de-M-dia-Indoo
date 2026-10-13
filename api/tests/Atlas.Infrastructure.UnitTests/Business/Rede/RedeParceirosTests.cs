@@ -277,7 +277,7 @@ public class RedeParceirosTests : IDisposable
     // ---------- Apoio ----------
 
     private Task<long> Criar(CriarParceiroCommand comando) =>
-        new CriarParceiroCommandHandler(_context, _identity, _email, new ConfiguracaoFake())
+        new CriarParceiroCommandHandler(_context, _identity, _email, new Indoor.ConfiguracaoIndoorFake())
             .Handle(comando, CancellationToken.None);
 
     private Task<PaginatedList<Application.Business.Rede.Parceiros.Dtos.ParceiroDto>> Listar(GetParceirosQuery query) =>
@@ -308,11 +308,6 @@ public class RedeParceirosTests : IDisposable
         TamanhoBytes = tamanho,
         Hash = new string('a', 64),
     };
-
-    private sealed class ConfiguracaoFake : IConfiguracaoIndoor
-    {
-        public string UrlPainel => "https://painel.indoor.test/";
-    }
 
     private sealed class EmailFake : IEmailMessageService
     {

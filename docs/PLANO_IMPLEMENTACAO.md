@@ -96,23 +96,25 @@ build verde, testes passando e docs atualizadas.
   (tradução das consultas, concorrência por `xmin` nos itens) e roteiro de
   ponta a ponta por HTTP. [Como testar](COMO_TESTAR.md) e `Indoor.http`.
 
-## Etapa 5 — Dispositivo: autenticação e sincronização
+## Etapa 5 — Dispositivo: autenticação e sincronização ✅
 
-- [ ] Esquema JWT `Dispositivo` (audience própria, claims `tela_id`,
-  `parceiro_id`, `versao_credencial`), roteado no `MixedAuthSchema` por
-  `/api/v1/dispositivo/*`. O JwtBearer da plataforma exige `SessionId` de
-  usuário e recusaria o token da TV.
-- [ ] `AutenticarDispositivoCommand` (anônimo, limite de taxa por IP): código +
-  `dispositivoId` → pareia, consome o código e devolve o token.
-- [ ] `IDispositivoAtual`: confere `versao_credencial`, tela ativa e parceiro não bloqueado.
-- [ ] `GetSincronizacaoQuery`: grade da playlist da tela, filtrada por
-  vigência e dia da semana **no fuso do parceiro**, ordenada; URL assinada por
-  mídia; `versaoGrade` (hash) como ETag com resposta 304; renova o token
-  perto de expirar; grava `EstadoTela`.
-- [ ] Endpoint `Dispositivo` → `POST /api/v1/dispositivo/autenticar`,
-  `GET /api/v1/dispositivo/sincronizacao`.
-- [ ] Testes: código de uso único/expirado, token antigo após desvincular,
-  filtro por data/dia/fuso, ETag.
+- [x] Esquema JWT `Dispositivo` próprio (mesma chave da plataforma, audiência
+  `Indoor.Dispositivos`), registrado sem alterar o `MixedAuthSchema`: as rotas
+  da TV exigem a política `Dispositivo`; o token da TV não abre o painel e o
+  login de usuário não abre as rotas da TV.
+- [x] `POST /api/v1/dispositivo/autenticar` (anônimo, 10 tentativas por IP a
+  cada 5 min): código + `dispositivoId` → pareia, consome o código e devolve
+  o token (30 dias). Mesma resposta para qualquer motivo de recusa.
+- [x] `IDispositivoAtual`: 401 para credencial revogada (TV desvinculada ou
+  outra pareada — `VersaoCredencial`), 403 para tela inativa ou parceiro bloqueado.
+- [x] `GET /api/v1/dispositivo/sincronizacao`: grade com tudo o que ainda
+  pode tocar (dias, período e `exibirHoje` no fuso do parceiro), URLs de
+  download assinadas numa chamada só ao storage, `versaoGrade` (sem itens
+  quando nada mudou), renovação do token e registro em `EstadoTela`.
+- [x] Situação Online/Offline calculada pela última sincronização (sem job).
+- [x] [Contrato do app das TVs](CONTRATO_DISPOSITIVO.md).
+- [x] Testes: unitários (pareamento, credencial, filtros, versão, fuso,
+  renovação, token real) e roteiro de ponta a ponta por HTTP.
 
 ## Etapa 6 — Painel `web/`
 

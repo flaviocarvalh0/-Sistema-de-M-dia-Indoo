@@ -19,6 +19,7 @@ namespace Atlas.Infrastructure.Business.Armazenamento;
 /// <list type="bullet">
 /// <item><c>POST object/upload/sign/{bucket}/{chave}</c> → <c>{ url, token }</c> (envio, validade fixa do Supabase: 2 h)</item>
 /// <item><c>POST object/sign/{bucket}/{chave}</c> com <c>{ expiresIn }</c> → <c>{ signedURL }</c> (leitura)</item>
+/// <item><c>POST object/sign/{bucket}</c> com <c>{ expiresIn, paths }</c> → <c>[{ path, signedURL, error }]</c> (leitura em lote)</item>
 /// <item><c>HEAD object/authenticated/{bucket}/{chave}</c> (metadados)</item>
 /// <item><c>GET object/authenticated/{bucket}/{chave}</c> (conteúdo)</item>
 /// <item><c>DELETE object/{bucket}/{chave}</c></item>
@@ -49,6 +50,25 @@ internal sealed class ArmazenamentoSupabase(
         var assinatura = await LerJsonAsync<RespostaUrlAssinada>(resposta, "gerar a URL de leitura", cancellationToken);
 
         return Absoluta(assinatura.SignedUrl ?? assinatura.Url);
+    }
+
+    public async Task<IReadOnlyDictionary<string, Uri>> GerarUrlsLeituraAsync(
+        IReadOnlyCollection<string> chaves,
+        TimeSpan validade,
+        CancellationToken cancellationToken)
+    {
+        if (chaves.Count == 0)
+        {
+            return new Dictionary<string, Uri>();
+        }
+
+        var corpo = Json(new { expiresIn = (int)Math.Ceiling(validade.TotalSeconds), paths = chaves });
+        var resposta = await EnviarAsync(HttpMethod.Post, $"object/sign/{Uri.EscapeDataString(opcoes.Bucket)}", corpo, cancellationToken);
+        var assinaturas = await LerJsonAsync<List<RespostaUrlEmLote>>(resposta, "gerar as URLs de leitura", cancellationToken);
+
+        return assinaturas
+            .Where(a => a.Path is not null && !string.IsNullOrWhiteSpace(a.SignedUrl))
+            .ToDictionary(a => a.Path!, a => Absoluta(a.SignedUrl));
     }
 
     public async Task<ObjetoArmazenado?> ObterAsync(string chave, CancellationToken cancellationToken)
@@ -193,6 +213,16 @@ internal sealed class ArmazenamentoSupabase(
     /// <summary>Bucket e chave com cada segmento codificado (a chave é gerada pela API, mas não custa).</summary>
     private string Caminho(string chave) =>
         $"{Uri.EscapeDataString(opcoes.Bucket)}/{string.Join('/', chave.Split('/').Select(Uri.EscapeDataString))}";
+
+    /// <summary>Item da assinatura em lote; <c>signedURL</c> vem nulo (com <c>error</c>) para chave inexistente.</summary>
+    private sealed class RespostaUrlEmLote
+    {
+        [JsonPropertyName("path")]
+        public string? Path { get; init; }
+
+        [JsonPropertyName("signedURL")]
+        public string? SignedUrl { get; init; }
+    }
 
     /// <summary>O envio devolve <c>url</c>; a leitura devolve <c>signedURL</c>.</summary>
     private sealed class RespostaUrlAssinada
