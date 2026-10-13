@@ -38,7 +38,9 @@ public sealed record ItemPlaylistDto
     public string Titulo { get; init; } = null!;
     public TipoMidia Tipo { get; init; }
     public int DuracaoSegundos { get; init; }
-    public DiasSemana DiasSemana { get; init; }
+
+    /// <summary>Bits dos dias (domingo = 1, segunda = 2, … sábado = 64; 127 = todos), como no contrato da TV.</summary>
+    public int DiasSemana { get; init; }
 
     /// <summary>Mídia inativa continua no lugar, mas não toca.</summary>
     public bool MidiaAtiva { get; init; }
@@ -77,7 +79,7 @@ public static class PlaylistProjecao
                 Titulo = i.Midia.Titulo,
                 Tipo = i.Midia.Tipo,
                 DuracaoSegundos = i.Midia.DuracaoSegundos,
-                DiasSemana = i.DiasSemana,
+                DiasSemana = (int)i.DiasSemana,
                 MidiaAtiva = i.Midia.Ativo,
                 InicioExibicao = i.Midia.InicioExibicao,
                 FimExibicao = i.Midia.FimExibicao,

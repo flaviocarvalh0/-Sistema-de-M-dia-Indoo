@@ -1,0 +1,74 @@
+import { Injectable } from '@angular/core';
+import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
+import { CrudService, Page, PaginatedResponse, QueryParams, comErroLocal } from '@atlas/framework';
+import { ItemGrade, LinhaPlaylist, PlaylistDto } from '../models/playlist.model';
+import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util';
+import { formatarDuracao } from '../../../shared/models/indoor.util';
+
+/**
+ * Playlists do parceiro (reutilizáveis: uma playlist toca em N telas).
+ *
+ *  - GET  /api/v1/business/parceiro/playlists?ativo=
+ *  - GET  /api/v1/business/parceiro/playlists/{id}          (traz os itens)
+ *  - POST /api/v1/business/parceiro/playlists               → id
+ *  - PUT  /api/v1/business/parceiro/playlists/{id}          → nova versão
+ *  - PUT  /api/v1/business/parceiro/playlists/{id}/itens    → nova versão (grade inteira, na ordem)
+ *  - POST /api/v1/business/parceiro/playlists/{id}/ativar|inativar?version=
+ *  - DELETE /api/v1/business/parceiro/playlists/{id}
+ */
+@Injectable({ providedIn: 'root' })
+export class PlaylistService extends CrudService<PlaylistDto, number> {
+  protected readonly resource = 'api/v1/business/parceiro/playlists';
+
+  listar(query: QueryParams, ativo: boolean | null = null): Observable<Page<LinhaPlaylist>> {
+    return this.http
+      .get<PaginatedResponse<PlaylistDto>>(this.baseUrl, {
+        params: paramsPaginacao(query, { ativo: ativo == null ? null : String(ativo) }),
+      })
+      .pipe(
+        map(resp => paraPage(resp, query)),
+        map(page => ({ ...page, content: page.content.map(p => ({ ...p, duracao: formatarDuracao(p.duracaoTotalSegundos) })) })),
+      );
+  }
+
+  /** Todas as playlists, para o select da tela. */
+  listarTodas(): Observable<PlaylistDto[]> {
+    return this.listar({ pageIndex: 0, pageSize: 1000 }).pipe(map(p => p.content));
+  }
+
+  /** Sai de modal com `errosInline: true`: erro no banner do modal. */
+  salvar(id: number | null, valor: Partial<PlaylistDto>, version?: number): Observable<unknown> {
+    const corpo = { nome: valor.nome, descricao: valor.descricao || null };
+    return id
+      ? this.http.put(`${this.baseUrl}/${id}`, { id, ...corpo, version }, { context: comErroLocal() })
+      : this.http.post(this.baseUrl, corpo, { context: comErroLocal() });
+  }
+
+  /** Cria uma playlist nova com a grade de outra (mesmas mídias, ordem e dias). */
+  duplicar(origemId: number, valor: Partial<PlaylistDto>): Observable<number> {
+    return this.http
+      .post<number>(this.baseUrl, { nome: valor.nome, descricao: valor.descricao || null }, { context: comErroLocal() })
+      .pipe(
+        switchMap(novaId => forkJoin([this.getById(origemId), this.getById(novaId)])),
+        switchMap(([origem, nova]) => {
+          const itens = (origem.itens ?? []).map(i => ({ midiaId: i.midiaId, diasSemana: i.diasSemana }));
+          return itens.length
+            ? this.http.put<number>(`${this.baseUrl}/${nova.id}/itens`, { id: nova.id, version: nova.version, itens }, { context: comErroLocal() })
+              .pipe(map(() => nova.id))
+            : of(nova.id);
+        }),
+      );
+  }
+
+  definirItens(id: number, itens: ItemGrade[], version: number): Observable<number> {
+    return this.http.put<number>(`${this.baseUrl}/${id}/itens`, { id, version, itens }, { context: comErroLocal() });
+  }
+
+  definirAtivo(id: number, ativo: boolean, version: number): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/${id}/${ativo ? 'ativar' : 'inativar'}`, null, { params: { version } });
+  }
+
+  excluir(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+}

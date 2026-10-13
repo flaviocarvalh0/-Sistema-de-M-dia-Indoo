@@ -1,0 +1,56 @@
+/* ─── Estilos globais — Mídia Indoor ──────────────────────────────────────── */
+
+/* Bootstrap PRIMEIRO — os componentes do @atlas/framework usam suas classes
+   (.form-control, .btn, .input-group, .card...). Sem ele os campos ficam sem
+   estilo. O tema do Atlas é importado depois para poder sobrepor. */
+@import "bootstrap/dist/css/bootstrap.min.css";
+
+/* Ícones */
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+/* Overlay do CDK — necessário para modais (CDK Dialog) e para o dropdown
+   flutuante do @atlas/framework escaparem de containers com overflow. */
+@import "@angular/cdk/overlay-prebuilt.css";
+
+/* Tema do Atlas (sobrepõe o Bootstrap) e, por cima, a marca da Mídia Indoor:
+   tokens próprios, como o atlas-brand-af.css do framework. */
+@import "@atlas/framework/styles/atlas-theme.css";
+@import "./atlas-brand-indoor.css";
+
+html, body { height: 100%; margin: 0; }
+
+/* Overlay-container acima dos modais custom dos painéis (z-index 1055/1060). */
+.cdk-overlay-container, .cdk-global-overlay-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 9999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cdk-overlay-backdrop { background-color: rgba(0, 0, 0, 0.5) !important; }
+.cdk-overlay-pane.dialog-card {
+  width: auto;
+  max-width: 90%;
+  max-height: 90vh;
+  display: flex;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+.cdk-overlay-pane.dialog-card .cdk-dialog-container {
+  padding: 0; display: flex; max-height: inherit; overflow: visible; min-height: 0;
+  background: transparent; box-shadow: none;
+}
+.cdk-overlay-pane.dialog-card .card {
+  display: flex; flex-direction: column; width: 100%; max-height: inherit; min-height: 0;
+  border: none; background: transparent;
+}
+.cdk-overlay-pane.dialog-card .card-body { flex: 1 1 auto; overflow: visible; min-height: 0; }
+
+/* Toasts: renderizados na RAIZ do app (<atlas-toast-container> em app.ts, via
+   ToastService.registrarHostExterno()). Ficam acima dos modais pelo z-index
+   próprio do componente (100000 > cdk-overlay-container 9999) — solução
+   arquitetural, sem hack global de z-index. */
+

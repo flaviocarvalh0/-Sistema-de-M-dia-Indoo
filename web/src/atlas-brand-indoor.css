@@ -1,0 +1,101 @@
+/* =========================================================
+   Marca Mídia Indoor — overlay sobre o tema do @atlas/framework
+   ---------------------------------------------------------
+   Mesmo mecanismo do atlas-brand-af.css do framework: só tokens e
+   poucos ajustes, importado DEPOIS do atlas-theme.css. Fundo claro,
+   menu em azul-petróleo, verde-azulado como cor de ação (a mesma dos
+   e-mails da API) e a fonte Plus Jakarta Sans.
+
+   A escala "navy" do framework é remapeada: as pontas escuras viram
+   petróleo (sidebar, login), as claras viram tons de verde-azulado.
+   ========================================================= */
+:root {
+  --mi-acao:          #0F766E;
+  --mi-acao-escuro:   #0B5D57;
+  --mi-acao-claro:    #CCFBF1;
+  --mi-escuro:        #0F1F2E;
+  --mi-texto:         #1F2937;
+  --mi-texto-suave:   #5B6573;
+  --mi-fundo:         #F6F8F9;
+  --mi-borda:         #E1E7EB;
+  --mi-raio:          12px;
+
+  --font-family-base: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-navy-950: #08121C;
+  --color-navy-900: #0F1F2E; /* fundo da sidebar */
+  --color-navy-800: #16304A;
+  --color-navy-700: #1B4256; /* gradiente do login */
+  --color-navy-600: #0F766E; /* cor da marca */
+  --color-navy-500: #14918A;
+  --color-navy-400: #2DB3A8;
+  --color-navy-300: #7DD8CE;
+  --color-navy-200: #B4EBE4;
+  --color-navy-100: #CCFBF1;
+  --color-navy-50:  #EEFDF9;
+
+  --bs-primary: var(--mi-acao);
+  --bs-primary-rgb: 15, 118, 110;
+  --bs-link-color: var(--mi-acao-escuro);
+  --bs-link-color-rgb: 11, 93, 87;
+  --bs-link-hover-color: var(--mi-acao);
+  --bs-body-color: var(--mi-texto);
+  --bs-body-font-family: var(--font-family-base);
+  --bs-focus-ring-color: rgba(15, 118, 110, 0.25);
+}
+
+body {
+  background-color: var(--mi-fundo);
+  color: var(--mi-texto);
+  font-family: var(--font-family-base);
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+/* Botões: o Bootstrap compilado traz o azul nas variáveis do componente. */
+.btn-primary {
+  --bs-btn-bg: var(--mi-acao);
+  --bs-btn-border-color: var(--mi-acao);
+  --bs-btn-hover-bg: var(--mi-acao-escuro);
+  --bs-btn-hover-border-color: var(--mi-acao-escuro);
+  --bs-btn-active-bg: var(--mi-acao-escuro);
+  --bs-btn-active-border-color: var(--mi-acao-escuro);
+  --bs-btn-disabled-bg: var(--mi-acao);
+  --bs-btn-disabled-border-color: var(--mi-acao);
+  --bs-btn-focus-shadow-rgb: 15, 118, 110;
+  font-weight: 600;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--mi-acao-escuro);
+  --bs-btn-border-color: var(--mi-acao);
+  --bs-btn-hover-bg: var(--mi-acao);
+  --bs-btn-hover-border-color: var(--mi-acao);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-active-bg: var(--mi-acao-escuro);
+  --bs-btn-active-border-color: var(--mi-acao-escuro);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-focus-shadow-rgb: 15, 118, 110;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--color-navy-300);
+  box-shadow: 0 0 0 .25rem rgba(15, 118, 110, .15);
+}
+
+.form-check-input:checked {
+  background-color: var(--mi-acao);
+  border-color: var(--mi-acao);
+}
+
+.card {
+  border-color: var(--mi-borda);
+  border-radius: var(--mi-raio);
+}
+
+.text-primary { color: var(--mi-acao) !important; }
+.bg-primary, .text-bg-primary { background-color: var(--mi-acao) !important; }
+.progress-bar { background-color: var(--mi-acao); }

@@ -118,13 +118,25 @@ build verde, testes passando e docs atualizadas.
 
 ## Etapa 6 — Painel `web/`
 
-- [ ] Copiar `playmenu-web`, remover as features do PlayMenu, manter `shared/`.
-- [ ] Features `rede/parceiros`, `telas`, `midias`, `playlists` no padrão
-  service + configs + list-page + `FormModalService`.
-- [ ] `UploadMidiaService` (SHA-256 com `crypto.subtle`, duração do vídeo, PUT
-  direto na URL assinada com progresso).
-- [ ] Playlist: seleção de mídias, reordenação por arrastar, dias da semana.
-- [ ] Tela: gerar/exibir código de pareamento, situação Online/Offline.
+- [x] Cópia do `playmenu-web` sem as features do PlayMenu; ficaram `shared/`
+  (paginação, formulário, telefone, documento), notas de versão, gerador de
+  versão e publicação no IIS. Marca própria (`atlas-brand-indoor.css`).
+- [x] Features `rede` (parceiros), `telas`, `midias` e `playlists` no padrão
+  service + configs + list-page + `FormModalService`, com histórico na edição.
+- [x] Envio de mídia em página própria: SHA-256 com `crypto.subtle`, duração
+  lida do vídeo, PUT direto na URL assinada (sem passar pela API) com
+  progresso, e conferência de formato, tamanho e cota antes de subir.
+- [x] Grade da playlist: adicionar mídias, reordenar arrastando (CDK), dias da
+  semana por item com atalhos, salvar a grade inteira com a versão.
+  "Clonar" na grid duplica a playlist com a grade.
+- [x] Tela: código de pareamento em destaque com contagem regressiva, conexão
+  (Aguardando pareamento/Online/Offline) atualizada a cada minuto, desvincular,
+  "parear outra TV". "Clonar" cria outra tela com o mesmo local e playlist.
+- [x] `ItemPlaylistDto.DiasSemana` passou a sair como número (bits), como no
+  contrato da TV.
+- [x] Roteiro de navegador (Playwright) de ponta a ponta: login do dono, envio
+  de vídeo e imagem, grade com arrastar e dias, tela com código, duplicações e
+  a lista de parceiros da operadora.
 
 ## Etapa 7 — Player `player/` (Flutter, offline-first)
 

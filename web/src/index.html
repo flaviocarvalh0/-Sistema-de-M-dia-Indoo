@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Mídia Indoor</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="favicon.ico">
+  <!--
+    Fonte da marca. Carrega SEM bloquear a pintura (media=print troca
+    para all quando chega): a tela de abertura não espera a fonte, e até ela
+    chegar vale a do sistema.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" media="print" onload="this.media='all'"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+
+  <!--
+    TELA DE ABERTURA — tudo embutido, de propósito.
+
+    Ela existe para cobrir o intervalo entre o HTML chegar e o Angular subir, e
+    nesse intervalo NENHUM arquivo externo carregou ainda: nem CSS, nem fonte,
+    nem JS. Qualquer `<link>` ou `<img>` aqui seria mais uma ida ao servidor
+    ANTES de a tela pintar, ou seja, aumentaria justamente o que ela veio
+    esconder. Por isso o estilo é inline e as engrenagens são SVG no documento.
+
+    O intervalo não é curto: o `main.ts` busca `assets/config.json` antes do
+    bootstrap, então há uma requisição de rede a mais na frente de tudo. Sem
+    isto, o usuário olhava um retângulo chapado sem sinal de vida.
+  -->
+  <style>
+    #abertura {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      /* Mesmos tons da marca (atlas-brand-indoor.css: navy-500/700/900
+         remapeados): a troca para o login não dá salto de cor. */
+      background: radial-gradient(120% 90% at 50% 0%, #14918A 0%, #1B4256 45%, #0F1F2E 100%);
+      color: #fff;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      opacity: 1;
+      transition: opacity .35s ease;
+    }
+    #abertura.saindo { opacity: 0; pointer-events: none; }
+
+    .ab-engrenagens { position: relative; width: 132px; height: 104px; }
+    .ab-engrenagens svg { position: absolute; stroke: #fff; fill: none; stroke-linecap: butt; }
+    .ab-g1 { top: 0; left: 8px; width: 84px; height: 84px; animation: ab-horario 4.2s linear infinite; opacity: .95; }
+    .ab-g2 { top: 44px; left: 72px; width: 56px; height: 56px; animation: ab-antihorario 3s linear infinite; opacity: .75; }
+    @keyframes ab-horario { to { transform: rotate(360deg); } }
+    @keyframes ab-antihorario { to { transform: rotate(-360deg); } }
+
+    .ab-marca { text-align: center; line-height: 1.25; }
+    .ab-marca b { display: block; font-size: 1.35rem; font-weight: 700; letter-spacing: .5px; }
+    .ab-marca span { display: block; font-size: .8rem; opacity: .72; letter-spacing: 2.4px; text-transform: uppercase; }
+
+    /*
+      As mensagens giram como uma RODA: a que sai desbota subindo, a que entra
+      desbota vindo de baixo, e a do meio fica nítida. Antes elas trocavam no
+      mesmo ponto da tela, e qualquer sobra de uma caía por cima da outra.
+      Agora cada uma tem sua faixa vertical, então não há como se encontrarem.
+
+      Só CSS. Com JS seria preciso um `setInterval` que alguém teria de limpar
+      ao remover a tela — e um timer vivo apontando para um nó que já saiu do
+      documento é vazamento silencioso.
+
+      `nowrap` mais fonte fluida: uma mensagem que quebrasse em duas linhas
+      invadiria a faixa da vizinha. Encolher a letra é mais barato que empilhar.
+    */
+    /*
+      O ciclo vive numa VARIAVEL porque os atrasos derivam dele: as tres
+      mensagens precisam ficar a um terco de volta uma da outra. Quando isso era
+      escrito a mao, o bloco de `prefers-reduced-motion` trocava so a duracao e
+      deixava os atrasos velhos — a roda desalinhava e duas mensagens caiam uma
+      em cima da outra. Era ESTE o texto sobreposto, e so aparecia para quem usa
+      o sistema com animacoes reduzidas.
+    */
+    .ab-mensagens {
+      --ab-ciclo: 9s;
+      position: relative;
+      height: 84px;
+      width: min(420px, 92vw);
+      overflow: hidden;
+    }
+    .ab-mensagens span {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      white-space: nowrap;
+      font-size: clamp(.78rem, 3.2vw, .92rem);
+      opacity: 0;
+      animation: ab-roda var(--ab-ciclo) infinite;
+    }
+    .ab-mensagens span:nth-child(2) { animation-delay: calc(var(--ab-ciclo) / 3); }
+    .ab-mensagens span:nth-child(3) { animation-delay: calc(var(--ab-ciclo) / 3 * 2); }
+    @keyframes ab-roda {
+      0%        { transform: translateY(44px);  opacity: 0; }
+      10%       { transform: translateY(28px);  opacity: .3; }
+      30%, 42%  { transform: translateY(0);     opacity: 1; }
+      62%       { transform: translateY(-28px); opacity: .3; }
+      75%, 100% { transform: translateY(-44px); opacity: 0; }
+    }
+
+    .ab-barra { width: 190px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.22); overflow: hidden; }
+    .ab-barra i { display: block; width: 40%; height: 100%; background: rgba(255,255,255,.85); animation: ab-desliza 1.4s ease-in-out infinite; }
+    @keyframes ab-desliza {
+      0%   { margin-left: -40%; }
+      100% { margin-left: 100%; }
+    }
+
+    /*
+      Estado de FALHA. Sem ele, um bootstrap quebrado deixaria as engrenagens
+      girando para sempre e o usuário esperando por algo que não vem.
+    */
+    #abertura.falhou .ab-engrenagens,
+    #abertura.falhou .ab-mensagens,
+    #abertura.falhou .ab-barra { display: none; }
+    .ab-erro { display: none; text-align: center; max-width: 420px; padding: 0 24px; }
+    #abertura.falhou .ab-erro { display: block; }
+    .ab-erro b { display: block; font-size: 1.05rem; margin-bottom: 6px; }
+    .ab-erro p { margin: 0 0 16px; font-size: .9rem; opacity: .8; line-height: 1.5; }
+    .ab-erro button {
+      border: 1px solid rgba(255,255,255,.5); background: transparent; color: #fff;
+      padding: 8px 20px; border-radius: 6px; font-size: .9rem; cursor: pointer;
+    }
+    .ab-erro button:hover { background: rgba(255,255,255,.12); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ab-g1, .ab-g2 { animation-duration: 14s; }
+      .ab-barra i { animation-duration: 4s; }
+      /* So o ciclo. Os atrasos se ajustam sozinhos, por serem calculados dele. */
+      .ab-mensagens { --ab-ciclo: 18s; }
+    }
+  </style>
+</head>
+<body>
+  <div id="abertura" role="status" aria-live="polite" aria-label="Preparando a aplicação">
+    <div class="ab-engrenagens" aria-hidden="true">
+      <!--
+        Engrenagem feita com `stroke-dasharray` num círculo grosso: os traços
+        viram os dentes. Desenhar dente a dente exigiria dezenas de nós no
+        HTML, e isto ocupa três linhas.
+        r=34 → circunferência 213,6 → 10 dentes de 21,36 (10 de traço, 11,36 de vão).
+      -->
+      <svg class="ab-g1" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="34" stroke-width="13" stroke-dasharray="10 11.36"/>
+        <circle cx="50" cy="50" r="25" stroke-width="5"/>
+        <circle cx="50" cy="50" r="8"  stroke-width="5"/>
+      </svg>
+      <!-- r=30 → circunferência 188,5 → 8 dentes de 23,56 (11 de traço, 12,56 de vão). -->
+      <svg class="ab-g2" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="30" stroke-width="15" stroke-dasharray="11 12.56"/>
+        <circle cx="50" cy="50" r="20" stroke-width="6"/>
+        <circle cx="50" cy="50" r="7"  stroke-width="6"/>
+      </svg>
+    </div>
+
+    <div class="ab-marca">
+      <b>Mídia Indoor</b>
+      <span>Suas TVs sempre no ar</span>
+    </div>
+
+    <div class="ab-mensagens">
+      <span>Preparando o ambiente…</span>
+      <span>Carregando as configurações…</span>
+      <span>Quase lá…</span>
+    </div>
+
+    <div class="ab-barra" aria-hidden="true"><i></i></div>
+
+    <div class="ab-erro">
+      <b>Não foi possível iniciar o sistema</b>
+      <p>Verifique sua conexão e tente novamente. Se o problema continuar, avise o suporte.</p>
+      <button type="button" onclick="location.reload()">Recarregar</button>
+    </div>
+  </div>
+
+  <app-root></app-root>
+</body>
+</html>

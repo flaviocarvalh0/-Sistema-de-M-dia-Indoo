@@ -1,0 +1,68 @@
+# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+.history/*
+
+# Miscellaneous
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+__screenshots__/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Tooling de IA / editor (nao versionar)
+.claude/
+# Mapa de conhecimento do Graphify
+graphify-out/
+# Scripts operacionais de banco (seed de modulo/menu): rodam na maquina de
+# quem recria o ambiente e nao fazem parte do build do front.
+# Os seeds de banco daqui carregam dados de ambiente e ficam de fora.
+# Exceto o script de publicacao, que o package.json referencia: sem ele
+# versionado, `npm run publicar` quebra para quem clona o repositorio.
+/scripts/*
+!/scripts/publicar-iis.ps1
+# Idem para o gerador de versao: o `prebuild` o invoca, entao sem ele
+# versionado `npm run build` quebra para quem clona o repositorio.
+!/scripts/gerar-versao.js
+
+# Roteiro de testes: documento de trabalho, revisado a cada entrega.
+# Fica no disco de quem testa, fora do repositorio.
+docs/roteiro-testes.md
+
+# Versao: derivada do package.json e do CHANGELOG a cada build
+# (ver scripts/gerar-versao.js). Versionar o gerado daria conflito a cada
+# compilacao.
+/src/app/versao.ts

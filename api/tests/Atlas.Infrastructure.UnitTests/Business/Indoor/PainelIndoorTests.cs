@@ -270,9 +270,9 @@ public class PainelIndoorTests : IDisposable
             .Handle(new GetPlaylistByIdQuery(playlist.Id), CancellationToken.None);
 
         dto.Itens!.Select(i => (i.Ordem, i.MidiaId, i.DiasSemana)).Should().Equal(
-            (0, imagem.Id, DiasSemana.DiasUteis),
-            (1, video.Id, DiasSemana.Todos),
-            (2, imagem.Id, DiasSemana.FimDeSemana));
+            (0, imagem.Id, (int)DiasSemana.DiasUteis),
+            (1, video.Id, (int)DiasSemana.Todos),
+            (2, imagem.Id, (int)DiasSemana.FimDeSemana));
         dto.QuantidadeItens.Should().Be(3);
         dto.DuracaoTotalSegundos.Should().Be(50);
     }

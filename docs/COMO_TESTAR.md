@@ -1,7 +1,7 @@
 # Como testar na sua máquina
 
-Enquanto o painel (`web/`) e o app das TVs (`player/`) não existem, a API é
-testada pela documentação interativa (Scalar) ou pelo roteiro
+A API sobe primeiro (passos 1 a 5); depois o painel `web/` (passo 7). Enquanto
+o app das TVs (`player/`) não existe, o papel da TV é feito pelo roteiro
 `api/src/Atlas.Web/Indoor.http`.
 
 ## 1. Pré-requisitos
@@ -100,3 +100,48 @@ $env:INDOOR_SUPABASE_URL = "https://<projeto>.supabase.co"
 $env:INDOOR_SUPABASE_CHAVE_SERVICO = "<chave secreta>"
 dotnet test tests/Atlas.Infrastructure.IntegrationTests --filter "FullyQualifiedName~Contrato"
 ```
+
+## 7. Painel (`web/`)
+
+Pré-requisitos: Node.js 20+ e o `atlas-framework` clonado **ao lado** da pasta
+deste repositório, com o `dist` gerado:
+
+```powershell
+cd ..\..            # a pasta que contém -Sistema-de-M-dia-Indoo
+git clone <url do atlas-framework> atlas-framework
+cd atlas-framework
+npm install
+npm run build
+```
+
+Com a API no ar (passo 5):
+
+```powershell
+cd -Sistema-de-M-dia-Indoo\web
+npm install
+npm start
+```
+
+Abra `http://localhost:4200` (a porta tem de ser essa: é a liberada no CORS
+da API).
+
+### Roteiro
+
+1. Entre como `admin` e abra **Rede → Parceiros**. Cadastre um parceiro: o
+   responsável recebe a senha temporária por e-mail (sem SMTP configurado,
+   consulte `select html_body from platform.email_message order by id desc limit 1;`).
+2. Saia e entre com o e-mail do responsável; troque a senha.
+3. **Mídias → Enviar mídia**: escolha um MP4 (a duração vem do vídeo) e uma
+   imagem PNG/JPG. A barra mostra o envio direto ao Supabase; ao terminar a
+   mídia aparece na lista e a barra de espaço usado cresce. Use o botão de
+   play da linha para pré-visualizar.
+4. **Playlists → Novo**, depois clique na playlist para abrir a grade:
+   adicione as mídias, arraste para mudar a ordem, desmarque dias (ex.: só
+   Seg a sex) e **Salvar grade**.
+5. **Telas → Novo**, escolha a playlist e use o botão de QR Code da linha
+   (**Gerar código**). O código aparece em destaque, com o tempo restante.
+6. Faça o papel da TV com os passos 12 a 15 do `Indoor.http` usando esse
+   código: a tela passa a **Online** (a lista se atualiza a cada minuto).
+7. **Desvincular TV** na linha: a próxima sincronização da TV recebe 401 e a
+   tela volta a *Aguardando pareamento*.
+
