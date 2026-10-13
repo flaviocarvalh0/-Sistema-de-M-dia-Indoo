@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using Atlas.Application.Business.Common;
+using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Application.Common.Interfaces;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Constants;
+using Atlas.Infrastructure.Business.Armazenamento;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +25,41 @@ public static class DependencyInjection
     {
         builder.Services.AddScoped<IParceiroAtual, ParceiroAtual>();
         builder.Services.AddSingleton<IConfiguracaoIndoor, ConfiguracaoIndoor>();
+        builder.AddArmazenamentoMidias();
         builder.Services.AddBusinessAuthorization();
+    }
+
+    /// <summary>
+    /// Storage das mídias (Supabase). Sem <c>Indoor:Armazenamento:Supabase</c>
+    /// configurado, a API sobe e só o que mexe em arquivo responde com erro.
+    /// </summary>
+    private static void AddArmazenamentoMidias(this IHostApplicationBuilder builder)
+    {
+        var opcoes = OpcoesSupabase.Ler(builder.Configuration);
+
+        if (opcoes is null)
+        {
+            builder.Services.AddSingleton<IArmazenamentoMidias, ArmazenamentoNaoConfigurado>();
+            return;
+        }
+
+        builder.Services.AddSingleton(opcoes);
+
+        // Um HttpClient só, com conexões renovadas para acompanhar mudanças de DNS.
+        builder.Services.AddSingleton(sp => new ArmazenamentoSupabase(
+            new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(15) })
+            {
+                Timeout = TimeSpan.FromSeconds(60),
+            },
+            opcoes,
+            sp.GetRequiredService<TimeProvider>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ArmazenamentoSupabase>>()));
+        builder.Services.AddSingleton<IArmazenamentoMidias>(sp => sp.GetRequiredService<ArmazenamentoSupabase>());
+
+        if (opcoes.CriarBucket)
+        {
+            builder.Services.AddHostedService<InicializadorBucket>();
+        }
     }
 
     /// <summary>

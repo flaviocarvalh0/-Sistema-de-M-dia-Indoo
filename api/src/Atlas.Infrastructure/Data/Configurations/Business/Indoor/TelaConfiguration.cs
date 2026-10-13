@@ -20,7 +20,8 @@ public class TelaConfiguration : IEntityTypeConfiguration<Tela>
 
         builder.Property(t => t.Nome).HasMaxLength(100).IsRequired();
         builder.Property(t => t.Localizacao).HasMaxLength(150);
-        builder.Property(t => t.CodigoPareamento).HasMaxLength(Tela.TamanhoCodigoPareamento).IsFixedLength();
+        // varchar e não char(8): ver MidiaConfiguration (histórico da plataforma).
+        builder.Property(t => t.CodigoPareamento).HasMaxLength(Tela.TamanhoCodigoPareamento);
         builder.Property(t => t.DispositivoId).HasMaxLength(100);
         builder.Property(t => t.VersaoCredencial).HasDefaultValue(1);
 

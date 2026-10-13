@@ -143,9 +143,8 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.Property<string>("Hash")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character(64)")
-                        .HasColumnName("hash")
-                        .IsFixedLength();
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("hash");
 
                     b.Property<DateOnly?>("InicioExibicao")
                         .HasColumnType("date")
@@ -286,9 +285,8 @@ namespace Atlas.Infrastructure.Data.Migrations
 
                     b.Property<string>("CodigoPareamento")
                         .HasMaxLength(8)
-                        .HasColumnType("character(8)")
-                        .HasColumnName("codigo_pareamento")
-                        .IsFixedLength();
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("codigo_pareamento");
 
                     b.Property<DateTimeOffset?>("CodigoPareamentoExpiraEm")
                         .HasColumnType("timestamp with time zone")

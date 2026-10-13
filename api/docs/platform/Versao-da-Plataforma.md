@@ -58,6 +58,15 @@ no merge de uma tag nova:
 | `src/Atlas.Infrastructure/Data/Migrations/ApplicationDbContextModelSnapshot.cs` | Modelo combinado Platform + Business (ADR-006) |
 | `tests/Atlas.Infrastructure.UnitTests/*.csproj` | Pacote `Microsoft.EntityFrameworkCore.InMemory` 9.0.18 (já usado nos testes de integração) |
 
+## Problemas conhecidos da versão adotada
+
+Contornados no produto, sem alterar a plataforma:
+
+| Problema | Efeito | Contorno |
+|---|---|---|
+| Login em modo **Bearer** emite a claim `sub` duplicada (corrigido no commit `ba81daf`, posterior à tag) | O próprio JwtBearer recusa o token: 401 em qualquer rota | O painel usa modo Cookie; o token das TVs é do módulo Indoor |
+| O inspetor do histórico (`PostgreSqlEntityHistorySchemaInspector`) lê colunas `char(n)` como `character`, sem tamanho | A segunda subida da API acusa esquema incompatível na tabela histórica e não sobe | Entidades de negócio usam `varchar(n)` + check constraint, nunca `IsFixedLength()` |
+
 ## Histórico de atualizações
 
 | Data | Versão anterior | Nova versão | Observações |

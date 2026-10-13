@@ -27,7 +27,10 @@ public class MidiaConfiguration : IEntityTypeConfiguration<Midia>
         builder.Property(m => m.Titulo).HasMaxLength(150).IsRequired();
         builder.Property(m => m.ChaveArmazenamento).HasMaxLength(300).IsRequired();
         builder.Property(m => m.TipoConteudo).HasMaxLength(50).IsRequired();
-        builder.Property(m => m.Hash).HasMaxLength(64).IsFixedLength().IsRequired();
+        // varchar e não char(64): o inspetor do histórico da plataforma não
+        // reconhece o tamanho de char(n) e recusaria a tabela histórica na
+        // subida seguinte. O tamanho exato fica na ck_midia_hash.
+        builder.Property(m => m.Hash).HasMaxLength(64).IsRequired();
 
         builder.Property(m => m.DuracaoSegundos)
             .HasDefaultValue(Midia.DuracaoPadraoSegundos);

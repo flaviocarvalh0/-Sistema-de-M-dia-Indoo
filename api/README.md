@@ -34,6 +34,20 @@ Pré-requisitos: .NET SDK 9 e PostgreSQL.
    módulos, os menus e os grupos `Operadora` e `Proprietário de Parceiro`.
 5. **Configuração:** `Indoor:UrlPainel` no appsettings é o endereço do painel
    usado nos e-mails de boas-vindas.
+6. **Storage das mídias (Supabase):** crie um projeto em
+   [supabase.com](https://supabase.com) (plano gratuito) e, em
+   *Project Settings → API*, copie a URL do projeto e a chave `service_role`.
+   A chave é segredo (ADR-008):
+
+   ```powershell
+   dotnet user-secrets set "Indoor:Armazenamento:Supabase:Url" "https://<projeto>.supabase.co" --project src/Atlas.Web
+   dotnet user-secrets set "Indoor:Armazenamento:Supabase:ChaveServico" "<service_role>" --project src/Atlas.Web
+   ```
+
+   Na subida, a API cria o bucket privado `midias` (50 MB por arquivo; MP4,
+   JPEG e PNG). Sem essas chaves a API sobe normalmente e só o envio de mídia
+   responde 503 com a explicação. Nos servidores, use as variáveis
+   `Indoor__Armazenamento__Supabase__Url` e `Indoor__Armazenamento__Supabase__ChaveServico`.
 
 ### Testes
 
@@ -41,6 +55,11 @@ Pré-requisitos: .NET SDK 9 e PostgreSQL.
 dotnet test tests/Atlas.Infrastructure.UnitTests
 dotnet test tests/Atlas.Infrastructure.IntegrationTests
 ```
+
+O teste de contrato do storage (`ArmazenamentoSupabaseContratoTests`) só roda
+com `INDOOR_SUPABASE_URL` e `INDOOR_SUPABASE_CHAVE_SERVICO` definidas (bucket
+`midias-testes`, ou `INDOOR_SUPABASE_BUCKET`): envia, confere, baixa e apaga
+um arquivo de verdade.
 
 Os de integração usam o banco **`Indoor_Testes`** — nunca o de
 desenvolvimento, porque apagam objetos de histórico de propósito. Prepare uma

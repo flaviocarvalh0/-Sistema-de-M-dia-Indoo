@@ -9,14 +9,17 @@ namespace Atlas.Web.Business;
 /// merge de cada nova tag da Atlas Platform.
 /// </summary>
 /// <remarks>
-/// O esquema de autenticação das TVs, o storage e os limites de taxa entram
-/// aqui nas etapas seguintes (Dispositivo e Sincronização).
+/// O esquema de autenticação das TVs e os limites de taxa entram aqui na
+/// etapa do dispositivo.
 /// </remarks>
 public static class IndoorComposicao
 {
     public static IHostApplicationBuilder AddIndoor(this IHostApplicationBuilder builder)
     {
         builder.AddBusinessServices();
+
+        // Antes do tratador da plataforma (AddWebServices vem depois no Program.cs).
+        builder.Services.AddExceptionHandler<IndoorExceptionHandler>();
 
         return builder;
     }

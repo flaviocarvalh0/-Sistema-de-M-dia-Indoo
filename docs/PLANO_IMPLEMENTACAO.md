@@ -54,20 +54,28 @@ build verde, testes passando e docs atualizadas.
   grupos Operadora e Proprietário de Parceiro com as permissões.
 - [x] Verificado ponta a ponta na API com PostgreSQL (login em modo Cookie).
 
-> **Pendência da plataforma:** na tag `v0.4.0-alpha.1` o login em modo
-> **Bearer** emite a claim `sub` duplicada e o próprio JwtBearer recusa o token
-> (401 em qualquer rota). A correção é o commit `ba81daf` da Atlas Platform,
-> posterior à tag. O painel usa modo Cookie e não é afetado; o token das TVs
-> (etapa 5) é emitido pelo próprio módulo e também não.
+> **Pendências da plataforma** (login Bearer e histórico com `char(n)`):
+> ver [Versão da Plataforma](../api/docs/platform/Versao-da-Plataforma.md#problemas-conhecidos-da-versão-adotada).
 
-## Etapa 3 — Storage (Supabase)
+## Etapa 3 — Storage (Supabase) ✅
 
-- [ ] `IArmazenamentoMidias` na Application: `GerarEnvioAsync` (URL assinada de
-  upload), `GerarLeituraAsync` (URL assinada de download), `ObterAsync`
-  (metadados do objeto), `RemoverAsync`.
-- [ ] `ArmazenamentoSupabase` na Infrastructure (Storage API: `object/upload/sign`,
-  `object/sign`, `object/info`), configurada por `Indoor:Supabase` + segredos (ADR-008).
-- [ ] Bucket privado `midias`; chave `parceiros/{parceiroId}/midias/{guid}.{ext}`.
+- [x] `IArmazenamentoMidias` (Application): `PrepararEnvioAsync` (URL assinada
+  de envio, `PUT` binário direto do navegador), `GerarUrlLeituraAsync`,
+  `ObterAsync` (tamanho e tipo), `AbrirLeituraAsync` (conteúdo, para a API
+  conferir) e `RemoverAsync`.
+- [x] `TiposArquivoMidia` (MP4, JPEG, PNG detectados pelos bytes),
+  `ChavesArmazenamento` (`parceiros/{id}/midias/{guid}.{ext}`, gerada e
+  conferida pela API) e `VerificadorArquivoMidia` (SHA-256, tamanho e tipo
+  numa leitura só, parando acima de 50 MB).
+- [x] `ArmazenamentoSupabase` (Infrastructure) sobre a Storage API, com a
+  chave `service_role` em segredo; bucket privado `midias` criado na subida
+  (50 MB, MP4/JPEG/PNG). Sem configuração a API sobe e o envio responde 503.
+- [x] Falhas do storage viram 503 com mensagem clara (`IndoorExceptionHandler`).
+- [x] Testes do contrato HTTP (handler falso) e teste de ponta a ponta
+  contra uma Storage API (pula sem `INDOOR_SUPABASE_*`).
+- [x] Correção: `hash` e `codigo_pareamento` passam a `varchar` (migration
+  `Business_HashECodigoComoVarchar`) — o histórico da plataforma não lê
+  `char(n)` e a API não subia pela segunda vez no mesmo banco.
 
 ## Etapa 4 — CRUD do painel
 

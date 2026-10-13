@@ -1,6 +1,6 @@
 # Modelo de dados — Mídia Indoor
 
-Migration: `Business_CriarEstruturaIndoor`. Todas as entidades seguem o padrão
+Migrations: `Business_CriarEstruturaIndoor` e `Business_HashECodigoComoVarchar`. Todas as entidades seguem o padrão
 Atlas: chave `long`, concorrência otimista pela coluna `xmin` (propriedade
 `Version`), auditoria (`created`, `created_by`, `last_modified`,
 `last_modified_by`) e nomes em snake_case.
@@ -67,7 +67,7 @@ Vínculo usuário → parceiro. `usuario_id` é único (um usuário, um parceiro
 | `chave_armazenamento` | varchar(300) | única; caminho no bucket |
 | `tipo_conteudo` | varchar(50) | `video/mp4`, `image/jpeg`, `image/png` |
 | `tamanho_bytes` | bigint | 1 a 50 MB (limite do Supabase grátis) |
-| `hash` | char(64) | SHA-256 hex minúsculo |
+| `hash` | varchar(64) | SHA-256 hex minúsculo (64 caracteres, pela check constraint) |
 | `duracao_segundos` | int | padrão 15; 1 a 3600 |
 | `inicio_exibicao` / `fim_exibicao` | date | fim ≥ início; nulos = sem limite |
 | `ativo` | bool | inativa sai da grade |
@@ -94,7 +94,7 @@ posição na lista vira a ordem.
 | `localizacao` | varchar(150) | |
 | `playlist_id` | bigint | opcional; FK `playlist` (restrict) |
 | `ativo` | bool | |
-| `codigo_pareamento` | char(8) | `[A-Z0-9]{8}`, único entre os não nulos |
+| `codigo_pareamento` | varchar(8) | `[A-Z0-9]{8}`, único entre os não nulos |
 | `codigo_pareamento_expira_em` | timestamptz | obrigatório com o código |
 | `dispositivo_id` | varchar(100) | nulo = sem TV |
 | `pareada_em` | timestamptz | presente se e só se há dispositivo |
