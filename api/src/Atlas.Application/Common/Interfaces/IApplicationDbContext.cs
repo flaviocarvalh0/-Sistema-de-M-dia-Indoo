@@ -1,4 +1,5 @@
-﻿using Atlas.Domain.Business.Indoor.Entities;
+﻿using Atlas.Domain.Business.Conteudo.Entities;
+using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Platform.Entities;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -32,6 +33,11 @@ public interface IApplicationDbContext
     DbSet<Midia> Midias { get; }
     DbSet<Playlist> Playlists { get; }
     DbSet<ItemPlaylist> ItensPlaylist { get; }
+
+    // Business — Conteúdo externo (notícias e clima)
+    DbSet<FonteNoticia> FontesNoticia { get; }
+    DbSet<Noticia> Noticias { get; }
+    DbSet<PrevisaoClima> PrevisoesClima { get; }
 
     /// <summary>
     /// Retorna a entrada de rastreamento do ChangeTracker para a entidade informada.

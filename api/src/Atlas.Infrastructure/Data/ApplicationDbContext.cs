@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using Atlas.Application.Common.Interfaces;
 using Atlas.Domain.Business.Indoor.Entities;
+using Atlas.Domain.Business.Conteudo.Entities;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Common;
 using Atlas.Domain.Platform.Entities;
@@ -51,6 +52,11 @@ public class ApplicationDbContext
     public DbSet<Midia> Midias => Set<Midia>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<ItemPlaylist> ItensPlaylist => Set<ItemPlaylist>();
+
+    // Business — Conteúdo externo (notícias e clima)
+    public DbSet<FonteNoticia> FontesNoticia => Set<FonteNoticia>();
+    public DbSet<Noticia> Noticias => Set<Noticia>();
+    public DbSet<PrevisaoClima> PrevisoesClima => Set<PrevisaoClima>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

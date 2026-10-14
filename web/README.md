@@ -1,8 +1,9 @@
 # Mídia Indoor — painel
 
 Painel Angular do **Sistema de Mídia Indoor**: a operadora cadastra os
-parceiros e as TVs e monta as playlists com os anúncios da rede; cada
-parceiro (anunciante) envia e mantém os próprios vídeos e imagens. Consome a biblioteca `@atlas/framework` e conversa com a API em
+parceiros e as TVs, as fontes de notícias e monta as playlists com os
+anúncios da rede; cada parceiro (anunciante) envia e mantém os próprios
+vídeos e imagens. Consome a biblioteca `@atlas/framework` e conversa com a API em
 [`../api`](../api/README.md).
 
 ## Pré-requisitos
@@ -45,8 +46,9 @@ liberada no CORS da API.
 |---|---|---|
 | `/rede/parceiro` | Operadora | Parceiros: cadastro (cria o login do responsável), espaço em MB, plano de mídias ativas, bloquear/desbloquear |
 | `/rede/tela` | Operadora | TVs da rede (o hardware é dela): estabelecimento (host), playlist, identificação do aparelho, código de pareamento, conexão, desvincular |
-| `/rede/playlist` | Operadora | Playlists da rede (uma playlist toca em várias telas); "Clonar" duplica com a grade |
-| `/rede/playlist/:id/grade` | Operadora | Mídias ativas de todos os parceiros (busca, filtro, "Já adicionado (N×)"), ordem do loop e dias da semana de cada item |
+| `/rede/playlist` | Operadora | Playlists da rede (uma playlist toca em várias telas), com a composição da fila (notícia a cada N, embaralhar, relógio, clima); "Clonar" duplica com a grade |
+| `/rede/playlist/:id/grade` | Operadora | Mídias ativas de todos os parceiros (busca, filtro, "Já adicionado (N×)"), ordem do loop, 📌 posição fixa e dias da semana de cada item |
+| `/rede/fonte-noticia` | Operadora | Feeds de notícias (RSS/Atom): cadastro, "Coletar agora", situação da última leitura e as notícias guardadas |
 | `/indoor/midia` | Parceiro | Biblioteca: título, duração, período, ativar/inativar dentro do plano ("Mídias ativas: x de y"), substituir arquivo, pré-visualizar, espaço usado |
 | `/indoor/midia/enviar` | Parceiro | Envio de vídeo MP4 ou imagem JPG/PNG direto ao storage, com SHA-256 e progresso; com `?substituir={id}`, troca o arquivo de uma mídia |
 | `/indoor/tela` | Parceiro | **Onde meus anúncios passam**: TVs com mídia ativa dele, somente leitura |
@@ -60,7 +62,7 @@ src/app/
   app.config.ts        provideAtlasFramework + interceptors
   app.routes.ts        rotas; módulos de negócio por routePrefix/route_key do Studio
   app-shell.component  casca autenticada (layout + menus vindos da API)
-  features/<feature>/  models, services, configs, pages (rede, telas, midias, playlists)
+  features/<feature>/  models, services, configs, pages (rede, telas, midias, playlists, noticias)
   shared/              utilitários (paginação, formulário, dias da semana, bytes, duração)
 public/assets/config.json   endereço da API, lido em tempo de execução
 ```

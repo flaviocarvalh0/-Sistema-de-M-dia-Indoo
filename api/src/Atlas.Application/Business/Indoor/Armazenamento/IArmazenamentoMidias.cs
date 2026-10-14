@@ -32,6 +32,12 @@ public interface IArmazenamentoMidias
     /// <summary>Conteúdo do objeto para a API conferir hash e tipo; <c>null</c> se ele não existe.</summary>
     Task<Stream?> AbrirLeituraAsync(string chave, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Grava o objeto a partir da própria API (sobrescreve se já existe). Usado
+    /// só para conteúdo que a API busca sozinha, como as imagens das notícias.
+    /// </summary>
+    Task GravarAsync(string chave, byte[] conteudo, string tipoConteudo, CancellationToken cancellationToken);
+
     /// <summary>Apaga o objeto. Não falha se ele já não existe.</summary>
     Task RemoverAsync(string chave, CancellationToken cancellationToken);
 }

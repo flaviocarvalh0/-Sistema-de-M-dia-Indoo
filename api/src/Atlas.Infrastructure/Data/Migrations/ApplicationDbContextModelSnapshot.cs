@@ -22,6 +22,237 @@ namespace Atlas.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.FonteNoticia", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ativo");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Credito")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("credito");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_modified");
+
+                    b.Property<long?>("LastModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_modified_by");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nome");
+
+                    b.Property<DateTimeOffset?>("UltimaColetaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ultima_coleta_em");
+
+                    b.Property<string>("UltimoErro")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ultimo_erro");
+
+                    b.Property<string>("UrlFeed")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("url_feed");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fonte_noticia");
+
+                    b.HasIndex("Nome")
+                        .IsUnique()
+                        .HasDatabaseName("ix_fonte_noticia_nome");
+
+                    b.HasIndex("UrlFeed")
+                        .IsUnique()
+                        .HasDatabaseName("ix_fonte_noticia_url_feed");
+
+                    b.ToTable("fonte_noticia", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_fonte_noticia_url", "url_feed ~ '^https?://'");
+                        });
+                });
+
+            modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.Noticia", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ChaveImagem")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("chave_imagem");
+
+                    b.Property<DateTimeOffset>("ColetadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("coletada_em");
+
+                    b.Property<long>("FonteNoticiaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("fonte_noticia_id");
+
+                    b.Property<string>("HashImagem")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("hash_imagem");
+
+                    b.Property<string>("Identificador")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("identificador");
+
+                    b.Property<DateTimeOffset>("PublicadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("publicada_em");
+
+                    b.Property<long?>("TamanhoImagemBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tamanho_imagem_bytes");
+
+                    b.Property<string>("TipoConteudoImagem")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("tipo_conteudo_imagem");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("titulo");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_noticia");
+
+                    b.HasIndex("PublicadaEm")
+                        .HasDatabaseName("ix_noticia_publicada_em");
+
+                    b.HasIndex("FonteNoticiaId", "Identificador")
+                        .IsUnique()
+                        .HasDatabaseName("ix_noticia_fonte_noticia_id_identificador");
+
+                    b.ToTable("noticia", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_noticia_hash_imagem", "hash_imagem IS NULL OR hash_imagem ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_noticia_imagem_completa", "(chave_imagem IS NULL) = (hash_imagem IS NULL) AND (chave_imagem IS NULL) = (tamanho_imagem_bytes IS NULL) AND (chave_imagem IS NULL) = (tipo_conteudo_imagem IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.PrevisaoClima", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset?>("AtualizadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("atualizada_em");
+
+                    b.Property<string>("CidadeConsultada")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("cidade_consultada");
+
+                    b.Property<int?>("CodigoTempo")
+                        .HasColumnType("integer")
+                        .HasColumnName("codigo_tempo");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("latitude");
+
+                    b.Property<string>("Local")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("local");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("longitude");
+
+                    b.Property<decimal?>("MaximaC")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("maxima_c");
+
+                    b.Property<decimal?>("MinimaC")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("minima_c");
+
+                    b.Property<long>("ParceiroId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("parceiro_id");
+
+                    b.Property<decimal?>("TemperaturaC")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("temperatura_c");
+
+                    b.Property<string>("UltimoErro")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ultimo_erro");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_previsao_clima");
+
+                    b.HasIndex("ParceiroId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_previsao_clima_parceiro_id");
+
+                    b.ToTable("previsao_clima", "indoor");
+                });
+
             modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.EstadoTela", b =>
                 {
                     b.Property<long>("TelaId")
@@ -79,6 +310,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.Property<long>("PlaylistId")
                         .HasColumnType("bigint")
                         .HasColumnName("playlist_id");
+
+                    b.Property<bool>("PosicaoFixa")
+                        .HasColumnType("boolean")
+                        .HasColumnName("posicao_fixa");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
@@ -236,6 +471,24 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("descricao");
 
+                    b.Property<int>("DuracaoNoticiaSegundos")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(10)
+                        .HasColumnName("duracao_noticia_segundos");
+
+                    b.Property<bool>("EmbaralharAnuncios")
+                        .HasColumnType("boolean")
+                        .HasColumnName("embaralhar_anuncios");
+
+                    b.Property<bool>("ExibirClima")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exibir_clima");
+
+                    b.Property<bool>("ExibirRelogio")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exibir_relogio");
+
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified");
@@ -250,6 +503,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("nome");
 
+                    b.Property<int>("NoticiaACadaAnuncios")
+                        .HasColumnType("integer")
+                        .HasColumnName("noticia_a_cada_anuncios");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -263,7 +520,12 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_playlist_nome");
 
-                    b.ToTable("playlist", "indoor");
+                    b.ToTable("playlist", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_playlist_duracao_noticia", "duracao_noticia_segundos BETWEEN 5 AND 60");
+
+                            t.HasCheckConstraint("ck_playlist_noticia_a_cada", "noticia_a_cada_anuncios BETWEEN 0 AND 20");
+                        });
                 });
 
             modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.Tela", b =>
@@ -1797,6 +2059,28 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasName("pk_user_token");
 
                     b.ToTable("user_token", "platform");
+                });
+
+            modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.Noticia", b =>
+                {
+                    b.HasOne("Atlas.Domain.Business.Conteudo.Entities.FonteNoticia", "Fonte")
+                        .WithMany()
+                        .HasForeignKey("FonteNoticiaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_noticia_fonte_noticia_fonte_noticia_id");
+
+                    b.Navigation("Fonte");
+                });
+
+            modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.PrevisaoClima", b =>
+                {
+                    b.HasOne("Atlas.Domain.Business.Parceiros.Entities.Parceiro", null)
+                        .WithMany()
+                        .HasForeignKey("ParceiroId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_previsao_clima_parceiros_parceiro_id");
                 });
 
             modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.EstadoTela", b =>

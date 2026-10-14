@@ -4,6 +4,7 @@
 //   INDOOR_API_URL=http://localhost:5366 INDOOR_CODIGO=AB12CD34 flutter test test/integracao_api_test.dart
 //
 // O código sai do painel (Telas → Gerar código) de uma tela com playlist.
+// Se a playlist intercala notícias, confere também as notícias e as imagens.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +56,15 @@ void main() {
     // ignore: avoid_print
     print('Grade: ${s.grade.length} itens, ${FiltroDoDia.itensDoDia(s.grade, hoje).length} para hoje '
         '(${s.fusoHorario}); arquivos: ${Directory('${pasta.path}/midias').listSync().length}');
+
+    // ignore: avoid_print
+    print('Composição: 1 notícia a cada ${s.composicao.noticiaACadaAnuncios}, embaralhar ${s.composicao.embaralharAnuncios}; '
+        'notícias: ${s.noticias.length} (${s.noticias.where((n) => n.temImagem).length} com foto); '
+        'clima: ${s.clima == null ? '—' : '${s.clima!.temperaturaC}° ${s.clima!.descricao}'}');
+    if (s.composicao.noticiaACadaAnuncios > 0) {
+      expect(s.noticias, isNotEmpty);
+      expect(s.noticias.where((n) => n.temImagem).every(sync.baixadorNoticias.pronto), isTrue);
+    }
 
     // Segunda volta: nada muda e o painel passa a ver os itens prontos.
     expect(await sync.sincronizar(), ResultadoCiclo.semMudanca);

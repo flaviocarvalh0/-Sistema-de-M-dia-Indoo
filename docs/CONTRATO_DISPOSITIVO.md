@@ -40,6 +40,7 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 | Parâmetro | Uso |
 |---|---|
 | `versaoGrade` | A última `versaoGrade` recebida. Se nada mudou, vem `alterada: false` sem itens. |
+| `versaoNoticias` | A última `versaoNoticias` recebida. Se as notícias não mudaram, `noticias` vem nulo. |
 | `versaoApp` | Aparece no painel. |
 | `itensProntos` | Quantas mídias estão baixadas e conferidas (aparece no painel). |
 
@@ -66,18 +67,56 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
       "tamanhoBytes": 40008,
       "duracaoSegundos": 10,
       "diasSemana": 127,
+      "posicaoFixa": false,
       "inicioExibicao": null,
       "fimExibicao": null,
       "exibirHoje": true
     }
-  ]
+  ],
+  "composicao": {
+    "noticiaACadaAnuncios": 3,
+    "duracaoNoticiaSegundos": 10,
+    "embaralharAnuncios": true,
+    "exibirRelogio": true,
+    "exibirClima": true
+  },
+  "versaoNoticias": "<sha-256>",
+  "noticias": [
+    {
+      "id": 81,
+      "titulo": "Campanha de vacinação começa segunda",
+      "credito": "Fonte: Agência Brasil",
+      "publicadaEm": "2026-10-14T11:30:00+00:00",
+      "url": "https://<projeto>.supabase.co/storage/v1/object/sign/midias/noticias/1/...jpg?token=...",
+      "hash": "<sha-256 da imagem>",
+      "tamanhoBytes": 182340,
+      "tipoConteudo": "image/jpeg"
+    }
+  ],
+  "clima": {
+    "temperaturaC": 31.4,
+    "minimaC": 24.0,
+    "maximaC": 33.2,
+    "codigo": 2,
+    "descricao": "Parcialmente nublado",
+    "icone": "sol-nuvem",
+    "local": "Manaus, Amazonas",
+    "atualizadaEm": "2026-10-14T11:12:00+00:00",
+    "credito": "Clima: Open-Meteo"
+  }
 }
 ```
+
+- `composicao` e `clima` vêm em toda resposta `200`. `clima` é nulo quando a
+  playlist não exibe clima ou não há leitura recente (6 h).
+- `noticias` vem só quando a `versaoNoticias` mudou: vazia quando a playlist
+  não intercala notícias. Notícia sem foto vem com `url`, `hash`,
+  `tamanhoBytes` e `tipoConteudo` nulos.
 
 | Resposta | O que o app faz |
 |---|---|
 | `200` com `alterada: true` | Troca a grade local pela recebida (ver regras abaixo). |
-| `200` com `alterada: false` | Nada a fazer (`itens` vem nulo). |
+| `200` com `alterada: false` | Nada a fazer com a grade (`itens` vem nulo). Notícias, composição e clima valem do mesmo jeito. |
 | `novoToken` preenchido | Substitui o token guardado (vem quando falta menos de 1/4 da validade). |
 | `401` | Credencial revogada (TV desvinculada ou outra pareada no lugar): apagar o token e voltar à tela de pareamento. **Manter os arquivos e continuar tocando** até parear. |
 | `403` | Tela inativa: manter tudo e continuar tocando o que já tem; tentar de novo no próximo ciclo. Host ou anunciante bloqueado não dá 403: as mídias de anunciante bloqueado só deixam de vir nos `itens`. |
@@ -117,3 +156,18 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
    próximo já sai da grade nova. Eventos repetidos do player (fim de vídeo
    avisado duas vezes, timer de segurança de um item que já acabou) não podem
    avançar o loop mais de uma vez.
+10. **Fila montada na TV, a cada volta** (ADR-016), com os anúncios do dia:
+    - `embaralharAnuncios`: sortear a ordem a cada volta; itens com
+      `posicaoFixa` ficam na posição deles;
+    - `noticiaACadaAnuncios` > 0: uma notícia depois de cada N anúncios, em
+      rodízio (mais recentes primeiro), por `duracaoNoticiaSegundos`. A
+      contagem continua de uma volta para a outra;
+    - sem anúncios para hoje e com notícias, tocar só as notícias.
+11. **Notícias:** imagem baixada como as mídias (regra 2), numa pasta
+    própria; a lista nova só entra com as imagens prontas. Imagem que falhar
+    fica de fora e a versão não é guardada (o próximo ciclo pede de novo).
+    Notícia com mais de 48 h (`publicadaEm`) sai da tela, mesmo offline.
+    Mostrar sempre o `credito`.
+12. **Relógio e clima:** por cima de tudo, se `exibirRelogio`/`exibirClima`.
+    A hora é a do `fusoHorario` (não a do aparelho). O clima guardado vale até
+    6 h depois de `atualizadaEm`, com o `credito` ao lado.

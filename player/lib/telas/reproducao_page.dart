@@ -6,14 +6,18 @@ import 'package:flutter/services.dart';
 import '../app.dart';
 import '../config/configuracao.dart';
 import '../dados/modelos.dart';
+import '../reproducao/composicao_fila.dart';
 import '../reproducao/controlador_reproducao.dart';
 import '../reproducao/filtro_do_dia.dart';
 import '../reproducao/video_reproducao.dart';
 import '../sincronizacao/sincronizador.dart';
+import 'noticia_view.dart';
 import 'pareamento_page.dart';
+import 'sobreposicao_relogio_clima.dart';
 
-/// O loop da TV (regras 5 a 8 do contrato): só arquivo local, filtro do dia
-/// recalculado a cada item, sincronização em segundo plano.
+/// O loop da TV (regras 5 a 9 do contrato): só arquivo local, filtro do dia
+/// recalculado a cada volta, fila composta na TV (notícias intercaladas,
+/// ordem sorteada), relógio e clima por cima, sincronização em segundo plano.
 ///
 /// Botão OK (ou Menu/Info) do controle mostra as informações da TV e o
 /// atalho para parear de novo.
@@ -32,8 +36,11 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
 
   Sincronizador get _sync => widget.servicos.sincronizador;
 
+  final _composicao = ComposicaoFila();
+
   late final ControladorReproducao _loop = ControladorReproducao(
     itensDeHoje: _itensDeHoje,
+    compor: _compor,
     arquivoDe: widget.servicos.baixador.arquivoDe,
     criarVideo: VideoDoAparelho.new,
   );
@@ -83,6 +90,18 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
     if (_saindo) return;
     final espera = resultado == ResultadoCiclo.downloadIncompleto ? _tentarDeNovo : _sync.intervalo;
     _timerSync = Timer(espera, _sincronizar);
+  }
+
+  /// A fila de uma volta: anúncios de hoje com as notícias ainda válidas.
+  List<EntradaFila> _compor(List<ItemGrade> anuncios) {
+    final s = _sync.situacao.value;
+    if (s == null) return [for (final a in anuncios) EntradaFila.anuncio(a)];
+    return _composicao.montar(anuncios: anuncios, noticias: _noticiasValidas(s), composicao: s.composicao);
+  }
+
+  List<Noticia> _noticiasValidas(SituacaoPlayer s) {
+    final agora = DateTime.now();
+    return s.noticias.where((n) => n.valida(agora)).toList();
   }
 
   List<ItemGrade> _itensDeHoje() {
@@ -148,12 +167,19 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                 duration: const Duration(milliseconds: 400),
                 child: KeyedSubtree(key: ValueKey(_loop.geracao), child: _conteudo(situacao)),
               ),
+              if (situacao != null)
+                SobreposicaoRelogioClima(
+                  fusoHorario: situacao.fusoHorario,
+                  exibirRelogio: situacao.composicao.exibirRelogio,
+                  clima: situacao.composicao.exibirClima ? situacao.clima : null,
+                ),
               if (situacao?.desvinculada ?? false) const _AvisoDesvinculada(),
               if (_mostrarInfo)
                 _PainelInfo(
                   situacao: situacao,
                   servidor: widget.servicos.urlServidor,
                   itensHoje: _itensDeHoje().length,
+                  noticias: situacao == null ? 0 : _noticiasValidas(situacao).length,
                   aoParear: _parearDeNovo,
                   aoFechar: _fecharInfo,
                 ),
@@ -165,6 +191,14 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   }
 
   Widget _conteudo(SituacaoPlayer? situacao) {
+    final noticia = _loop.noticia;
+    if (noticia != null) {
+      return NoticiaView(
+        noticia: noticia,
+        imagem: noticia.temImagem ? _sync.baixadorNoticias.arquivoDe(noticia) : null,
+        aoFalharImagem: () => _loop.noticiaFalhou(noticia),
+      );
+    }
     final item = _loop.atual;
     if (item == null) return _Espera(nomeTela: situacao?.nomeTela);
     final video = _loop.video;
@@ -235,6 +269,7 @@ class _PainelInfo extends StatelessWidget {
     required this.situacao,
     required this.servidor,
     required this.itensHoje,
+    required this.noticias,
     required this.aoParear,
     required this.aoFechar,
   });
@@ -242,17 +277,25 @@ class _PainelInfo extends StatelessWidget {
   final SituacaoPlayer? situacao;
   final String servidor;
   final int itensHoje;
+  final int noticias;
   final VoidCallback aoParear;
   final VoidCallback aoFechar;
 
   static String _conexao(ResultadoCiclo? r) => switch (r) {
         ResultadoCiclo.gradeTrocada || ResultadoCiclo.semMudanca => 'Conectada',
         ResultadoCiclo.downloadIncompleto => 'Conectada · baixando conteúdo',
-        ResultadoCiclo.suspensa => 'Tela inativa ou parceiro bloqueado no painel',
+        ResultadoCiclo.suspensa => 'Tela inativa no painel',
         ResultadoCiclo.semConexao => 'Sem conexão · tocando o que já baixou',
         ResultadoCiclo.desvinculada || ResultadoCiclo.semCredencial => 'Não pareada',
         null => 'Conectando…',
       };
+
+  static String _clima(SituacaoPlayer? s) {
+    final c = s?.clima;
+    if (s == null || !s.composicao.exibirClima) return 'desligado na playlist';
+    if (c == null || !c.valido(DateTime.now())) return 'sem leitura recente';
+    return '${c.temperaturaC.round()}° · ${c.descricao}${c.local == null ? '' : ' · ${c.local}'}';
+  }
 
   static String _hora(DateTime? d) =>
       d == null ? '—' : '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
@@ -265,6 +308,10 @@ class _PainelInfo extends StatelessWidget {
       ('Conexão', _conexao(s?.ultimoResultado)),
       ('Última sincronização', _hora(s?.ultimaSincronizacao)),
       ('Itens na grade', '${s?.grade.length ?? 0} ($itensHoje para hoje)'),
+      ('Notícias', s == null || s.composicao.noticiaACadaAnuncios == 0
+          ? 'desligadas na playlist'
+          : '$noticias · 1 a cada ${s.composicao.noticiaACadaAnuncios} anúncio(s)'),
+      ('Clima', _clima(s)),
       ('Servidor', servidor),
       ('Versão do app', Configuracao.versaoApp),
     ];

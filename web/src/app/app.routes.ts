@@ -118,8 +118,8 @@ export const routes: Routes = [
         ]
       },
 
-      // Módulo "Rede" (/rede) — a operadora: parceiros, telas (hardware) e
-      // playlists (as grades da rede).
+      // Módulo "Rede" (/rede) — a operadora: parceiros, telas (hardware),
+      // playlists (as grades da rede) e fontes de notícias.
       {
         path: 'rede',
         children: [
@@ -157,6 +157,15 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/playlists/pages/grade-playlist-page.component')
                 .then(m => m.GradePlaylistPageComponent)
+          },
+          {
+            // Feeds RSS/Atom; as notícias entram nas playlists que intercalam notícias.
+            path: 'fonte-noticia',
+            canActivate: [atlasPermissionGuard],
+            data: { entity: 'fonte_noticia', action: 'View' },
+            loadComponent: () =>
+              import('./features/noticias/pages/fonte-noticia-list-page.component')
+                .then(m => m.FonteNoticiaListPageComponent)
           },
 
           { path: '', redirectTo: 'parceiro', pathMatch: 'full' },

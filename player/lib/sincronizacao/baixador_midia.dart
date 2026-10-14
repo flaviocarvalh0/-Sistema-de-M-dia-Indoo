@@ -23,6 +23,7 @@ class DownloadFalhou implements Exception {
 
 /// Regra 2 do contrato: baixa para `<arquivo>.part`, confere o SHA-256 e só
 /// então renomeia para o nome final. Hash errado apaga e tenta de novo.
+/// Serve às mídias da grade e às imagens das notícias (pastas separadas).
 class BaixadorMidia {
   BaixadorMidia(
     this.pasta, {
@@ -36,19 +37,19 @@ class BaixadorMidia {
             )),
         _esperar = esperar ?? Future.delayed;
 
-  /// Pasta das mídias (`<documentos>/midias`).
+  /// Pasta dos arquivos (`<documentos>/midias` ou `<documentos>/noticias`).
   final Directory pasta;
   final int tentativas;
   final Dio _dio;
   final Future<void> Function(Duration) _esperar;
 
-  File arquivoDe(ItemGrade item) => File(p.join(pasta.path, item.nomeArquivo));
+  File arquivoDe(ArquivoRemoto item) => File(p.join(pasta.path, item.nomeArquivo));
 
   /// O arquivo final só existe depois de conferido, então existir basta.
-  bool pronto(ItemGrade item) => arquivoDe(item).existsSync();
+  bool pronto(ArquivoRemoto item) => arquivoDe(item).existsSync();
 
   /// Garante o arquivo de [item] na pasta. Já existindo, não baixa de novo.
-  Future<File> garantir(ItemGrade item) async {
+  Future<File> garantir(ArquivoRemoto item) async {
     final destino = arquivoDe(item);
     if (destino.existsSync()) return destino;
     final url = item.url;
@@ -77,7 +78,7 @@ class BaixadorMidia {
   }
 
   /// Apaga os arquivos que não estão em [manter] e as sobras `.part`.
-  Future<void> limpar(Iterable<ItemGrade> manter) async {
+  Future<void> limpar(Iterable<ArquivoRemoto> manter) async {
     if (!pasta.existsSync()) return;
     final nomes = manter.map((i) => i.nomeArquivo).toSet();
     await for (final entidade in pasta.list()) {

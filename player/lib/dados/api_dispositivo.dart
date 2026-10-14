@@ -27,9 +27,9 @@ class CredencialRevogada extends FalhaApi {
   const CredencialRevogada() : super('Esta TV foi desvinculada no painel.');
 }
 
-/// 403: tela inativa ou parceiro bloqueado. Continua tocando o que já tem.
+/// 403: tela inativa no painel. Continua tocando o que já tem.
 class AcessoSuspenso extends FalhaApi {
-  const AcessoSuspenso() : super('Tela inativa ou parceiro bloqueado no painel.');
+  const AcessoSuspenso() : super('Tela inativa no painel.');
 }
 
 /// 429: muitas tentativas.
@@ -88,6 +88,7 @@ class ApiDispositivo {
   Future<RespostaSincronizacao> sincronizar({
     required String token,
     String? versaoGrade,
+    String? versaoNoticias,
     String? versaoApp,
     int? itensProntos,
   }) async {
@@ -95,6 +96,7 @@ class ApiDispositivo {
           '/sincronizacao',
           queryParameters: {
             if (versaoGrade != null) 'versaoGrade': versaoGrade,
+            if (versaoNoticias != null) 'versaoNoticias': versaoNoticias,
             if (versaoApp != null) 'versaoApp': versaoApp,
             if (itensProntos != null) 'itensProntos': itensProntos,
           },

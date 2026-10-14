@@ -22,6 +22,7 @@ namespace Atlas.Infrastructure.Business.Armazenamento;
 /// <item><c>POST object/sign/{bucket}</c> com <c>{ expiresIn, paths }</c> → <c>[{ path, signedURL, error }]</c> (leitura em lote)</item>
 /// <item><c>HEAD object/authenticated/{bucket}/{chave}</c> (metadados)</item>
 /// <item><c>GET object/authenticated/{bucket}/{chave}</c> (conteúdo)</item>
+/// <item><c>POST object/{bucket}/{chave}</c> com <c>x-upsert: true</c> (gravação pela própria API)</item>
 /// <item><c>DELETE object/{bucket}/{chave}</c></item>
 /// <item><c>GET bucket/{bucket}</c> e <c>POST bucket</c> (criação do bucket)</item>
 /// </list>
@@ -100,6 +101,16 @@ internal sealed class ArmazenamentoSupabase(
         GarantirSucesso(resposta, "ler o arquivo");
 
         return await resposta.Content.ReadAsStreamAsync(cancellationToken);
+    }
+
+    public async Task GravarAsync(string chave, byte[] conteudo, string tipoConteudo, CancellationToken cancellationToken)
+    {
+        var corpo = new ByteArrayContent(conteudo);
+        corpo.Headers.ContentType = new MediaTypeHeaderValue(tipoConteudo);
+        corpo.Headers.Add("x-upsert", "true");
+
+        using var resposta = await EnviarAsync(HttpMethod.Post, $"object/{Caminho(chave)}", corpo, cancellationToken);
+        GarantirSucesso(resposta, "gravar o arquivo");
     }
 
     public async Task RemoverAsync(string chave, CancellationToken cancellationToken)

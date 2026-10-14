@@ -129,12 +129,29 @@ Content-Type: application/json
 ###
 GET {{api}}/api/v1/business/rede/midias?ativo=true&parceiroId={{parceiro.response.body.$}}
 
+### 9a. Fontes de notícias: a Agência Brasil vem cadastrada; "coletar" lê o feed na hora
+# @name fontes
+GET {{api}}/api/v1/business/rede/fontes-noticia
+
 ###
+POST {{api}}/api/v1/business/rede/fontes-noticia/{{fontes.response.body.$.items[0].id}}/coletar
+
+###
+GET {{api}}/api/v1/business/rede/fontes-noticia/{{fontes.response.body.$.items[0].id}}/noticias
+
+### 9b. A playlist, com a composição da fila que a TV monta a cada volta
 # @name playlist
 POST {{api}}/api/v1/business/rede/playlists
 Content-Type: application/json
 
-{ "nome": "Grade principal" }
+{
+  "nome": "Grade principal",
+  "noticiaACadaAnuncios": 2,
+  "duracaoNoticiaSegundos": 10,
+  "embaralharAnuncios": true,
+  "exibirRelogio": true,
+  "exibirClima": true
+}
 
 ###
 # @name grade
@@ -142,6 +159,7 @@ GET {{api}}/api/v1/business/rede/playlists/{{playlist.response.body.$}}
 
 ### 9. Itens na ordem do loop (diasSemana: domingo=1, segunda=2, ... sábado=64; 62 = seg a sex; 127 = todos)
 # Só mídia ativa entra; a mesma mídia pode aparecer mais de uma vez.
+# posicaoFixa: o item não entra no sorteio quando a playlist embaralha.
 PUT {{api}}/api/v1/business/rede/playlists/{{playlist.response.body.$}}/itens
 Content-Type: application/json
 
@@ -149,7 +167,7 @@ Content-Type: application/json
   "id": {{playlist.response.body.$}},
   "version": {{grade.response.body.version}},
   "itens": [
-    { "midiaId": {{imagem.response.body.$}}, "diasSemana": 62 },
+    { "midiaId": {{imagem.response.body.$}}, "diasSemana": 62, "posicaoFixa": true },
     { "midiaId": {{video.response.body.$}}, "diasSemana": 127 }
   ]
 }
@@ -201,13 +219,14 @@ Content-Type: application/json
 
 { "codigoPareamento": "{{codigo}}", "dispositivoId": "tv-teste-001", "versaoApp": "1.0.0" }
 
-### 13. A TV sincroniza (abra uma das urls no navegador: é o arquivo)
+### 13. A TV sincroniza (abra uma das urls no navegador: é o arquivo).
+# Vêm também composicao, noticias (com versaoNoticias) e clima.
 # @name sincronizacao
 GET {{api}}/api/v1/dispositivo/sincronizacao?versaoApp=1.0.0&itensProntos=0
 Authorization: Bearer {{tv.response.body.token}}
 
-### 14. De novo, com a versão recebida: alterada=false, sem itens
-GET {{api}}/api/v1/dispositivo/sincronizacao?versaoGrade={{sincronizacao.response.body.versaoGrade}}
+### 14. De novo, com as versões recebidas: alterada=false, sem itens nem notícias
+GET {{api}}/api/v1/dispositivo/sincronizacao?versaoGrade={{sincronizacao.response.body.versaoGrade}}&versaoNoticias={{sincronizacao.response.body.versaoNoticias}}
 Authorization: Bearer {{tv.response.body.token}}
 
 ### 15. No painel do dono a tela aparece Online

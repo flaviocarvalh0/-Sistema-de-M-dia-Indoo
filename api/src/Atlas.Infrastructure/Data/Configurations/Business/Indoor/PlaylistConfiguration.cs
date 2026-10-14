@@ -8,10 +8,24 @@ public class PlaylistConfiguration : IEntityTypeConfiguration<Playlist>
 {
     public void Configure(EntityTypeBuilder<Playlist> builder)
     {
-        builder.ToTable("playlist", "indoor");
-
         builder.Property(p => p.Nome).HasMaxLength(100).IsRequired();
         builder.Property(p => p.Descricao).HasMaxLength(300);
+
+        builder.Property(p => p.DuracaoNoticiaSegundos)
+            .HasDefaultValue(Playlist.DuracaoNoticiaPadraoSegundos);
+
+        // ExibirRelogio e ExibirClima nascem true: o default fica só na
+        // migration (HasDefaultValue em bool faria o EF trocar false por true).
+        builder.ToTable("playlist", "indoor", table =>
+        {
+            table.HasCheckConstraint(
+                "ck_playlist_noticia_a_cada",
+                $"noticia_a_cada_anuncios BETWEEN 0 AND {Playlist.MaximoNoticiaACadaAnuncios}");
+
+            table.HasCheckConstraint(
+                "ck_playlist_duracao_noticia",
+                $"duracao_noticia_segundos BETWEEN {Playlist.DuracaoNoticiaMinimaSegundos} AND {Playlist.DuracaoNoticiaMaximaSegundos}");
+        });
 
         // A playlist é da rede (da operadora), não de um parceiro.
         builder.HasIndex(p => p.Nome)

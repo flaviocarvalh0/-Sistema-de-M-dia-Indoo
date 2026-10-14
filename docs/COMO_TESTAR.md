@@ -95,7 +95,15 @@ usam o cookie.
   entrar duas vezes.
 - `PUT /midias/{id}/arquivo` troca o arquivo: a TV recebe o hash novo na
   próxima sincronização e o arquivo antigo some do bucket.
-- O parceiro recebe 403 em `rede/playlists` e `rede/midias`.
+- O parceiro recebe 403 em `rede/playlists`, `rede/midias` e `rede/fontes-noticia`.
+- `POST rede/fontes-noticia/{id}/coletar` devolve quantas notícias entraram
+  (ou o erro do feed); `GET rede/fontes-noticia/{id}/noticias` mostra as
+  notícias com a imagem guardada.
+- Com "notícia a cada N" na playlist, a sincronização da TV traz `noticias`;
+  mandando a `versaoNoticias` recebida, `noticias` volta nulo (e a grade de
+  anúncios não é reenviada quando só as notícias mudam).
+- Com a cidade do host preenchida (ex.: "Manaus" ou "São José - SC"), em até
+  30 min a sincronização traz `clima`.
 - Salvar com uma `version` antiga devolve 409.
 - O `admin` não enxerga o painel de parceiro (403): ele não pertence a um parceiro.
 - Desvincular a TV no painel faz a sincronização dela responder 401; inativar
@@ -174,6 +182,16 @@ da API).
 10. **Desvincular TV** na linha da tela: a próxima sincronização da TV recebe
     401 e a tela volta a *Aguardando pareamento*. Trocar o estabelecimento ou
     a playlist da tela não desvincula a TV.
+11. **Rede → Fontes de notícias:** a Agência Brasil já vem cadastrada. Use
+    **Coletar agora** (ícone de setas) e clique na linha para ver as notícias
+    com as fotos. Sem internet na máquina da API, a fonte aparece "Com erro"
+    com a mensagem.
+12. **Rede → Playlists → editar:** "Uma notícia a cada" 2, marque
+    **Embaralhar**; deixe **Relógio** e **Clima** marcados. Na grade, clique
+    no 📌 do primeiro item para ele não entrar no sorteio e salve. Na TV, em
+    até 1 minuto a fila passa a intercalar notícias, com a hora e a
+    temperatura no canto (o clima precisa da cidade preenchida no cadastro do
+    estabelecimento).
 
 ## 8. App das TVs (`player/`)
 

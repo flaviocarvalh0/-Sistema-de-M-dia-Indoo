@@ -87,6 +87,56 @@ public class RedePlaylistsTests : IDisposable
     }
 
     [Fact]
+    public async Task SalvarPlaylist_GuardaAComposicaoDaFila()
+    {
+        var id = await new CriarPlaylistCommandHandler(_context).Handle(new CriarPlaylistCommand
+        {
+            Nome = "Com notícias", NoticiaACadaAnuncios = 3, DuracaoNoticiaSegundos = 12, EmbaralharAnuncios = true, ExibirClima = false,
+        }, CancellationToken.None);
+
+        var dto = await new GetPlaylistByIdQueryHandler(_context, new IdentityNomesFake())
+            .Handle(new GetPlaylistByIdQuery(id), CancellationToken.None);
+
+        dto.Should().BeEquivalentTo(new
+        {
+            NoticiaACadaAnuncios = 3, DuracaoNoticiaSegundos = 12, EmbaralharAnuncios = true, ExibirRelogio = true, ExibirClima = false,
+        });
+
+        // Sem os campos novos (cliente antigo): relógio e clima ligados, sem notícias.
+        var padrao = await new CriarPlaylistCommandHandler(_context).Handle(new CriarPlaylistCommand { Nome = "Padrão" }, CancellationToken.None);
+        (await _context.Playlists.SingleAsync(p => p.Id == padrao)).Should().Match<Playlist>(p =>
+            p.NoticiaACadaAnuncios == 0 && p.DuracaoNoticiaSegundos == 10 && !p.EmbaralharAnuncios && p.ExibirRelogio && p.ExibirClima);
+    }
+
+    [Theory]
+    [InlineData(0, 10, true)]
+    [InlineData(20, 60, true)]
+    [InlineData(21, 10, false)]
+    [InlineData(-1, 10, false)]
+    [InlineData(3, 4, false)]
+    [InlineData(3, 61, false)]
+    public void ValidadorPlaylist_LimitesDaComposicao(int aCada, int duracao, bool valido)
+    {
+        new CriarPlaylistCommandValidator()
+            .Validate(new CriarPlaylistCommand { Nome = "A", NoticiaACadaAnuncios = aCada, DuracaoNoticiaSegundos = duracao })
+            .IsValid.Should().Be(valido);
+    }
+
+    [Fact]
+    public async Task DefinirItens_GuardaAPosicaoFixa()
+    {
+        var a = await Midia(_parceiroA, "Da casa");
+        var b = await Midia(_parceiroB, "Anúncio");
+        var playlist = await Playlist("Padaria");
+
+        await DefinirItens(playlist.Id, Item(null, a.Id) with { PosicaoFixa = true }, Item(null, b.Id));
+
+        var dto = await new GetPlaylistByIdQueryHandler(_context, new IdentityNomesFake())
+            .Handle(new GetPlaylistByIdQuery(playlist.Id), CancellationToken.None);
+        dto.Itens!.Select(i => (i.Titulo, i.PosicaoFixa)).Should().Equal(("Da casa", true), ("Anúncio", false));
+    }
+
+    [Fact]
     public async Task DefinirItens_MidiaInexistenteDeveSerRecusada()
     {
         var playlist = await Playlist("Padaria");

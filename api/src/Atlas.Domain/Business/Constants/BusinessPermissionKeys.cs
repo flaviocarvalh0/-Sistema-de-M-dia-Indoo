@@ -49,11 +49,21 @@ public static class BusinessPermissionKeys
         public const string Delete = "Playlists.Delete";
     }
 
+    /// <summary>Tabela <c>indoor.fonte_noticia</c> (feeds de notícias da rede; "Coletar agora" exige Update).</summary>
+    public static class FonteNoticias
+    {
+        public const string View = "FonteNoticias.View";
+        public const string Create = "FonteNoticias.Create";
+        public const string Update = "FonteNoticias.Update";
+        public const string Delete = "FonteNoticias.Delete";
+    }
+
     public static IReadOnlyList<string> All() =>
     [
         Parceiros.View, Parceiros.Create, Parceiros.Update, Parceiros.Delete,
         Telas.View, Telas.Create, Telas.Update, Telas.Delete,
         Midias.View, Midias.Create, Midias.Update, Midias.Delete,
         Playlists.View, Playlists.Create, Playlists.Update, Playlists.Delete,
+        FonteNoticias.View, FonteNoticias.Create, FonteNoticias.Update, FonteNoticias.Delete,
     ];
 }

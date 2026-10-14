@@ -1,11 +1,15 @@
 using System.Security.Claims;
 using Atlas.Application.Business.Common;
+using Atlas.Application.Business.Conteudo.Clima;
+using Atlas.Application.Business.Conteudo.Common;
+using Atlas.Application.Business.Conteudo.Noticias;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Application.Common.Interfaces;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Constants;
 using Atlas.Infrastructure.Business.Armazenamento;
+using Atlas.Infrastructure.Business.Conteudo;
 using Atlas.Infrastructure.Business.Dispositivo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -29,6 +33,19 @@ public static class DependencyInjection
         builder.AddArmazenamentoMidias();
         builder.Services.AddAutenticacaoDispositivo(builder.Configuration);
         builder.Services.AddBusinessAuthorization();
+        builder.Services.AddConteudoExterno();
+    }
+
+    /// <summary>
+    /// Notícias (feeds RSS) e clima (Open-Meteo): os coletores, o cliente HTTP
+    /// e a coleta em segundo plano (<see cref="ColetorConteudoExterno"/>).
+    /// </summary>
+    private static void AddConteudoExterno(this IServiceCollection services)
+    {
+        services.AddSingleton<IClienteConteudoExterno>(_ => new ClienteConteudoExterno(ClienteConteudoExterno.CriarHttpClient()));
+        services.AddScoped<ColetorNoticias>();
+        services.AddScoped<ColetorClima>();
+        services.AddHostedService<ColetorConteudoExterno>();
     }
 
     /// <summary>

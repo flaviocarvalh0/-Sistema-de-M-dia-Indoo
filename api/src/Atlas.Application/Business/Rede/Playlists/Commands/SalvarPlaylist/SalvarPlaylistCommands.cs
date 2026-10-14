@@ -13,6 +13,11 @@ public record CriarPlaylistCommand : IRequest<long>, IDadosPlaylist
 {
     public string Nome { get; init; } = string.Empty;
     public string? Descricao { get; init; }
+    public int NoticiaACadaAnuncios { get; init; }
+    public int DuracaoNoticiaSegundos { get; init; } = Playlist.DuracaoNoticiaPadraoSegundos;
+    public bool EmbaralharAnuncios { get; init; }
+    public bool ExibirRelogio { get; init; } = true;
+    public bool ExibirClima { get; init; } = true;
 }
 
 [Authorize(Policy = BusinessPermissionKeys.Playlists.Update)]
@@ -21,13 +26,27 @@ public record AtualizarPlaylistCommand : IRequest<uint>, IDadosPlaylist
     public long Id { get; init; }
     public string Nome { get; init; } = string.Empty;
     public string? Descricao { get; init; }
+    public int NoticiaACadaAnuncios { get; init; }
+    public int DuracaoNoticiaSegundos { get; init; } = Playlist.DuracaoNoticiaPadraoSegundos;
+    public bool EmbaralharAnuncios { get; init; }
+    public bool ExibirRelogio { get; init; } = true;
+    public bool ExibirClima { get; init; } = true;
     public uint Version { get; init; }
 }
 
+/// <summary>
+/// Nome, descrição e a composição da fila que a TV monta a cada volta:
+/// notícias intercaladas, ordem sorteada, relógio e clima.
+/// </summary>
 public interface IDadosPlaylist
 {
     string Nome { get; }
     string? Descricao { get; }
+    int NoticiaACadaAnuncios { get; }
+    int DuracaoNoticiaSegundos { get; }
+    bool EmbaralharAnuncios { get; }
+    bool ExibirRelogio { get; }
+    bool ExibirClima { get; }
 }
 
 public class CriarPlaylistCommandHandler(IApplicationDbContext context)
@@ -44,6 +63,7 @@ public class CriarPlaylistCommandHandler(IApplicationDbContext context)
             Nome = nome,
             Descricao = RegistrosDoParceiro.Limpar(request.Descricao),
         };
+        RegrasPlaylist.AplicarComposicao(playlist, request);
 
         context.Playlists.Add(playlist);
         await context.SaveChangesAsync(cancellationToken);
@@ -65,6 +85,7 @@ public class AtualizarPlaylistCommandHandler(IApplicationDbContext context)
         context.ConferirVersao(playlist, request.Version);
         playlist.Nome = nome;
         playlist.Descricao = RegistrosDoParceiro.Limpar(request.Descricao);
+        RegrasPlaylist.AplicarComposicao(playlist, request);
 
         return await context.SalvarAsync(playlist, cancellationToken);
     }
@@ -72,6 +93,15 @@ public class AtualizarPlaylistCommandHandler(IApplicationDbContext context)
 
 internal static class RegrasPlaylist
 {
+    public static void AplicarComposicao(Playlist playlist, IDadosPlaylist dados)
+    {
+        playlist.NoticiaACadaAnuncios = dados.NoticiaACadaAnuncios;
+        playlist.DuracaoNoticiaSegundos = dados.DuracaoNoticiaSegundos;
+        playlist.EmbaralharAnuncios = dados.EmbaralharAnuncios;
+        playlist.ExibirRelogio = dados.ExibirRelogio;
+        playlist.ExibirClima = dados.ExibirClima;
+    }
+
     /// <summary>A playlist, rastreada; inexistente dá 404.</summary>
     public static async Task<Playlist> CarregarAsync(IQueryable<Playlist> conjunto, long id, CancellationToken cancellationToken)
     {
@@ -125,5 +155,13 @@ internal static class ValidacaoPlaylist
 
         validador.RuleFor(x => x.Descricao)
             .MaximumLength(300).WithMessage("A descrição deve ter no máximo 300 caracteres.");
+
+        validador.RuleFor(x => x.NoticiaACadaAnuncios)
+            .InclusiveBetween(0, Playlist.MaximoNoticiaACadaAnuncios)
+            .WithMessage($"Notícias: de 0 (desligado) a {Playlist.MaximoNoticiaACadaAnuncios} anúncios entre uma e outra.");
+
+        validador.RuleFor(x => x.DuracaoNoticiaSegundos)
+            .InclusiveBetween(Playlist.DuracaoNoticiaMinimaSegundos, Playlist.DuracaoNoticiaMaximaSegundos)
+            .WithMessage($"A notícia fica de {Playlist.DuracaoNoticiaMinimaSegundos} a {Playlist.DuracaoNoticiaMaximaSegundos} segundos na tela.");
     }
 }

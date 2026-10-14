@@ -9,6 +9,12 @@ export interface PlaylistDto {
   quantidadeItens: number;
   quantidadeTelas: number;
   duracaoTotalSegundos: number;
+  /** Composição da fila que a TV monta: uma notícia a cada N anúncios (0 = sem). */
+  noticiaACadaAnuncios: number;
+  duracaoNoticiaSegundos: number;
+  embaralharAnuncios: boolean;
+  exibirRelogio: boolean;
+  exibirClima: boolean;
   /** Só no detalhe (`GET /{id}`), na ordem do loop. */
   itens?: ItemPlaylistDto[] | null;
   created: string;
@@ -30,6 +36,8 @@ export interface ItemPlaylistDto {
   duracaoSegundos: number;
   /** Bits dos dias (domingo = 1 … sábado = 64; 127 = todos). */
   diasSemana: number;
+  /** Fica no lugar quando a playlist embaralha os anúncios. */
+  posicaoFixa: boolean;
   midiaAtiva: boolean;
   inicioExibicao?: string | null;
   fimExibicao?: string | null;
@@ -40,6 +48,7 @@ export interface ItemGrade {
   id?: number | null;
   midiaId: number;
   diasSemana: number;
+  posicaoFixa: boolean;
 }
 
-export type LinhaPlaylist = PlaylistDto & { duracao: string };
+export type LinhaPlaylist = PlaylistDto & { duracao: string; noticias: string };

@@ -42,10 +42,11 @@ public class DispositivoTv : IEndpointGroup
     }
 
     [EndpointSummary("Sincronizar a grade")]
-    [EndpointDescription("Grade da tela com URLs de download, hash, dias e período de cada item. Com a versaoGrade atual, responde alterada=false sem itens. 401: token revogado (parear de novo). 403: tela inativa ou parceiro bloqueado (continuar no que já baixou).")]
+    [EndpointDescription("Grade da tela com URLs de download, hash, dias e período de cada item, mais a composição da fila, as notícias e o clima. Com a versaoGrade atual, responde alterada=false sem itens; com a versaoNoticias atual, noticias vem nulo. 401: token revogado (parear de novo). 403: tela inativa (continuar no que já baixou).")]
     public static async Task<Ok<SincronizacaoDto>> Sincronizar(
         ISender sender,
         [FromQuery] string? versaoGrade,
+        [FromQuery] string? versaoNoticias,
         [FromQuery] string? versaoApp,
         [FromQuery] int? itensProntos,
         CancellationToken cancellationToken)
@@ -53,6 +54,7 @@ public class DispositivoTv : IEndpointGroup
         return TypedResults.Ok(await sender.Send(new GetSincronizacaoQuery
         {
             VersaoGrade = versaoGrade,
+            VersaoNoticias = versaoNoticias,
             VersaoApp = versaoApp,
             ItensProntos = itensProntos,
         }, cancellationToken));

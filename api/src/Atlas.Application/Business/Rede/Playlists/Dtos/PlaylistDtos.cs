@@ -18,6 +18,13 @@ public sealed record PlaylistDto : IDtoAuditavel
     /// <summary>Soma da duração dos itens (um ciclo do loop, sem filtrar dia nem validade).</summary>
     public int DuracaoTotalSegundos { get; init; }
 
+    /// <summary>Uma notícia depois de cada N anúncios (0 = sem notícias).</summary>
+    public int NoticiaACadaAnuncios { get; init; }
+    public int DuracaoNoticiaSegundos { get; init; }
+    public bool EmbaralharAnuncios { get; init; }
+    public bool ExibirRelogio { get; init; }
+    public bool ExibirClima { get; init; }
+
     /// <summary>Itens na ordem do loop. Só no detalhe (<c>GET /{id}</c>).</summary>
     public IReadOnlyList<ItemPlaylistDto>? Itens { get; init; }
 
@@ -46,6 +53,9 @@ public sealed record ItemPlaylistDto
     /// <summary>Bits dos dias (domingo = 1, segunda = 2, … sábado = 64; 127 = todos), como no contrato da TV.</summary>
     public int DiasSemana { get; init; }
 
+    /// <summary>Não entra no sorteio quando a playlist embaralha.</summary>
+    public bool PosicaoFixa { get; init; }
+
     /// <summary>Mídia inativa continua no lugar, mas não toca.</summary>
     public bool MidiaAtiva { get; init; }
 
@@ -65,6 +75,11 @@ public static class PlaylistProjecao
             QuantidadeItens = p.Itens.Count,
             QuantidadeTelas = context.Telas.Count(t => t.PlaylistId == p.Id),
             DuracaoTotalSegundos = p.Itens.Sum(i => (int?)i.Midia.DuracaoSegundos) ?? 0,
+            NoticiaACadaAnuncios = p.NoticiaACadaAnuncios,
+            DuracaoNoticiaSegundos = p.DuracaoNoticiaSegundos,
+            EmbaralharAnuncios = p.EmbaralharAnuncios,
+            ExibirRelogio = p.ExibirRelogio,
+            ExibirClima = p.ExibirClima,
             Created = p.Created,
             CreatedBy = p.CreatedBy,
             LastModified = p.LastModified,
@@ -86,6 +101,7 @@ public static class PlaylistProjecao
                 Tipo = i.Midia.Tipo,
                 DuracaoSegundos = i.Midia.DuracaoSegundos,
                 DiasSemana = (int)i.DiasSemana,
+                PosicaoFixa = i.PosicaoFixa,
                 MidiaAtiva = i.Midia.Ativo,
                 InicioExibicao = i.Midia.InicioExibicao,
                 FimExibicao = i.Midia.FimExibicao,

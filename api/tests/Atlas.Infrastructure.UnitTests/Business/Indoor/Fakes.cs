@@ -44,6 +44,15 @@ internal sealed class ArmazenamentoFake : IArmazenamentoMidias
     public Task<Stream?> AbrirLeituraAsync(string chave, CancellationToken cancellationToken) =>
         Task.FromResult<Stream?>(Arquivos.TryGetValue(chave, out var a) ? new MemoryStream(a) : null);
 
+    public Dictionary<string, string> Tipos { get; } = [];
+
+    public Task GravarAsync(string chave, byte[] conteudo, string tipoConteudo, CancellationToken cancellationToken)
+    {
+        Arquivos[chave] = conteudo;
+        Tipos[chave] = tipoConteudo;
+        return Task.CompletedTask;
+    }
+
     public Task RemoverAsync(string chave, CancellationToken cancellationToken)
     {
         Arquivos.Remove(chave);
@@ -103,4 +112,9 @@ internal sealed class ConfiguracaoIndoorFake : IConfiguracaoIndoor
     public TimeSpan IntervaloSincronizacao => TimeSpan.FromMinutes(5);
     public TimeSpan ValidadeTokenDispositivo => TimeSpan.FromDays(30);
     public TimeSpan ValidadeUrlDownload => TimeSpan.FromHours(24);
+    public bool ColetaAutomatica => false;
+    public TimeSpan IntervaloColetaNoticias => TimeSpan.FromHours(1);
+    public TimeSpan IntervaloColetaClima => TimeSpan.FromMinutes(30);
+    public Uri UrlPrevisaoClima => new("https://clima.test/v1/forecast");
+    public Uri UrlGeocodificacao => new("https://geo.test/v1/search");
 }

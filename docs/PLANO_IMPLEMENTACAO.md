@@ -240,9 +240,21 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
 - [x] Badge "Já adicionado (N×)" no seletor de mídias da grade (repetição
   permitida), entregue junto da 1B.
 
-### Entrega 4 — Notícias e randomização
+### Entrega 4 — Notícias, randomização, relógio e clima ✅
 
-- [ ] Fontes e coletor RSS (Agência Brasil), imagens no storage com hash,
-  composição na playlist (notícia a cada X, embaralhar, posição fixa),
-  montagem da fila e tela de notícia no player.
+- [x] Composição da fila na TV ([ADR-016](../api/docs/decisions/ADR-016-Composicao-da-Fila-na-TV-Noticias-e-Clima.md)):
+  na playlist, notícia a cada N anúncios, tempo da notícia, embaralhar,
+  relógio e clima; 📌 posição fixa por item da grade.
+- [x] Fontes de notícias (Rede → Fontes de notícias), com a Agência Brasil
+  cadastrada pela migration; coletor RSS/Atom de hora em hora, imagens no
+  storage com hash, 30 por fonte, 48 h de validade; "Coletar agora".
+- [x] Clima pelo Open-Meteo (geocodificação da cidade do host, a cada 30 min).
+- [x] Sincronização com `composicao`, `posicaoFixa`, `noticias` (versão
+  própria) e `clima`; contrato atualizado (regras 10 a 12).
+- [x] Player: `ComposicaoFila`, tela de notícia, relógio e clima sobrepostos,
+  banco local v2 com migração.
+- [x] Testes: unitários da API (coletores com feed e Open-Meteo falsos,
+  sincronização, cadastro), roteiro HTTP de ponta a ponta com coleta
+  automática, roteiro no navegador, testes do player (fila, loop com
+  notícias, sincronização, telas) e o player contra a API de verdade.
 

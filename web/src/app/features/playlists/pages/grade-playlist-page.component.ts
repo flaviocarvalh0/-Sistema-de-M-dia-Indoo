@@ -22,6 +22,7 @@ interface ItemEdicao {
   tipo: TipoMidia;
   duracaoSegundos: number;
   diasSemana: number;
+  posicaoFixa: boolean;
   midiaAtiva: boolean;
   periodo: string;
 }
@@ -60,6 +61,11 @@ let sequenciaChave = 0;
           @if (playlist(); as p) { · toca em {{ p.quantidadeTelas }} {{ p.quantidadeTelas === 1 ? 'tela' : 'telas' }} }
           @if (playlist()?.ativo === false) { · <span class="text-warning">inativa</span> }
         </div>
+        @if (playlist(); as p) {
+          <div class="small text-muted" data-teste="composicao">
+            <i class="bi bi-shuffle me-1"></i>{{ resumoComposicao(p) }}
+          </div>
+        }
       </div>
       @if (podeEditar) {
         <button type="button" class="btn btn-outline-secondary" [disabled]="!alterada() || salvando()" (click)="descartar()">
@@ -135,6 +141,14 @@ let sequenciaChave = 0;
                 <i class="bi bi-grip-vertical fs-5 text-muted alca" cdkDragHandle aria-label="Arrastar para reordenar"></i>
               }
               <span class="badge text-bg-light border">{{ i + 1 }}</span>
+              <button type="button" class="btn btn-sm px-1 py-0 border-0"
+                      [disabled]="!podeEditar"
+                      [attr.aria-pressed]="item.posicaoFixa"
+                      [title]="item.posicaoFixa ? 'Posição fixa: não entra no sorteio. Clique para soltar.' : 'Fixar nesta posição (não entra no sorteio)'"
+                      (click)="alternarFixa(item)">
+                <i class="bi" [class.bi-pin-angle-fill]="item.posicaoFixa" [class.text-primary]="item.posicaoFixa"
+                   [class.bi-pin-angle]="!item.posicaoFixa" [class.text-muted]="!item.posicaoFixa"></i>
+              </button>
               <div class="flex-grow-1" style="min-width: 200px">
                 <div class="fw-semibold">
                   <i class="bi me-1" [class.bi-camera-video]="item.tipo === 'Video'" [class.bi-image]="item.tipo === 'Imagem'"></i>
@@ -251,6 +265,7 @@ export class GradePlaylistPageComponent implements OnInit {
     this.itens.update(lista => [...lista, {
       chave: ++sequenciaChave,
       midiaId: m.id,
+      posicaoFixa: false,
       parceiroNome: m.parceiroNome,
       titulo: m.titulo,
       tipo: m.tipo,
@@ -263,6 +278,21 @@ export class GradePlaylistPageComponent implements OnInit {
 
   remover(indice: number): void {
     this.itens.update(lista => lista.filter((_, i) => i !== indice));
+  }
+
+  alternarFixa(item: ItemEdicao): void {
+    this.itens.update(lista => lista.map(i => (i.chave === item.chave ? { ...i, posicaoFixa: !i.posicaoFixa } : i)));
+  }
+
+  /** "Ordem sorteada a cada volta · 1 notícia a cada 3 anúncios (10 s) · relógio · clima". */
+  resumoComposicao(p: PlaylistDto): string {
+    const partes = [p.embaralharAnuncios ? 'Ordem sorteada a cada volta (📌 ficam no lugar)' : 'Ordem fixa'];
+    partes.push(p.noticiaACadaAnuncios > 0
+      ? `1 notícia a cada ${p.noticiaACadaAnuncios} anúncio(s) (${p.duracaoNoticiaSegundos} s)`
+      : 'sem notícias');
+    if (p.exibirRelogio) partes.push('relógio');
+    if (p.exibirClima) partes.push('clima');
+    return partes.join(' · ');
   }
 
   temDia(item: ItemEdicao, bit: number): boolean {
@@ -295,7 +325,7 @@ export class GradePlaylistPageComponent implements OnInit {
     if (!p) return;
     this.salvando.set(true);
     this.erro.set(null);
-    const itens = this.itens().map(i => ({ id: i.id ?? null, midiaId: i.midiaId, diasSemana: i.diasSemana }));
+    const itens = this.itens().map(i => ({ id: i.id ?? null, midiaId: i.midiaId, diasSemana: i.diasSemana, posicaoFixa: i.posicaoFixa }));
     this.service.definirItens(p.id, itens, p.version).subscribe({
       next: () => {
         this.salvando.set(false);
@@ -327,6 +357,7 @@ export class GradePlaylistPageComponent implements OnInit {
       chave: ++sequenciaChave,
       id: i.id,
       midiaId: i.midiaId,
+      posicaoFixa: i.posicaoFixa,
       parceiroNome: i.parceiroNome,
       titulo: i.titulo,
       tipo: i.tipo,
@@ -344,6 +375,6 @@ export class GradePlaylistPageComponent implements OnInit {
   }
 
   private assinatura(itens: ItemEdicao[]): string {
-    return JSON.stringify(itens.map(i => [i.id ?? null, i.midiaId, i.diasSemana]));
+    return JSON.stringify(itens.map(i => [i.id ?? null, i.midiaId, i.diasSemana, i.posicaoFixa]));
   }
 }

@@ -22,7 +22,8 @@ public record DefinirItensPlaylistCommand : IRequest<uint>
     public IReadOnlyList<ItemInformado> Itens { get; init; } = [];
     public uint Version { get; init; }
 
-    public sealed record ItemInformado(long? Id, long MidiaId, DiasSemana DiasSemana);
+    /// <summary>Item da grade; <c>PosicaoFixa</c> fica no lugar quando a playlist embaralha os anúncios.</summary>
+    public sealed record ItemInformado(long? Id, long MidiaId, DiasSemana DiasSemana, bool PosicaoFixa = false);
 }
 
 public class DefinirItensPlaylistCommandHandler(IApplicationDbContext context)
@@ -55,7 +56,7 @@ public class DefinirItensPlaylistCommandHandler(IApplicationDbContext context)
 
         try
         {
-            playlist.DefinirItens(request.Itens.Select(i => new ItemPlaylistInformado(i.Id, i.MidiaId, i.DiasSemana)).ToList());
+            playlist.DefinirItens(request.Itens.Select(i => new ItemPlaylistInformado(i.Id, i.MidiaId, i.DiasSemana, i.PosicaoFixa)).ToList());
         }
         catch (InvalidOperationException ex)
         {

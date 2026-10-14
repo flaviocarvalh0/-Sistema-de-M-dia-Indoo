@@ -28,7 +28,14 @@ export class PlaylistService extends CrudService<PlaylistDto, number> {
       })
       .pipe(
         map(resp => paraPage(resp, query)),
-        map(page => ({ ...page, content: page.content.map(p => ({ ...p, duracao: formatarDuracao(p.duracaoTotalSegundos) })) })),
+        map(page => ({
+          ...page,
+          content: page.content.map(p => ({
+            ...p,
+            duracao: formatarDuracao(p.duracaoTotalSegundos),
+            noticias: p.noticiaACadaAnuncios > 0 ? `1 a cada ${p.noticiaACadaAnuncios}` : '—',
+          })),
+        })),
       );
   }
 
@@ -39,7 +46,7 @@ export class PlaylistService extends CrudService<PlaylistDto, number> {
 
   /** Sai de modal com `errosInline: true`: erro no banner do modal. */
   salvar(id: number | null, valor: Partial<PlaylistDto>, version?: number): Observable<unknown> {
-    const corpo = { nome: valor.nome, descricao: valor.descricao || null };
+    const corpo = corpoPlaylist(valor);
     return id
       ? this.http.put(`${this.baseUrl}/${id}`, { id, ...corpo, version }, { context: comErroLocal() })
       : this.http.post(this.baseUrl, corpo, { context: comErroLocal() });
@@ -47,21 +54,25 @@ export class PlaylistService extends CrudService<PlaylistDto, number> {
 
   /**
    * Cria uma playlist nova com a grade de outra (mesmas mídias, ordem e dias).
-   * Mídias inativas ficam de fora: item novo só entra com mídia ativa.
+   * Mídias inativas ficam de fora: item novo só entra com mídia ativa. A
+   * composição (notícias, embaralhar, relógio, clima) vem da original.
    */
   duplicar(origemId: number, valor: Partial<PlaylistDto>): Observable<number> {
-    return this.http
-      .post<number>(this.baseUrl, { nome: valor.nome, descricao: valor.descricao || null }, { context: comErroLocal() })
-      .pipe(
-        switchMap(novaId => forkJoin([this.getById(origemId), this.getById(novaId)])),
-        switchMap(([origem, nova]) => {
-          const itens = (origem.itens ?? []).filter(i => i.midiaAtiva).map(i => ({ midiaId: i.midiaId, diasSemana: i.diasSemana }));
-          return itens.length
-            ? this.http.put<number>(`${this.baseUrl}/${nova.id}/itens`, { id: nova.id, version: nova.version, itens }, { context: comErroLocal() })
-              .pipe(map(() => nova.id))
-            : of(nova.id);
-        }),
-      );
+    return this.getById(origemId).pipe(
+      switchMap(origem => this.http
+        .post<number>(this.baseUrl, corpoPlaylist({ ...origem, nome: valor.nome, descricao: valor.descricao }), { context: comErroLocal() })
+        .pipe(map(novaId => ({ origem, novaId })))),
+      switchMap(({ origem, novaId }) => forkJoin([of(origem), this.getById(novaId)])),
+      switchMap(([origem, nova]) => {
+        const itens = (origem.itens ?? [])
+          .filter(i => i.midiaAtiva)
+          .map(i => ({ midiaId: i.midiaId, diasSemana: i.diasSemana, posicaoFixa: i.posicaoFixa }));
+        return itens.length
+          ? this.http.put<number>(`${this.baseUrl}/${nova.id}/itens`, { id: nova.id, version: nova.version, itens }, { context: comErroLocal() })
+            .pipe(map(() => nova.id))
+          : of(nova.id);
+      }),
+    );
   }
 
   definirItens(id: number, itens: ItemGrade[], version: number): Observable<number> {
@@ -75,4 +86,17 @@ export class PlaylistService extends CrudService<PlaylistDto, number> {
   excluir(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+}
+
+/** Corpo do POST/PUT: nome, descrição e a composição da fila (com os padrões da API). */
+function corpoPlaylist(valor: Partial<PlaylistDto>) {
+  return {
+    nome: valor.nome,
+    descricao: valor.descricao || null,
+    noticiaACadaAnuncios: Number(valor.noticiaACadaAnuncios ?? 0) || 0,
+    duracaoNoticiaSegundos: Number(valor.duracaoNoticiaSegundos ?? 10) || 10,
+    embaralharAnuncios: !!valor.embaralharAnuncios,
+    exibirRelogio: valor.exibirRelogio ?? true,
+    exibirClima: valor.exibirClima ?? true,
+  };
 }

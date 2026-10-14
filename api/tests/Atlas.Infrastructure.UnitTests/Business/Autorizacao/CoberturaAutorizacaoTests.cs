@@ -3,6 +3,7 @@ using Atlas.Application.Business.Dispositivo.Autenticacao;
 using Atlas.Application.Business.Dispositivo.Sincronizacao;
 using Atlas.Application.Business.Indoor.Midias.Commands.SubstituirArquivo;
 using Atlas.Application.Business.Indoor.Telas.Queries;
+using Atlas.Application.Business.Rede.FontesNoticia;
 using Atlas.Application.Business.Rede.Midias.Queries;
 using Atlas.Application.Business.Rede.Parceiros.Queries;
 using Atlas.Application.Business.Rede.Playlists.Commands.DefinirItensPlaylist;
@@ -105,6 +106,12 @@ public class CoberturaAutorizacaoTests
     [InlineData(typeof(GetMidiasRedeQuery), new[] { BusinessPermissionKeys.Playlists.View, BusinessPermissionKeys.Parceiros.View })]
     [InlineData(typeof(GetMidiaRedeByIdQuery), new[] { BusinessPermissionKeys.Playlists.View, BusinessPermissionKeys.Parceiros.View })]
     [InlineData(typeof(SubstituirArquivoMidiaCommand), new[] { BusinessPermissionKeys.Midias.Update })]
+    [InlineData(typeof(GetFontesNoticiaQuery), new[] { BusinessPermissionKeys.FonteNoticias.View })]
+    [InlineData(typeof(GetNoticiasDaFonteQuery), new[] { BusinessPermissionKeys.FonteNoticias.View })]
+    [InlineData(typeof(CriarFonteNoticiaCommand), new[] { BusinessPermissionKeys.FonteNoticias.Create })]
+    [InlineData(typeof(AtualizarFonteNoticiaCommand), new[] { BusinessPermissionKeys.FonteNoticias.Update })]
+    [InlineData(typeof(ColetarFonteNoticiaCommand), new[] { BusinessPermissionKeys.FonteNoticias.Update })]
+    [InlineData(typeof(ExcluirFonteNoticiaCommand), new[] { BusinessPermissionKeys.FonteNoticias.Delete })]
     public void Telas_PoliticasSeguemAPosseDoHardware(Type request, string[] politicas)
     {
         request.GetCustomAttributes<AuthorizeAttribute>().Select(a => a.Policy).Should().BeEquivalentTo(politicas);

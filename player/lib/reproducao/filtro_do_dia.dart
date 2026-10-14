@@ -19,6 +19,12 @@ class FiltroDoDia {
 
   /// A data de hoje no fuso do parceiro, como `DateTime.utc(ano, mês, dia)`.
   static DateTime hoje(String fusoHorario, DateTime agora) {
+    final noFuso = horaLocal(fusoHorario, agora);
+    return DateTime.utc(noFuso.year, noFuso.month, noFuso.day);
+  }
+
+  /// A hora no fuso do estabelecimento (o relógio da TV mostra esta, não a do aparelho).
+  static tz.TZDateTime horaLocal(String fusoHorario, DateTime agora) {
     iniciarFusos();
     tz.Location local;
     try {
@@ -26,8 +32,7 @@ class FiltroDoDia {
     } on tz.LocationNotFoundException {
       local = tz.getLocation('America/Sao_Paulo');
     }
-    final noFuso = tz.TZDateTime.from(agora.toUtc(), local);
-    return DateTime.utc(noFuso.year, noFuso.month, noFuso.day);
+    return tz.TZDateTime.from(agora.toUtc(), local);
   }
 
   /// Bit do dia da semana: domingo = 1, segunda = 2, … sábado = 64.

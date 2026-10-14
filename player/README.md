@@ -62,8 +62,8 @@ flutter build apk --release --dart-define=API_URL=https://api.suaempresa.com.br
 3. A TV baixa a grade e começa a tocar. No painel, a tela fica **Online**.
 
 Com o controle: **OK** (ou Menu/Info) mostra o painel da TV — tela, conexão,
-última sincronização, itens de hoje, servidor e versão — com o botão
-**Parear de novo**.
+última sincronização, itens de hoje, notícias, clima, servidor e versão — com
+o botão **Parear de novo**.
 
 ### Abrir sozinho ao ligar a TV
 
@@ -82,18 +82,21 @@ lib/
   config/configuracao.dart        API_URL e versão (--dart-define)
   dados/
     api_dispositivo.dart          POST /autenticar e GET /sincronizacao (dio), erros tipados
-    modelos.dart                  Pareamento, RespostaSincronizacao, ItemGrade
-    banco_local.dart              grade em uso e estado (sqflite)
+    modelos.dart                  Pareamento, RespostaSincronizacao, ItemGrade, Composicao, Noticia, Clima
+    banco_local.dart              grade, notícias, composição, clima e estado (sqflite, versão 2)
     credenciais.dart              token, id do aparelho e servidor (flutter_secure_storage)
   sincronizacao/
-    baixador_midia.dart           .part → SHA-256 em blocos → renomeia; 3 tentativas
-    sincronizador.dart            um ciclo: pergunta, baixa, troca a grade de uma vez, limpa
+    baixador_midia.dart           .part → SHA-256 em blocos → renomeia; 3 tentativas (mídias e imagens das notícias)
+    sincronizador.dart            um ciclo: pergunta, baixa, troca grade e notícias de uma vez, limpa
   reproducao/filtro_do_dia.dart   "hoje" no fuso do parceiro, dias da semana e período
-  reproducao/controlador_reproducao.dart   o loop sem tela: próximo item, fim, falha, espera
+  reproducao/composicao_fila.dart          a fila de cada volta: embaralhar (fixos no lugar) e notícia a cada N
+  reproducao/controlador_reproducao.dart   o loop sem tela: próximo passo da fila, fim, falha, espera
   reproducao/video_reproducao.dart         vídeo (video_player) atrás de uma interface testável
   telas/
     pareamento_page.dart          digitação do código
-    reproducao_page.dart          loop de vídeo/imagem, espera, painel de informações
+    reproducao_page.dart          loop de vídeo/imagem/notícia, espera, painel de informações
+    noticia_view.dart             notícia em tela cheia: foto, título animado e crédito
+    sobreposicao_relogio_clima.dart   relógio (fuso do estabelecimento) e clima no canto
 ```
 
 - **Arquivos pelo hash:** cada mídia vira `midias/<sha256>.<ext>`. A mesma
@@ -116,6 +119,15 @@ lib/
   novo.
 - **Grade nova sem cortar:** o que está na tela vai até o fim e o próximo
   item já sai da grade nova. A TV pergunta ao servidor a cada 60 s.
+- **Fila montada na TV:** a cada volta, se a playlist pedir, a ordem dos
+  anúncios é sorteada (os itens com 📌 ficam no lugar) e entra uma notícia a
+  cada N anúncios. Por ser na TV, cada volta sai diferente mesmo offline.
+- **Notícias:** as imagens ficam em `noticias/<sha256>.<ext>`, separadas das
+  mídias; a lista nova só entra com as imagens prontas. Notícia com mais de
+  48 h sai da tela, mesmo sem internet. O crédito da fonte aparece sempre.
+- **Relógio e clima:** no canto, por cima de tudo. A hora é a do fuso do
+  estabelecimento; o clima guardado vale até 6 h (com o crédito do
+  Open-Meteo).
 
 ## Testes
 

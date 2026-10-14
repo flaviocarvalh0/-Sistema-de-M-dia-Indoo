@@ -17,4 +17,10 @@ public class ItemPlaylist : BaseEntity
     public int Ordem { get; set; }
 
     public DiasSemana DiasSemana { get; set; } = DiasSemana.Todos;
+
+    /// <summary>
+    /// Fica sempre nesta posição quando a playlist embaralha os anúncios
+    /// (ex.: o anúncio do próprio estabelecimento abrindo o loop).
+    /// </summary>
+    public bool PosicaoFixa { get; set; }
 }

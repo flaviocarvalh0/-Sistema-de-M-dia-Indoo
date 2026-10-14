@@ -10,7 +10,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 |---|---|---|
 | **Operadora** (grupo "Operadora") | Painel → Rede | Cadastra os parceiros e as TVs (o hardware é dela), monta as playlists com os anúncios da rede e escolhe o que cada TV toca |
 | **Parceiro** (grupo "Proprietário de Parceiro") | Painel → Mídia Indoor | Anunciante: envia e mantém as próprias mídias, dentro do plano, e vê onde elas passam |
-| **TV** | App `player/` | Toca a grade da tela, mesmo sem internet |
+| **TV** | App `player/` | Toca a grade da tela com notícias, relógio e clima, mesmo sem internet |
 | **Administrador** (`admin`) | Atlas Studio | Usuários, grupos, menus, SMTP e parâmetros |
 
 ## Rede (operadora)
@@ -53,6 +53,20 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Duplicar | "Clonar" cria outra playlist com a mesma grade (mídias inativas ficam de fora) |
 | Ativar / inativar | Inativa: as telas dela ficam sem grade |
 | Concorrência | Salvar com a versão: edição simultânea não sobrescreve a do outro (409) |
+| Notícias | "Uma notícia a cada N anúncios" (0 = sem notícias) e o tempo de cada notícia na tela (5 a 60 s) |
+| Embaralhar | Sorteia a ordem dos anúncios a cada volta, na TV; itens com 📌 (posição fixa) ficam no lugar |
+| Relógio e clima | Liga ou desliga o relógio e a temperatura na tela |
+
+## Fontes de notícias (operadora, Rede → Fontes de notícias)
+
+| Funcionalidade | Detalhe |
+|---|---|
+| Cadastro | Nome, endereço do feed (RSS ou Atom) e crédito exibido na TV. A Agência Brasil (CC BY) já vem cadastrada |
+| Coleta | A API lê as fontes ativas a cada hora e guarda as 30 notícias mais recentes de cada uma, com a imagem no storage |
+| Coletar agora | Lê o feed na hora (para conferir uma fonte nova) |
+| Situação da leitura | Ok, com erro (com a mensagem) ou aguardando; quando foi a última leitura |
+| Ver notícias | Título, data e miniatura de cada notícia; as com mais de 48 h aparecem como fora das TVs |
+| Excluir | Apaga a fonte, as notícias e as imagens |
 
 ## Telas — operadora (Rede → Telas)
 
@@ -85,10 +99,13 @@ escolhe a playlist.
 | Offline-first | Só toca arquivos baixados; sem internet, continua tocando |
 | Download seguro | Conferência do SHA-256, 3 tentativas, arquivos reaproveitados entre grades |
 | Troca sem tela preta | A grade nova só entra quando tudo baixou |
-| Agenda | Dias da semana e período calculados na TV, no fuso do estabelecimento, a cada item |
+| Agenda | Dias da semana e período calculados na TV, no fuso do estabelecimento, a cada volta |
 | Loop | Vídeo até o fim, imagem pela duração; arquivo com problema é pulado |
+| Composição na TV | A cada volta: ordem sorteada (se a playlist pedir, com os itens fixos no lugar) e uma notícia a cada N anúncios, em rodízio |
+| Notícias | Foto em tela cheia, título animado e crédito da fonte; sem foto, fundo da marca. Mais de 48 h, sai da tela mesmo offline |
+| Relógio e clima | No canto da tela: hora do estabelecimento e temperatura da cidade dele (Open-Meteo, com crédito). O clima some depois de 6 h sem atualizar |
 | Tela de espera | Sem nada para hoje, mostra o nome da tela |
-| Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, servidor e versão |
+| Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, notícias, clima, servidor e versão |
 | Sempre no ar | Tela cheia, sempre acesa, abre sozinho ao ligar a TV |
 | Revogação | Desvinculada, continua tocando e pede novo pareamento |
 
@@ -110,4 +127,5 @@ escolhe a playlist.
   existe no modelo, sem tela).
 - Operadora acessar o painel de um parceiro ("acessar como").
 - Relatório de exibições (prova de veiculação).
+- Fontes de notícias por playlist (hoje as fontes ativas valem para toda a rede).
 - Agendamento por horário do dia (hoje: dia da semana e período).

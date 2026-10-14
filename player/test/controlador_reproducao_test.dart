@@ -5,6 +5,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:midia_indoor_player/dados/modelos.dart';
+import 'package:midia_indoor_player/reproducao/composicao_fila.dart';
 import 'package:midia_indoor_player/reproducao/controlador_reproducao.dart';
 import 'package:midia_indoor_player/reproducao/video_reproducao.dart';
 
@@ -313,6 +314,72 @@ void main() {
       expect(videos.single.descartado, isTrue);
       async.elapse(const Duration(minutes: 5));
       expect(videos, hasLength(1));
+    });
+  });
+
+  group('com notícias na fila', () {
+    final noticia = Noticia(id: 9, titulo: 'Manchete', credito: 'Fonte', publicadaEm: DateTime.utc(2026, 10, 14));
+    late ComposicaoFila composicao;
+
+    ControladorReproducao criarComNoticias() {
+      composicao = ComposicaoFila();
+      return ControladorReproducao(
+        itensDeHoje: () => grade,
+        compor: (anuncios) => composicao.montar(
+            anuncios: anuncios, noticias: [noticia], composicao: const Composicao(noticiaACadaAnuncios: 2, duracaoNoticiaSegundos: 7)),
+        arquivoDe: (i) => File(i.hash),
+        criarVideo: (arquivo) {
+          final v = VideoFalso(arquivo.path);
+          videos.add(v);
+          return v;
+        },
+      );
+    }
+
+    String passo() => loop.entrada?.toString() ?? '-';
+
+    test('a notícia entra depois de 2 anúncios e fica o tempo dela', () {
+      fakeAsync((async) {
+        grade = [item(0), item(1), item(2)];
+        loop = criarComNoticias()..iniciar();
+        async.flushMicrotasks();
+        final vistos = <String>[];
+        for (var i = 0; i < 6; i++) {
+          vistos.add(passo());
+          async.elapse(Duration(seconds: loop.entrada!.duracaoSegundos));
+        }
+        expect(vistos, ['A0', 'A1', 'N9', 'A2', 'A0', 'N9']);
+        expect(loop.atual, isNotNull);
+        loop.dispose();
+      });
+    });
+
+    test('notícia com imagem que falha é pulada', () {
+      fakeAsync((async) {
+        grade = [item(0), item(1), item(2)];
+        loop = criarComNoticias()..iniciar();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 20));
+        expect(loop.noticia?.id, 9);
+        expect(loop.atual, isNull, reason: 'durante a notícia não há anúncio');
+
+        loop.noticiaFalhou(noticia);
+        async.elapse(ControladorReproducao.pausaAposFalha);
+        expect(passo(), 'A2');
+        loop.dispose();
+      });
+    });
+
+    test('vídeo depois da notícia abre normalmente', () {
+      fakeAsync((async) {
+        grade = [item(0), item(1), item(2, tipo: TipoMidia.video, duracao: 30)];
+        loop = criarComNoticias()..iniciar();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 27));
+        expect(passo(), 'A2');
+        expect(videos.single.tocando, isTrue);
+        loop.dispose();
+      });
     });
   });
 }

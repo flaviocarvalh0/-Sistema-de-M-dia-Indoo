@@ -4,6 +4,7 @@ using Atlas.Application.Business.Dispositivo.Common;
 using Atlas.Application.Business.Dispositivo.Sincronizacao;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Common.Exceptions;
+using Atlas.Domain.Business.Conteudo.Entities;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
 using Atlas.Domain.Business.Parceiros.Entities;
@@ -308,6 +309,133 @@ public class DispositivoTests : IDisposable
 
         grade.Hoje.Should().Be(Hoje);
         grade.Itens!.Single().ExibirHoje.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Sincronizar_EntregaAComposicaoDaPlaylistEAPosicaoFixa()
+    {
+        var credencial = await ParearComGradeAsync((Midia("Da casa"), DiasSemana.Todos), (Midia("Anúncio"), DiasSemana.Todos));
+        var playlist = await _context.Playlists.Include(p => p.Itens).SingleAsync();
+        playlist.NoticiaACadaAnuncios = 3;
+        playlist.DuracaoNoticiaSegundos = 12;
+        playlist.EmbaralharAnuncios = true;
+        playlist.ExibirRelogio = false;
+        await _context.SaveChangesAsync();
+
+        var antes = await Sincronizar(credencial, new GetSincronizacaoQuery());
+        antes.Composicao.Should().BeEquivalentTo(new ComposicaoFilaDto
+        {
+            NoticiaACadaAnuncios = 3, DuracaoNoticiaSegundos = 12, EmbaralharAnuncios = true, ExibirRelogio = false, ExibirClima = true,
+        });
+        antes.Itens!.Select(i => i.PosicaoFixa).Should().Equal(false, false);
+
+        playlist.Itens.OrderBy(i => i.Ordem).First().PosicaoFixa = true;
+        await _context.SaveChangesAsync();
+
+        var depois = await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoGrade = antes.VersaoGrade });
+        depois.Alterada.Should().BeTrue("fixar um item muda a grade");
+        depois.Itens!.Select(i => i.PosicaoFixa).Should().Equal(true, false);
+    }
+
+    [Fact]
+    public async Task Sincronizar_SemPlaylistAtivaAComposicaoEDesligada()
+    {
+        var credencial = await ParearComGradeAsync();
+        var playlist = await _context.Playlists.SingleAsync();
+        playlist.NoticiaACadaAnuncios = 2;
+        playlist.Ativo = false;
+        await _context.SaveChangesAsync();
+
+        var grade = await Sincronizar(credencial, new GetSincronizacaoQuery());
+
+        grade.Composicao.NoticiaACadaAnuncios.Should().Be(0);
+        grade.Noticias.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Sincronizar_NoticiasRecentesDasFontesAtivasComVersaoPropria()
+    {
+        var credencial = await ParearComGradeAsync((Midia("Anúncio"), DiasSemana.Todos));
+        var ativa = new FonteNoticia { Nome = "Agência", UrlFeed = "https://a.test/rss", Credito = "Fonte: Agência" };
+        var inativa = new FonteNoticia { Nome = "Outra", UrlFeed = "https://b.test/rss", Credito = "Fonte: Outra", Ativo = false };
+        _context.FontesNoticia.AddRange(ativa, inativa);
+        await _context.SaveChangesAsync();
+
+        Noticia Nova(FonteNoticia fonte, string titulo, TimeSpan idade, bool comImagem = false)
+        {
+            var noticia = new Noticia
+            {
+                FonteNoticiaId = fonte.Id, Identificador = titulo, Titulo = titulo,
+                PublicadaEm = Agora - idade, ColetadaEm = Agora,
+            };
+            if (comImagem)
+            {
+                noticia.ChaveImagem = $"noticias/{fonte.Id}/{titulo}.jpg";
+                noticia.HashImagem = new string('e', 64);
+                noticia.TamanhoImagemBytes = 10;
+                noticia.TipoConteudoImagem = "image/jpeg";
+                _armazenamento.Arquivos[noticia.ChaveImagem] = [1];
+            }
+
+            return noticia;
+        }
+
+        _context.Noticias.AddRange(
+            Nova(ativa, "Velha", TimeSpan.FromHours(50)),
+            Nova(ativa, "Com foto", TimeSpan.FromHours(1), comImagem: true),
+            Nova(ativa, "Mais nova", TimeSpan.FromMinutes(5)),
+            Nova(inativa, "De fonte inativa", TimeSpan.FromMinutes(1)));
+        await _context.SaveChangesAsync();
+
+        // Playlist sem notícias: nada vai.
+        var sem = await Sincronizar(credencial, new GetSincronizacaoQuery());
+        sem.Noticias.Should().BeEmpty();
+
+        var playlist = await _context.Playlists.SingleAsync();
+        playlist.NoticiaACadaAnuncios = 2;
+        await _context.SaveChangesAsync();
+
+        var com = await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoGrade = sem.VersaoGrade, VersaoNoticias = sem.VersaoNoticias });
+        com.Noticias!.Select(n => n.Titulo).Should().Equal("Mais nova", "Com foto");
+        com.Noticias![0].Url.Should().BeNull();
+        com.Noticias![0].Credito.Should().Be("Fonte: Agência");
+        com.Noticias![1].Url!.AbsoluteUri.Should().Contain("Com%20foto");
+        com.Noticias![1].Hash.Should().Be(new string('e', 64));
+        com.Itens.Should().BeNull("a grade de anúncios não mudou");
+
+        var deNovo = await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoGrade = com.VersaoGrade, VersaoNoticias = com.VersaoNoticias });
+        deNovo.Noticias.Should().BeNull();
+        deNovo.VersaoNoticias.Should().Be(com.VersaoNoticias);
+    }
+
+    [Fact]
+    public async Task Sincronizar_ClimaDoHostRecenteEDesligavelNaPlaylist()
+    {
+        var credencial = await ParearComGradeAsync((Midia("Anúncio"), DiasSemana.Todos));
+        var previsao = new PrevisaoClima
+        {
+            ParceiroId = _parceiro.Id, CidadeConsultada = "Manaus", Local = "Manaus, Amazonas",
+            Latitude = -3.1, Longitude = -60, TemperaturaC = 31.4m, MinimaC = 24m, MaximaC = 33.2m, CodigoTempo = 2,
+            AtualizadaEm = Agora.AddMinutes(-20),
+        };
+        _context.PrevisoesClima.Add(previsao);
+        await _context.SaveChangesAsync();
+
+        var clima = (await Sincronizar(credencial, new GetSincronizacaoQuery())).Clima;
+        clima.Should().BeEquivalentTo(new ClimaSincronizacaoDto
+        {
+            TemperaturaC = 31.4m, MinimaC = 24m, MaximaC = 33.2m, Codigo = 2, Descricao = "Parcialmente nublado",
+            Icone = "sol-nuvem", Local = "Manaus, Amazonas", AtualizadaEm = Agora.AddMinutes(-20),
+        });
+
+        previsao.AtualizadaEm = Agora.AddHours(-7);
+        await _context.SaveChangesAsync();
+        (await Sincronizar(credencial, new GetSincronizacaoQuery())).Clima.Should().BeNull("leitura velha não vai para a TV");
+
+        previsao.AtualizadaEm = Agora;
+        (await _context.Playlists.SingleAsync()).ExibirClima = false;
+        await _context.SaveChangesAsync();
+        (await Sincronizar(credencial, new GetSincronizacaoQuery())).Clima.Should().BeNull("a playlist desligou o clima");
     }
 
     [Fact]

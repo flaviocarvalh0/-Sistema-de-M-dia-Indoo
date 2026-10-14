@@ -68,7 +68,7 @@ public class RedePlaylists : IEndpointGroup
     }
 
     [EndpointSummary("Atualizar playlist")]
-    [EndpointDescription("Nome e descrição. Devolve a nova versão do registro.")]
+    [EndpointDescription("Nome, descrição e composição da fila (notícias, embaralhar, relógio e clima). Devolve a nova versão do registro.")]
     public static async Task<Ok<uint>> AtualizarPlaylist(
         ISender sender, long id, AtualizarPlaylistCommand command, CancellationToken cancellationToken)
     {

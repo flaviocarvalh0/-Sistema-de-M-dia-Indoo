@@ -211,4 +211,136 @@ void main() {
     final id = await c.dispositivoId();
     expect(await c.dispositivoId(), id);
   });
+
+  // ---------- Entrega 4: notícias, composição e clima ----------
+
+  group('notícias, composição e clima', () {
+    late Map<String, dynamic> Function(Map<String, String>) base;
+    var noticias = <Map<String, dynamic>>[];
+    String versaoNoticias() => noticias.map((n) => n['id']).join(',');
+    Map<String, dynamic>? clima;
+
+    Map<String, dynamic> noticiaJson(int id, {String? imagem, Duration idade = const Duration(hours: 1)}) => {
+          'id': id,
+          'titulo': 'Notícia $id',
+          'credito': 'Fonte: Teste',
+          'publicadaEm': DateTime.now().toUtc().subtract(idade).toIso8601String(),
+          'url': imagem == null ? null : servidor.urlArquivo(imagem),
+          'hash': imagem == null ? null : ServidorFalso.sha(servidor.arquivos[imagem]!),
+          'tamanhoBytes': imagem == null ? null : servidor.arquivos[imagem]!.length,
+          'tipoConteudo': imagem == null ? null : 'image/jpeg',
+        };
+
+    setUp(() {
+      servidor.arquivos['foto1.jpg'] = List.filled(300, 1);
+      servidor.arquivos['foto2.jpg'] = List.filled(400, 2);
+      noticias = [noticiaJson(2, imagem: 'foto2.jpg'), noticiaJson(1)];
+      clima = {
+        'temperaturaC': 31.4, 'minimaC': 24.0, 'maximaC': 33.2, 'codigo': 2, 'descricao': 'Parcialmente nublado',
+        'icone': 'sol-nuvem', 'local': 'Manaus, Amazonas', 'atualizadaEm': DateTime.now().toUtc().toIso8601String(),
+        'credito': 'Clima: Open-Meteo',
+      };
+      base = servidor.sincronizacao!;
+      servidor.sincronizacao = (q) => {
+            ...base(q),
+            'composicao': {
+              'noticiaACadaAnuncios': 2, 'duracaoNoticiaSegundos': 12, 'embaralharAnuncios': true,
+              'exibirRelogio': false, 'exibirClima': true,
+            },
+            'versaoNoticias': versaoNoticias(),
+            'noticias': q['versaoNoticias'] == versaoNoticias() ? null : noticias,
+            'clima': clima,
+          };
+    });
+
+    List<String> naPasta(String sub) => Directory('${pasta.path}/$sub').existsSync()
+        ? (Directory('${pasta.path}/$sub').listSync().map((e) => e.path.split('/').last).toList()..sort())
+        : <String>[];
+
+    test('guarda notícias (imagem em pasta própria), composição e clima', () async {
+      expect(await sync.sincronizar(), ResultadoCiclo.gradeTrocada);
+
+      final s = sync.situacao.value!;
+      expect(s.noticias.map((n) => n.id), [2, 1]);
+      expect(s.noticias.first.temImagem, isTrue);
+      expect(s.composicao.noticiaACadaAnuncios, 2);
+      expect(s.composicao.embaralharAnuncios, isTrue);
+      expect(s.composicao.exibirRelogio, isFalse);
+      expect(s.clima!.temperaturaC, 31.4);
+      expect(s.clima!.icone, 'sol-nuvem');
+      expect(naPasta('noticias'), ['${ServidorFalso.sha(servidor.arquivos['foto2.jpg']!)}.jpg']);
+      expect(naPasta('midias'), hasLength(2), reason: 'a limpeza das mídias não apaga as imagens das notícias');
+
+      // Segunda vez: manda a versão das notícias e não baixa nada.
+      expect(await sync.sincronizar(), ResultadoCiclo.semMudanca);
+      expect(servidor.ultimaQuery['versaoNoticias'], versaoNoticias());
+      expect(servidor.downloads['foto2.jpg'], 1);
+    });
+
+    test('notícias novas trocam a lista e apagam a imagem que saiu', () async {
+      await sync.sincronizar();
+      noticias = [noticiaJson(3, imagem: 'foto1.jpg')];
+
+      expect(await sync.sincronizar(), ResultadoCiclo.semMudanca, reason: 'a grade de anúncios não mudou');
+      expect(sync.situacao.value!.noticias.map((n) => n.id), [3]);
+      expect(naPasta('noticias'), ['${ServidorFalso.sha(servidor.arquivos['foto1.jpg']!)}.jpg']);
+    });
+
+    test('imagem de notícia que falha: fica de fora e o próximo ciclo pede de novo', () async {
+      servidor.statusDownload['foto2.jpg'] = 403;
+
+      expect(await sync.sincronizar(), ResultadoCiclo.downloadIncompleto);
+      expect(sync.situacao.value!.grade, hasLength(2), reason: 'a grade de anúncios entra mesmo assim');
+      expect(sync.situacao.value!.noticias.map((n) => n.id), [1]);
+
+      servidor.statusDownload.clear();
+      expect(await sync.sincronizar(), ResultadoCiclo.semMudanca);
+      expect(servidor.ultimaQuery['versaoNoticias'], '', reason: 'versão não gravada: pede tudo de novo');
+      expect(sync.situacao.value!.noticias.map((n) => n.id), [2, 1]);
+    });
+
+    test('clima nulo na resposta apaga o guardado', () async {
+      await sync.sincronizar();
+      clima = null;
+      await sync.sincronizar();
+      expect(sync.situacao.value!.clima, isNull);
+    });
+
+    test('API antiga (sem os campos novos): composição padrão, sem notícias', () async {
+      servidor.sincronizacao = base;
+      expect(await sync.sincronizar(), ResultadoCiclo.gradeTrocada);
+      final s = sync.situacao.value!;
+      expect(s.composicao.noticiaACadaAnuncios, 0);
+      expect(s.composicao.exibirRelogio, isTrue);
+      expect(s.noticias, isEmpty);
+      expect(s.clima, isNull);
+    });
+  });
+
+  test('banco da versão 1 é atualizado sem perder a grade', () async {
+    final arquivo = '${pasta.path}/v1.db';
+    final v1 = await databaseFactoryFfiNoIsolate.openDatabase(arquivo,
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: (db, _) async {
+            await db.execute('CREATE TABLE estado (chave TEXT PRIMARY KEY, valor TEXT)');
+            await db.execute('CREATE TABLE item_grade (ordem INTEGER PRIMARY KEY, midia_id INTEGER NOT NULL, tipo TEXT NOT NULL, '
+                'tipo_conteudo TEXT NOT NULL, hash TEXT NOT NULL, tamanho_bytes INTEGER NOT NULL, duracao_segundos INTEGER NOT NULL, '
+                'dias_semana INTEGER NOT NULL, inicio_exibicao TEXT, fim_exibicao TEXT)');
+            await db.insert('item_grade', {
+              'ordem': 0, 'midia_id': 1, 'tipo': 'imagem', 'tipo_conteudo': 'image/png', 'hash': 'abc',
+              'tamanho_bytes': 1, 'duracao_segundos': 10, 'dias_semana': 127,
+            });
+          },
+        ));
+    await v1.close();
+
+    final atualizado = await BancoLocal.abrir(arquivo, fabrica: databaseFactoryFfiNoIsolate);
+    final grade = await atualizado.lerGrade();
+    expect(grade.single.hash, 'abc');
+    expect(grade.single.posicaoFixa, isFalse);
+    expect(await atualizado.lerNoticias(), isEmpty);
+    expect((await atualizado.lerEstado()).composicao.exibirRelogio, isTrue);
+    await atualizado.fechar();
+  });
 }

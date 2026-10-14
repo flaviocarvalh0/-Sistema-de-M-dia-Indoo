@@ -19,6 +19,32 @@ public class Playlist : BaseAuditableEntity
 
     public bool Ativo { get; set; } = true;
 
+    public const int MaximoNoticiaACadaAnuncios = 20;
+    public const int DuracaoNoticiaMinimaSegundos = 5;
+    public const int DuracaoNoticiaMaximaSegundos = 60;
+    public const int DuracaoNoticiaPadraoSegundos = 10;
+
+    /// <summary>
+    /// Composição da fila na TV: uma notícia depois de cada N anúncios
+    /// (0 = sem notícias). A TV monta a fila a cada volta do loop.
+    /// </summary>
+    public int NoticiaACadaAnuncios { get; set; }
+
+    /// <summary>Tempo de cada notícia na tela.</summary>
+    public int DuracaoNoticiaSegundos { get; set; } = DuracaoNoticiaPadraoSegundos;
+
+    /// <summary>
+    /// A TV sorteia a ordem dos anúncios a cada volta; os itens com
+    /// <see cref="ItemPlaylist.PosicaoFixa"/> ficam no lugar.
+    /// </summary>
+    public bool EmbaralharAnuncios { get; set; }
+
+    /// <summary>Relógio sobreposto, na hora do estabelecimento (host) da tela.</summary>
+    public bool ExibirRelogio { get; set; } = true;
+
+    /// <summary>Temperatura da cidade do estabelecimento, sobreposta (Open-Meteo).</summary>
+    public bool ExibirClima { get; set; } = true;
+
     /// <summary>Itens na ordem do loop (<see cref="ItemPlaylist.Ordem"/>).</summary>
     public List<ItemPlaylist> Itens { get; private set; } = [];
 
@@ -50,6 +76,7 @@ public class Playlist : BaseAuditableEntity
 
             item.MidiaId = informado.MidiaId;
             item.DiasSemana = informado.DiasSemana & DiasSemana.Todos;
+            item.PosicaoFixa = informado.PosicaoFixa;
             item.Ordem = ordem;
 
             if (informado.Id is null)
@@ -61,4 +88,4 @@ public class Playlist : BaseAuditableEntity
 }
 
 /// <summary>Item como chega do formulário da playlist.</summary>
-public sealed record ItemPlaylistInformado(long? Id, long MidiaId, DiasSemana DiasSemana);
+public sealed record ItemPlaylistInformado(long? Id, long MidiaId, DiasSemana DiasSemana, bool PosicaoFixa = false);

@@ -5,14 +5,14 @@
 --
 --   1. Módulos "Rede" (/rede, da operadora) e "Mídia Indoor" (/indoor, do
 --      parceiro), com ícone, cor e ordem no launcher.
---   2. Entidades parceiro, tela, midia e playlist: rótulo, route_key (o
+--   2. Entidades parceiro, tela, midia, playlist e fonte_noticia: rótulo, route_key (o
 --      segmento da URL no web/app.routes.ts), ícone, histórico e módulo.
 --   3. Menus de cada módulo, com ícone e ordem.
 --   4. Grupos "Operadora" e "Proprietário de Parceiro".
 --   5. RBAC: as permissões de cada grupo, por módulo e entidade.
 --
 -- Rotas resultantes no painel:
---   /rede/parceiro   /rede/tela   /rede/playlist   (operadora)
+--   /rede/parceiro   /rede/tela   /rede/playlist   /rede/fonte-noticia   (operadora)
 --   /indoor/midia    /indoor/tela                  (parceiro)
 --
 -- Papéis (ADR-014 e ADR-015): a operadora é dona das TVs e monta as grades
@@ -56,7 +56,7 @@ DECLARE
 BEGIN
     -- 0. Pré-requisitos ---------------------------------------------------
     SELECT string_agg(t, ', ') INTO v_faltando
-      FROM unnest(ARRAY['parceiro', 'tela', 'midia', 'playlist']) AS t
+      FROM unnest(ARRAY['parceiro', 'tela', 'midia', 'playlist', 'fonte_noticia']) AS t
      WHERE NOT EXISTS (SELECT 1 FROM platform.entity_metadata em WHERE em.table_name = t);
 
     IF v_faltando IS NOT NULL THEN
@@ -64,7 +64,7 @@ BEGIN
     END IF;
 
     SELECT string_agg(i, ', ') INTO v_faltando
-      FROM unnest(ARRAY['broadcast', 'tv', 'people', 'display', 'collection-play', 'list-ol']) AS i
+      FROM unnest(ARRAY['broadcast', 'tv', 'people', 'display', 'collection-play', 'list-ol', 'newspaper']) AS i
      WHERE NOT EXISTS (SELECT 1 FROM platform.system_icon si WHERE si.name = i);
 
     IF v_faltando IS NOT NULL THEN
@@ -126,7 +126,8 @@ BEGIN
             ('parceiro', 'Parceiros', 'parceiro', 'people',          v_rede_id),
             ('tela',     'Telas',     'tela',     'tv',              v_rede_id),
             ('midia',    'Mídias',    'midia',    'collection-play', v_indoor_id),
-            ('playlist', 'Playlists', 'playlist', 'list-ol',         v_rede_id)
+            ('playlist', 'Playlists', 'playlist', 'list-ol',         v_rede_id),
+            ('fonte_noticia', 'Fontes de notícias', 'fonte-noticia', 'newspaper', v_rede_id)
            ) AS e(table_name, rotulo, route_key, icone, modulo_id)
      WHERE em.table_name = e.table_name;
 
@@ -143,6 +144,7 @@ BEGIN
             ('parceiro', 'Parceiros',                 1, v_rede_id),
             ('tela',     'Telas',                     2, v_rede_id),
             ('playlist', 'Playlists',                 3, v_rede_id),
+            ('fonte_noticia', 'Fontes de notícias',   4, v_rede_id),
             ('midia',    'Mídias',                    1, v_indoor_id),
             ('tela',     'Onde meus anúncios passam', 2, v_indoor_id)
            ) AS m(table_name, rotulo, ordem, modulo_id)
@@ -163,6 +165,7 @@ BEGIN
             ('parceiro', 'Parceiros',                 1, 'people',          v_rede_id),
             ('tela',     'Telas',                     2, 'tv',              v_rede_id),
             ('playlist', 'Playlists',                 3, 'list-ol',         v_rede_id),
+            ('fonte_noticia', 'Fontes de notícias',   4, 'newspaper',       v_rede_id),
             ('midia',    'Mídias',                    1, 'collection-play', v_indoor_id),
             ('tela',     'Onde meus anúncios passam', 2, 'broadcast',       v_indoor_id)
            ) AS m(table_name, rotulo, ordem, icone, modulo_id)
@@ -189,9 +192,9 @@ BEGIN
 
     -- 5. RBAC --------------------------------------------------------------
     -- Operadora: parceiros (sem Delete: o parceiro é bloqueado, nunca
-    -- apagado), telas (o hardware é dela) e playlists (as grades da rede;
+    -- apagado), telas (o hardware é dela), playlists (as grades da rede;
     -- Playlists.View também libera a leitura das mídias de todos os
-    -- parceiros, para montar as grades).
+    -- parceiros, para montar as grades) e fontes de notícias.
     -- Proprietário de Parceiro (anunciante): tudo nas próprias mídias e
     -- leitura de "onde meus anúncios passam" (Telas.View). O isolamento por
     -- parceiro é feito pela API, não pela permissão.
@@ -212,6 +215,10 @@ BEGIN
             (v_operadora_id,    'Playlists.Create', v_rede_id,   'playlist'),
             (v_operadora_id,    'Playlists.Update', v_rede_id,   'playlist'),
             (v_operadora_id,    'Playlists.Delete', v_rede_id,   'playlist'),
+            (v_operadora_id,    'FonteNoticias.View',   v_rede_id, 'fonte_noticia'),
+            (v_operadora_id,    'FonteNoticias.Create', v_rede_id, 'fonte_noticia'),
+            (v_operadora_id,    'FonteNoticias.Update', v_rede_id, 'fonte_noticia'),
+            (v_operadora_id,    'FonteNoticias.Delete', v_rede_id, 'fonte_noticia'),
             (v_proprietario_id, 'Telas.View',       v_indoor_id, 'tela'),
             (v_proprietario_id, 'Midias.View',      v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Create',    v_indoor_id, 'midia'),
@@ -237,6 +244,10 @@ BEGIN
             (v_operadora_id,    'Playlists.Create', v_rede_id,   'playlist'),
             (v_operadora_id,    'Playlists.Update', v_rede_id,   'playlist'),
             (v_operadora_id,    'Playlists.Delete', v_rede_id,   'playlist'),
+            (v_operadora_id,    'FonteNoticias.View',   v_rede_id, 'fonte_noticia'),
+            (v_operadora_id,    'FonteNoticias.Create', v_rede_id, 'fonte_noticia'),
+            (v_operadora_id,    'FonteNoticias.Update', v_rede_id, 'fonte_noticia'),
+            (v_operadora_id,    'FonteNoticias.Delete', v_rede_id, 'fonte_noticia'),
             (v_proprietario_id, 'Telas.View',       v_indoor_id, 'tela'),
             (v_proprietario_id, 'Midias.View',      v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Create',    v_indoor_id, 'midia'),

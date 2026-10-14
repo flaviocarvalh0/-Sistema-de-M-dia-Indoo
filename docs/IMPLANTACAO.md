@@ -75,9 +75,19 @@ Linux, use o `Environment=` do serviço systemd.
 | `Indoor__Dispositivo__IntervaloSincronizacaoSegundos` | não | Padrão `60` (mínimo 30). A TV aparece Offline depois de 5 min sem sincronizar |
 | `Indoor__Dispositivo__ValidadeTokenDias` | não | Padrão `30` |
 | `Indoor__Dispositivo__ValidadeUrlDownloadHoras` | não | Padrão `24` |
+| `Indoor__Coleta__Ativa` | não | Padrão `true`. Liga a coleta de notícias e clima em segundo plano |
+| `Indoor__Coleta__NoticiasMinutos` | não | Padrão `60` (mínimo 15) |
+| `Indoor__Coleta__ClimaMinutos` | não | Padrão `30` (mínimo 15) |
 
 Sem a configuração do Supabase a API sobe, mas as rotas de mídia respondem
 503.
+
+**Saída para a internet:** a API lê os feeds de notícias (ex.:
+`agenciabrasil.ebc.com.br`), baixa as imagens deles e consulta o Open-Meteo
+(`api.open-meteo.com` e `geocoding-api.open-meteo.com`). Libere HTTPS de
+saída para esses endereços no firewall/proxy do servidor. Sem isso, a API
+funciona, as fontes aparecem "Com erro" no painel e as TVs ficam sem
+notícias novas e sem clima.
 
 ### 2.3 Banco
 
@@ -221,4 +231,9 @@ APK só instalam por cima se forem assinadas com a mesma chave.
   caminhos no proxy ou no IIS.
 - **Plano gratuito do Supabase:** o limite é 1 GB no total. A cota de cada
   parceiro é definida no cadastro (padrão 200 MB). Some as cotas antes de
-  prometer espaço.
+  prometer espaço. As imagens das notícias também ficam no bucket (até 30
+  por fonte, em `noticias/`).
+- **Licença das notícias:** a Agência Brasil (CC BY) exige o crédito, que a
+  TV mostra. Outras fontes só com licença para exibição pública.
+- **Clima:** usa a cidade do cadastro do estabelecimento. Para cidades com
+  nome repetido, use "Cidade - UF" (ex.: "São José - SC").
