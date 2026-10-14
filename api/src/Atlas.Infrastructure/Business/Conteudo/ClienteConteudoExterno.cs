@@ -70,7 +70,9 @@ internal sealed class ClienteConteudoExterno(HttpClient http) : IClienteConteudo
             Timeout = TimeSpan.FromSeconds(30),
         };
 
-        http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MidiaIndoor", "1.0"));
+        // Alguns portais recusam (403) leitores sem um User-Agent no formato dos navegadores.
+        http.DefaultRequestHeaders.TryAddWithoutValidation(
+            "User-Agent", "Mozilla/5.0 (compatible; MidiaIndoor/1.0; leitor de RSS)");
         http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
 
         return http;

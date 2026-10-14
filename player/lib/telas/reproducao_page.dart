@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app.dart';
-import '../config/configuracao.dart';
 import '../dados/modelos.dart';
 import '../reproducao/composicao_fila.dart';
 import '../reproducao/controlador_reproducao.dart';
@@ -12,6 +11,7 @@ import '../reproducao/filtro_do_dia.dart';
 import '../reproducao/video_reproducao.dart';
 import '../sincronizacao/sincronizador.dart';
 import 'noticia_view.dart';
+import 'painel_info.dart';
 import 'pareamento_page.dart';
 import 'sobreposicao_relogio_clima.dart';
 
@@ -175,7 +175,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                 ),
               if (situacao?.desvinculada ?? false) const _AvisoDesvinculada(),
               if (_mostrarInfo)
-                _PainelInfo(
+                PainelInfo(
                   situacao: situacao,
                   servidor: widget.servicos.urlServidor,
                   itensHoje: _itensDeHoje().length,
@@ -258,100 +258,6 @@ class _AvisoDesvinculada extends StatelessWidget {
         child: const Text(
           'TV não pareada · pressione OK para parear',
           style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
-      ),
-    );
-  }
-}
-
-class _PainelInfo extends StatelessWidget {
-  const _PainelInfo({
-    required this.situacao,
-    required this.servidor,
-    required this.itensHoje,
-    required this.noticias,
-    required this.aoParear,
-    required this.aoFechar,
-  });
-
-  final SituacaoPlayer? situacao;
-  final String servidor;
-  final int itensHoje;
-  final int noticias;
-  final VoidCallback aoParear;
-  final VoidCallback aoFechar;
-
-  static String _conexao(ResultadoCiclo? r) => switch (r) {
-        ResultadoCiclo.gradeTrocada || ResultadoCiclo.semMudanca => 'Conectada',
-        ResultadoCiclo.downloadIncompleto => 'Conectada · baixando conteúdo',
-        ResultadoCiclo.suspensa => 'Tela inativa no painel',
-        ResultadoCiclo.semConexao => 'Sem conexão · tocando o que já baixou',
-        ResultadoCiclo.desvinculada || ResultadoCiclo.semCredencial => 'Não pareada',
-        null => 'Conectando…',
-      };
-
-  static String _clima(SituacaoPlayer? s) {
-    final c = s?.clima;
-    if (s == null || !s.composicao.exibirClima) return 'desligado na playlist';
-    if (c == null || !c.valido(DateTime.now())) return 'sem leitura recente';
-    return '${c.temperaturaC.round()}° · ${c.descricao}${c.local == null ? '' : ' · ${c.local}'}';
-  }
-
-  static String _hora(DateTime? d) =>
-      d == null ? '—' : '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-
-  @override
-  Widget build(BuildContext context) {
-    final s = situacao;
-    final linhas = <(String, String)>[
-      ('Tela', s?.nomeTela ?? '—'),
-      ('Conexão', _conexao(s?.ultimoResultado)),
-      ('Última sincronização', _hora(s?.ultimaSincronizacao)),
-      ('Itens na grade', '${s?.grade.length ?? 0} ($itensHoje para hoje)'),
-      ('Notícias', s == null || s.composicao.noticiaACadaAnuncios == 0
-          ? 'desligadas na playlist'
-          : '$noticias · 1 a cada ${s.composicao.noticiaACadaAnuncios} anúncio(s)'),
-      ('Clima', _clima(s)),
-      ('Servidor', servidor),
-      ('Versão do app', Configuracao.versaoApp),
-    ];
-    return ColoredBox(
-      color: Colors.black54,
-      child: Center(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: FocusTraversalGroup(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('Mídia Indoor', style: Theme.of(context).textTheme.headlineMedium),
-                    const SizedBox(height: 16),
-                    for (final (rotulo, valor) in linhas)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(children: [
-                          SizedBox(width: 220, child: Text(rotulo, style: const TextStyle(color: Colors.white60))),
-                          Expanded(child: Text(valor)),
-                        ]),
-                      ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(onPressed: aoParear, child: const Text('Parear de novo')),
-                        const SizedBox(width: 12),
-                        FilledButton(autofocus: true, onPressed: aoFechar, child: const Text('Fechar')),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ),
       ),
     );
