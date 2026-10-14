@@ -176,6 +176,6 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
 5. Botão **OK** do controle (Enter no teclado do emulador) mostra o painel de
    informações da TV.
 
-TV de verdade na rede: veja `player/README.md` (API ouvindo em `0.0.0.0`,
+TV de verdade na rede: veja `player/README.md` (API ouvindo em `*` — não em `0.0.0.0`, que deixa o painel lento —,
 endereço `https://<IP do PC>:7216`).
 

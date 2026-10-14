@@ -26,7 +26,9 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216
   não vale na TV); o APK de **release** exige um certificado válido.
 - Numa TV de verdade use o IP do PC na rede (ex.: `https://192.168.0.10:7216`)
   e suba a API ouvindo na rede (libere a porta 7216 no firewall do Windows):
-  `dotnet run --project src/Atlas.Web --launch-profile https --urls "https://0.0.0.0:7216;http://0.0.0.0:5366"`
+  `dotnet run --project src/Atlas.Web --launch-profile https --urls "https://*:7216;http://*:5366"`.
+  Use `*`, não `0.0.0.0`: `0.0.0.0` ouve só IPv4, e no Windows o
+  `localhost` do painel tenta IPv6 primeiro e espera ~2 s em cada requisição.
 - O endereço também pode ser trocado na própria TV, na tela de pareamento
   ("Servidor: … · alterar"); fica gravado.
 
