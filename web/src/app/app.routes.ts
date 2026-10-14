@@ -133,7 +133,7 @@ export const routes: Routes = [
         ]
       },
 
-      // Módulo "Rede" (/rede) — a operadora.
+      // Módulo "Rede" (/rede) — a operadora: parceiros e telas (hardware).
       {
         path: 'rede',
         children: [
@@ -144,6 +144,16 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/rede/pages/parceiro-list-page.component')
                 .then(m => m.ParceiroListPageComponent)
+          },
+          {
+            // Telas da rede: a operadora é dona do hardware. A mesma entidade
+            // aparece somente leitura para o parceiro em /indoor/tela.
+            path: 'tela',
+            canActivate: [atlasPermissionGuard],
+            data: { entity: 'tela', action: 'Create' },
+            loadComponent: () =>
+              import('./features/rede/pages/tela-rede-list-page.component')
+                .then(m => m.TelaRedeListPageComponent)
           },
           { path: '', redirectTo: 'parceiro', pathMatch: 'full' },
         ]

@@ -1,8 +1,8 @@
 using Atlas.Application.Business.Indoor.Common;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Rede.Telas.Commands.SalvarTela;
 using Atlas.Domain.Business.Constants;
 
-namespace Atlas.Application.Business.Indoor.Telas.Commands.EstadoTela;
+namespace Atlas.Application.Business.Rede.Telas.Commands.EstadoTela;
 
 [Authorize(Policy = BusinessPermissionKeys.Telas.Update)]
 public record AtivarTelaCommand(long Id, uint Version) : IRequest<uint>;
@@ -15,13 +15,12 @@ public record InativarTelaCommand(long Id, uint Version) : IRequest<uint>;
 [Authorize(Policy = BusinessPermissionKeys.Telas.Delete)]
 public record ExcluirTelaCommand(long Id) : IRequest;
 
-public class AtivarTelaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class AtivarTelaCommandHandler(IApplicationDbContext context)
     : IRequestHandler<AtivarTelaCommand, uint>
 {
     public async Task<uint> Handle(AtivarTelaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var tela = await RegistrosDoParceiro.CarregarAsync(context.Telas, parceiro.ParceiroId, request.Id, cancellationToken);
+        var tela = await RegrasTela.CarregarAsync(context, request.Id, cancellationToken);
 
         context.ConferirVersao(tela, request.Version);
         tela.Ativo = true;
@@ -30,13 +29,12 @@ public class AtivarTelaCommandHandler(IApplicationDbContext context, IParceiroAt
     }
 }
 
-public class InativarTelaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class InativarTelaCommandHandler(IApplicationDbContext context)
     : IRequestHandler<InativarTelaCommand, uint>
 {
     public async Task<uint> Handle(InativarTelaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var tela = await RegistrosDoParceiro.CarregarAsync(context.Telas, parceiro.ParceiroId, request.Id, cancellationToken);
+        var tela = await RegrasTela.CarregarAsync(context, request.Id, cancellationToken);
 
         context.ConferirVersao(tela, request.Version);
         tela.Ativo = false;
@@ -47,14 +45,13 @@ public class InativarTelaCommandHandler(IApplicationDbContext context, IParceiro
     }
 }
 
-public class ExcluirTelaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class ExcluirTelaCommandHandler(IApplicationDbContext context)
     : IRequestHandler<ExcluirTelaCommand>
 {
     public async Task Handle(ExcluirTelaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var tela = await RegistrosDoParceiro.CarregarAsync(
-            context.Telas.Include(t => t.Estado), parceiro.ParceiroId, request.Id, cancellationToken);
+        var tela = await context.Telas.Include(t => t.Estado).FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
+        Guard.Against.NotFound(request.Id, tela);
 
         context.Telas.Remove(tela);
         await context.SaveChangesAsync(cancellationToken);

@@ -6,9 +6,10 @@ using Atlas.Domain.Platform.Attributes;
 namespace Atlas.Domain.Business.Indoor.Entities;
 
 /// <summary>
-/// TV (TV box) do parceiro. A TV não tem usuário e senha: o painel gera um
-/// código de pareamento de uso único, a TV troca o código por um token próprio
-/// e passa a buscar a grade da <see cref="Playlist"/> apontada aqui.
+/// TV (TV box) instalada num parceiro. O hardware é da operadora: ela
+/// cadastra a tela, escolhe o parceiro e pareia a TV (código de uso único que
+/// a TV troca por um token próprio). O parceiro só escolhe a
+/// <see cref="Playlist"/> que a tela exibe.
 /// </summary>
 /// <remarks>
 /// O que muda a cada sincronização (último contato, versão do app) fica em
@@ -35,6 +36,13 @@ public class Tela : BaseAuditableEntity, IDoParceiro
 
     /// <summary>Onde a TV está (ex.: "Recepção", "Sala de musculação").</summary>
     public string? Localizacao { get; set; }
+
+    /// <summary>
+    /// MAC, número de série ou etiqueta do aparelho, anotado pela operadora na
+    /// instalação. Só informativo: o Android 10+ não deixa o app ler o MAC, e
+    /// a identidade da TV é o <see cref="DispositivoId"/>.
+    /// </summary>
+    public string? IdentificacaoAparelho { get; set; }
 
     /// <summary>Grade exibida. Nula = TV pareada mostra a tela de espera.</summary>
     public long? PlaylistId { get; set; }
@@ -102,6 +110,29 @@ public class Tela : BaseAuditableEntity, IDoParceiro
         DispositivoId = null;
         PareadaEm = null;
         VersaoCredencial++;
+    }
+
+    /// <summary>
+    /// Leva a tela para outro parceiro. A playlist era do parceiro anterior e
+    /// sai; a TV pareada e o código pendente também, para nenhuma TV tocar ou
+    /// parear com o conteúdo de quem não é mais dono da tela.
+    /// </summary>
+    public void TransferirPara(long parceiroId)
+    {
+        if (parceiroId == ParceiroId)
+        {
+            return;
+        }
+
+        ParceiroId = parceiroId;
+        PlaylistId = null;
+        CodigoPareamento = null;
+        CodigoPareamentoExpiraEm = null;
+
+        if (Pareada)
+        {
+            Desvincular();
+        }
     }
 
     public SituacaoTela Situacao(DateTimeOffset agora, TimeSpan toleranciaOffline) =>

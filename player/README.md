@@ -55,7 +55,9 @@ flutter build apk --release --dart-define=API_URL=https://api.suaempresa.com.br
 
 ## Uso na TV
 
-1. No painel, **Telas → Novo** (escolha a playlist) e **Gerar código**.
+1. No painel, a operadora cadastra a TV em **Rede → Telas → Novo** (escolhe o
+   parceiro) e usa **Gerar código**. O parceiro escolhe a playlist em
+   **Mídia Indoor → Telas → Trocar playlist**.
 2. Na TV, abra **Mídia Indoor**, digite o código (aceita minúsculas e hífen)
    e **Parear**.
 3. A TV baixa a grade e começa a tocar. No painel, a tela fica **Online**.

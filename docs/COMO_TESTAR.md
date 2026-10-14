@@ -146,12 +146,18 @@ da API).
 4. **Playlists → Novo**, depois clique na playlist para abrir a grade:
    adicione as mídias, arraste para mudar a ordem, desmarque dias (ex.: só
    Seg a sex) e **Salvar grade**.
-5. **Telas → Novo**, escolha a playlist e use o botão de QR Code da linha
-   (**Gerar código**). O código aparece em destaque, com o tempo restante.
+5. Saia e entre como `admin` (ou um usuário do grupo **Operadora**). Em
+   **Rede → Telas → Novo**, escolha o parceiro, o nome e, se quiser, a
+   identificação do aparelho (MAC/série). Use o botão de QR Code da linha
+   (**Gerar código**): o código aparece em destaque, com o tempo restante.
+   As TVs são da operadora: o parceiro não cadastra, não pareia nem exclui.
 6. Faça o papel da TV com os passos 12 a 15 do `Indoor.http` usando esse
    código: a tela passa a **Online** (a lista se atualiza a cada minuto).
-7. **Desvincular TV** na linha: a próxima sincronização da TV recebe 401 e a
-   tela volta a *Aguardando pareamento*.
+7. Entre de novo como o dono: em **Telas** a TV aparece somente leitura, com
+   **Trocar playlist** — escolha a playlist do passo 4.
+8. Como operadora, **Desvincular TV** na linha: a próxima sincronização da TV
+   recebe 401 e a tela volta a *Aguardando pareamento*. Editar a tela e trocar
+   o parceiro também tira a playlist e desvincula a TV.
 
 ## 8. App das TVs (`player/`)
 

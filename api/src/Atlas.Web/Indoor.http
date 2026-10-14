@@ -1,4 +1,4 @@
-# Roteiro de teste da Mídia Indoor (painel do parceiro).
+# Roteiro de teste da Mídia Indoor (operadora, parceiro e TV).
 #
 # Funciona na extensão REST Client do VS Code (humao.rest-client) e no
 # Visual Studio 2022 17.12+. Rode as requisições de cima para baixo: cada uma
@@ -142,19 +142,42 @@ Content-Type: application/json
 ###
 GET {{api}}/api/v1/business/parceiro/playlists/{{playlist.response.body.$}}
 
-### 10. Tela com a playlist
-# @name tela
-POST {{api}}/api/v1/business/parceiro/telas
+### 10. A operadora cadastra a tela (o hardware é dela) e escolhe o parceiro
+# O login por cookie é um só por vez: entra de novo como operadora.
+POST {{api}}/api/Auth/login
 Content-Type: application/json
 
-{ "nome": "Recepção", "localizacao": "Entrada", "playlistId": {{playlist.response.body.$}} }
+{ "userName": "admin", "password": "{{senhaAdmin}}", "mode": "Cookie" }
+
+###
+# @name tela
+POST {{api}}/api/v1/business/rede/telas
+Content-Type: application/json
+
+{ "parceiroId": {{parceiro.response.body.$}}, "nome": "Recepção", "localizacao": "Entrada", "identificacaoAparelho": "SN-0001" }
 
 ###
 # @name telaDetalhe
-GET {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}
+GET {{api}}/api/v1/business/rede/telas/{{tela.response.body.$}}
 
-### 11. Código de pareamento para digitar na TV (a TV usa na etapa 5)
-POST {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}/codigo-pareamento?version={{telaDetalhe.response.body.version}}
+### 11. Código de pareamento para digitar na TV (a TV usa a partir do passo 12)
+# @name codigoTela
+POST {{api}}/api/v1/business/rede/telas/{{tela.response.body.$}}/codigo-pareamento?version={{telaDetalhe.response.body.version}}
+
+###
+GET {{api}}/api/v1/business/rede/telas?parceiroId={{parceiro.response.body.$}}
+
+### 11b. O dono escolhe a playlist da tela (é o que ele pode mudar nela)
+POST {{api}}/api/Auth/login
+Content-Type: application/json
+
+{ "userName": "{{emailDono}}", "password": "{{senhaNova}}", "mode": "Cookie" }
+
+###
+PUT {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}/playlist
+Content-Type: application/json
+
+{ "id": {{tela.response.body.$}}, "playlistId": {{playlist.response.body.$}}, "version": {{codigoTela.response.body.version}} }
 
 ###
 GET {{api}}/api/v1/business/parceiro/telas
@@ -179,5 +202,5 @@ Authorization: Bearer {{tv.response.body.token}}
 GET {{api}}/api/v1/dispositivo/sincronizacao?versaoGrade={{sincronizacao.response.body.versaoGrade}}
 Authorization: Bearer {{tv.response.body.token}}
 
-### 15. No painel a tela aparece Online
+### 15. No painel do dono a tela aparece Online
 GET {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}

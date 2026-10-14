@@ -8,8 +8,8 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 
 | Perfil | Onde | O quê |
 |---|---|---|
-| **Operadora** (grupo "Operadora") | Painel → Rede | Cadastra e gerencia os parceiros |
-| **Parceiro** (grupo "Proprietário de Parceiro") | Painel → Mídia Indoor | Envia mídias, monta playlists e pareia as TVs |
+| **Operadora** (grupo "Operadora") | Painel → Rede | Cadastra os parceiros e as TVs (o hardware é dela): instala, pareia e libera cada TV para um parceiro |
+| **Parceiro** (grupo "Proprietário de Parceiro") | Painel → Mídia Indoor | Envia mídias, monta playlists e escolhe o que cada TV dele toca |
 | **TV** | App `player/` | Toca a grade do parceiro, mesmo sem internet |
 | **Administrador** (`admin`) | Atlas Studio | Usuários, grupos, menus, SMTP e parâmetros |
 
@@ -49,17 +49,28 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Ativar / inativar | Inativa: as telas dela ficam sem grade |
 | Concorrência | Salvar com a versão: edição simultânea não sobrescreve a do outro (409) |
 
-## Telas (parceiro)
+## Telas — operadora (Rede → Telas)
+
+O hardware é da operadora: ela cadastra cada TV e a libera para um parceiro.
 
 | Funcionalidade | Detalhe |
 |---|---|
-| Cadastro | Nome, local e playlist |
+| Cadastro | Parceiro, nome, local e identificação do aparelho (MAC/série, só informativa) |
+| Lista da rede | Todas as TVs, com parceiro, playlist e conexão; filtro por parceiro e situação; busca por nome, parceiro, local ou aparelho |
 | Código de pareamento | 8 caracteres, válido por 24 h, uso único; exibido em destaque com contagem regressiva |
 | Conexão | Aguardando pareamento, Online ou Offline (sem sincronizar há 15 min); a lista atualiza a cada minuto |
 | Parear outra TV | Gera um código novo; a TV atual continua até a nova parear |
 | Desvincular TV | A TV perde o acesso na próxima sincronização e a tela volta a aguardar pareamento |
+| Trocar de parceiro | A playlist sai (era do parceiro anterior), a TV é desvinculada e o código pendente descartado |
 | Ativar / inativar | Inativa: a TV continua no que já baixou, sem receber grade nova |
-| Copiar | "Clonar" cria outra tela com o mesmo local e playlist |
+| Copiar | "Clonar" cria outra tela no mesmo parceiro e local |
+
+## Telas — parceiro (Mídia Indoor → Telas)
+
+| Funcionalidade | Detalhe |
+|---|---|
+| Minhas TVs | Somente leitura: nome, local, playlist, conexão e última sincronização |
+| Trocar playlist | Escolhe a playlist de cada TV (vale na próxima sincronização) |
 
 ## App das TVs
 

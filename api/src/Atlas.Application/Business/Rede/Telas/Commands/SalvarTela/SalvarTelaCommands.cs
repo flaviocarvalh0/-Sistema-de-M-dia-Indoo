@@ -1,54 +1,61 @@
 using Atlas.Application.Business.Indoor.Common;
-using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
 
-namespace Atlas.Application.Business.Indoor.Telas.Commands.SalvarTela;
+namespace Atlas.Application.Business.Rede.Telas.Commands.SalvarTela;
 
-/// <summary>Cadastra a tela; a TV é pareada depois, com o código gerado no painel.</summary>
+/// <summary>
+/// A operadora cadastra a tela (o hardware é dela) e escolhe o parceiro que
+/// vai gerir o conteúdo. A TV é pareada depois, com o código gerado aqui.
+/// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Telas.Create)]
 public record CriarTelaCommand : IRequest<long>, IDadosTela
 {
+    public long ParceiroId { get; init; }
     public string Nome { get; init; } = string.Empty;
     public string? Localizacao { get; init; }
-    public long? PlaylistId { get; init; }
+    public string? IdentificacaoAparelho { get; init; }
 }
 
-/// <summary>Nome, localização e a playlist que a TV exibe (vale na próxima sincronização).</summary>
+/// <summary>
+/// Dados da tela. Trocar o parceiro tira a playlist (era do parceiro
+/// anterior), desvincula a TV e descarta o código pendente.
+/// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Telas.Update)]
 public record AtualizarTelaCommand : IRequest<uint>, IDadosTela
 {
     public long Id { get; init; }
+    public long ParceiroId { get; init; }
     public string Nome { get; init; } = string.Empty;
     public string? Localizacao { get; init; }
-    public long? PlaylistId { get; init; }
+    public string? IdentificacaoAparelho { get; init; }
     public uint Version { get; init; }
 }
 
 public interface IDadosTela
 {
+    long ParceiroId { get; }
     string Nome { get; }
     string? Localizacao { get; }
-    long? PlaylistId { get; }
+    string? IdentificacaoAparelho { get; }
 }
 
-public class CriarTelaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class CriarTelaCommandHandler(IApplicationDbContext context)
     : IRequestHandler<CriarTelaCommand, long>
 {
     public async Task<long> Handle(CriarTelaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
         var nome = request.Nome.Trim();
 
-        await RegrasTela.GarantirNomeLivreAsync(context, parceiro.ParceiroId, nome, null, cancellationToken);
-        await RegrasTela.GarantirPlaylistDoParceiroAsync(context, parceiro.ParceiroId, request.PlaylistId, cancellationToken);
+        await RegrasTela.GarantirParceiroAsync(context, request.ParceiroId, cancellationToken);
+        await RegrasTela.GarantirNomeLivreAsync(context, request.ParceiroId, nome, null, cancellationToken);
 
         var tela = new Tela
         {
-            ParceiroId = parceiro.ParceiroId,
+            ParceiroId = request.ParceiroId,
             Nome = nome,
             Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao),
-            PlaylistId = request.PlaylistId,
+            IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho),
         };
 
         context.Telas.Add(tela);
@@ -58,29 +65,53 @@ public class CriarTelaCommandHandler(IApplicationDbContext context, IParceiroAtu
     }
 }
 
-public class AtualizarTelaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class AtualizarTelaCommandHandler(IApplicationDbContext context)
     : IRequestHandler<AtualizarTelaCommand, uint>
 {
     public async Task<uint> Handle(AtualizarTelaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var tela = await RegistrosDoParceiro.CarregarAsync(context.Telas, parceiro.ParceiroId, request.Id, cancellationToken);
+        var tela = await RegrasTela.CarregarAsync(context, request.Id, cancellationToken);
         var nome = request.Nome.Trim();
 
-        await RegrasTela.GarantirNomeLivreAsync(context, parceiro.ParceiroId, nome, tela.Id, cancellationToken);
-        await RegrasTela.GarantirPlaylistDoParceiroAsync(context, parceiro.ParceiroId, request.PlaylistId, cancellationToken);
+        if (request.ParceiroId != tela.ParceiroId)
+        {
+            await RegrasTela.GarantirParceiroAsync(context, request.ParceiroId, cancellationToken);
+        }
+
+        await RegrasTela.GarantirNomeLivreAsync(context, request.ParceiroId, nome, tela.Id, cancellationToken);
 
         context.ConferirVersao(tela, request.Version);
+        tela.TransferirPara(request.ParceiroId);
         tela.Nome = nome;
         tela.Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao);
-        tela.PlaylistId = request.PlaylistId;
+        tela.IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho);
 
         return await context.SalvarAsync(tela, cancellationToken);
     }
 }
 
+/// <summary>Regras das telas na visão da operadora (sem filtro de parceiro).</summary>
 internal static class RegrasTela
 {
+    /// <summary>A tela, rastreada; inexistente dá 404.</summary>
+    public static async Task<Tela> CarregarAsync(IApplicationDbContext context, long id, CancellationToken cancellationToken)
+    {
+        var tela = await context.Telas.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+
+        Guard.Against.NotFound(id, tela);
+
+        return tela;
+    }
+
+    public static async Task GarantirParceiroAsync(IApplicationDbContext context, long parceiroId, CancellationToken cancellationToken)
+    {
+        if (!await context.Parceiros.AnyAsync(p => p.Id == parceiroId, cancellationToken))
+        {
+            throw new ValidationException(nameof(Tela.ParceiroId), ["Parceiro não encontrado."]);
+        }
+    }
+
+    /// <summary>O nome é único dentro do parceiro (é como ele reconhece a TV).</summary>
     public static async Task GarantirNomeLivreAsync(
         IApplicationDbContext context,
         long parceiroId,
@@ -94,21 +125,7 @@ internal static class RegrasTela
                 t => t.ParceiroId == parceiroId && t.Nome.ToLower() == normalizado && t.Id != idAtual,
                 cancellationToken))
         {
-            throw new ValidationException(nameof(Tela.Nome), ["Já existe uma tela com este nome."]);
-        }
-    }
-
-    /// <summary>O banco não cruza o parceiro na FK: a playlist de outro parceiro "não existe".</summary>
-    public static async Task GarantirPlaylistDoParceiroAsync(
-        IApplicationDbContext context,
-        long parceiroId,
-        long? playlistId,
-        CancellationToken cancellationToken)
-    {
-        if (playlistId is { } id
-            && !await context.Playlists.AnyAsync(p => p.Id == id && p.ParceiroId == parceiroId, cancellationToken))
-        {
-            throw new ValidationException(nameof(Tela.PlaylistId), ["Playlist não encontrada."]);
+            throw new ValidationException(nameof(Tela.Nome), ["Este parceiro já tem uma tela com este nome."]);
         }
     }
 }
@@ -132,6 +149,9 @@ internal static class ValidacaoTela
 {
     public static void RegrasDados<T>(this AbstractValidator<T> validador) where T : IDadosTela
     {
+        validador.RuleFor(x => x.ParceiroId)
+            .GreaterThan(0).WithMessage("Escolha o parceiro da tela.");
+
         validador.RuleFor(x => x.Nome)
             .NotEmpty().WithMessage("O nome da tela é obrigatório.")
             .MaximumLength(100).WithMessage("O nome deve ter no máximo 100 caracteres.");
@@ -139,8 +159,7 @@ internal static class ValidacaoTela
         validador.RuleFor(x => x.Localizacao)
             .MaximumLength(150).WithMessage("A localização deve ter no máximo 150 caracteres.");
 
-        validador.RuleFor(x => x.PlaylistId)
-            .GreaterThan(0).WithMessage("Playlist inválida.")
-            .When(x => x.PlaylistId is not null);
+        validador.RuleFor(x => x.IdentificacaoAparelho)
+            .MaximumLength(100).WithMessage("A identificação do aparelho deve ter no máximo 100 caracteres.");
     }
 }

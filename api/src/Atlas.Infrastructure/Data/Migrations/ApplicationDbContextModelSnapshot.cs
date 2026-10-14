@@ -305,6 +305,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("dispositivo_id");
 
+                    b.Property<string>("IdentificacaoAparelho")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("identificacao_aparelho");
+
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified");

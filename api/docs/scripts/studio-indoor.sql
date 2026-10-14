@@ -12,7 +12,13 @@
 --   5. RBAC: as permissões de cada grupo, por módulo e entidade.
 --
 -- Rotas resultantes no painel:
---   /rede/parceiro   /indoor/tela   /indoor/midia   /indoor/playlist
+--   /rede/parceiro   /rede/tela   (operadora)
+--   /indoor/tela     /indoor/midia   /indoor/playlist   (parceiro)
+--
+-- Posse das telas: o hardware é da operadora. A entidade "tela" fica no
+-- módulo Rede, com menu nos dois módulos: a operadora cadastra, escolhe o
+-- parceiro e pareia (/rede/tela); o parceiro só vê as TVs dele e escolhe a
+-- playlist (/indoor/tela, somente leitura).
 --
 -- Idempotente e convergente: pode rodar quantas vezes quiser; cria o que
 -- falta e corrige o que divergir (rótulo, ícone, módulo, ordem). Não apaga
@@ -117,7 +123,7 @@ BEGIN
            last_modified    = now()
       FROM (VALUES
             ('parceiro', 'Parceiros', 'parceiro', 'people',          v_rede_id),
-            ('tela',     'Telas',     'tela',     'tv',              v_indoor_id),
+            ('tela',     'Telas',     'tela',     'tv',              v_rede_id),
             ('midia',    'Mídias',    'midia',    'collection-play', v_indoor_id),
             ('playlist', 'Playlists', 'playlist', 'list-ol',         v_indoor_id)
            ) AS e(table_name, rotulo, route_key, icone, modulo_id)
@@ -134,6 +140,7 @@ BEGIN
            now(), NULL, now(), NULL
       FROM (VALUES
             ('parceiro', 'Parceiros', 1, v_rede_id),
+            ('tela',     'Telas',     2, v_rede_id),
             ('tela',     'Telas',     1, v_indoor_id),
             ('midia',    'Mídias',    2, v_indoor_id),
             ('playlist', 'Playlists', 3, v_indoor_id)
@@ -153,6 +160,7 @@ BEGIN
            last_modified  = now()
       FROM (VALUES
             ('parceiro', 'Parceiros', 1, 'people',          v_rede_id),
+            ('tela',     'Telas',     2, 'tv',              v_rede_id),
             ('tela',     'Telas',     1, 'tv',              v_indoor_id),
             ('midia',    'Mídias',    2, 'collection-play', v_indoor_id),
             ('playlist', 'Playlists', 3, 'list-ol',         v_indoor_id)
@@ -179,10 +187,11 @@ BEGIN
     SELECT id INTO v_proprietario_id FROM platform.role WHERE normalized_name = 'PROPRIETÁRIO DE PARCEIRO';
 
     -- 5. RBAC --------------------------------------------------------------
-    -- Operadora: cadastro e gestão dos parceiros. Sem Delete: o parceiro é
-    -- bloqueado, nunca apagado.
-    -- Proprietário de Parceiro: tudo nas próprias telas, mídias e playlists
-    -- (o isolamento por parceiro é feito pela API, não pela permissão).
+    -- Operadora: parceiros (sem Delete: o parceiro é bloqueado, nunca
+    -- apagado) e telas, que são o hardware dela.
+    -- Proprietário de Parceiro: só vê as próprias telas (escolher a playlist
+    -- exige Playlists.Update); tudo nas próprias mídias e playlists. O
+    -- isolamento por parceiro é feito pela API, não pela permissão.
     -- module_id/entity_name ligam a permissão ao módulo no launcher e ao
     -- RBAC do front (canView/canCreate/... por nome da tabela).
     UPDATE platform.role_claim rc
@@ -192,10 +201,11 @@ BEGIN
             (v_operadora_id,    'Parceiros.View',   v_rede_id,   'parceiro'),
             (v_operadora_id,    'Parceiros.Create', v_rede_id,   'parceiro'),
             (v_operadora_id,    'Parceiros.Update', v_rede_id,   'parceiro'),
+            (v_operadora_id,    'Telas.View',       v_rede_id,   'tela'),
+            (v_operadora_id,    'Telas.Create',     v_rede_id,   'tela'),
+            (v_operadora_id,    'Telas.Update',     v_rede_id,   'tela'),
+            (v_operadora_id,    'Telas.Delete',     v_rede_id,   'tela'),
             (v_proprietario_id, 'Telas.View',       v_indoor_id, 'tela'),
-            (v_proprietario_id, 'Telas.Create',     v_indoor_id, 'tela'),
-            (v_proprietario_id, 'Telas.Update',     v_indoor_id, 'tela'),
-            (v_proprietario_id, 'Telas.Delete',     v_indoor_id, 'tela'),
             (v_proprietario_id, 'Midias.View',      v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Create',    v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Update',    v_indoor_id, 'midia'),
@@ -216,10 +226,11 @@ BEGIN
             (v_operadora_id,    'Parceiros.View',   v_rede_id,   'parceiro'),
             (v_operadora_id,    'Parceiros.Create', v_rede_id,   'parceiro'),
             (v_operadora_id,    'Parceiros.Update', v_rede_id,   'parceiro'),
+            (v_operadora_id,    'Telas.View',       v_rede_id,   'tela'),
+            (v_operadora_id,    'Telas.Create',     v_rede_id,   'tela'),
+            (v_operadora_id,    'Telas.Update',     v_rede_id,   'tela'),
+            (v_operadora_id,    'Telas.Delete',     v_rede_id,   'tela'),
             (v_proprietario_id, 'Telas.View',       v_indoor_id, 'tela'),
-            (v_proprietario_id, 'Telas.Create',     v_indoor_id, 'tela'),
-            (v_proprietario_id, 'Telas.Update',     v_indoor_id, 'tela'),
-            (v_proprietario_id, 'Telas.Delete',     v_indoor_id, 'tela'),
             (v_proprietario_id, 'Midias.View',      v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Create',    v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Update',    v_indoor_id, 'midia'),
@@ -234,6 +245,12 @@ BEGIN
             WHERE rc.role_id = p.role_id
               AND rc.claim_type = 'permission'
               AND rc.claim_value = p.claim_value);
+
+    -- O parceiro não altera mais telas (versões anteriores deste script davam).
+    DELETE FROM platform.role_claim
+     WHERE role_id = v_proprietario_id
+       AND claim_type = 'permission'
+       AND claim_value IN ('Telas.Create', 'Telas.Update', 'Telas.Delete');
 
     RAISE NOTICE 'Módulos: Rede (%) e Mídia Indoor (%). Grupos: Operadora (%) e Proprietário de Parceiro (%).',
         v_rede_id, v_indoor_id, v_operadora_id, v_proprietario_id;

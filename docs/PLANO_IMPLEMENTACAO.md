@@ -174,3 +174,41 @@ build verde, testes passando e docs atualizadas.
   SMTP, APK das TVs e checklist de produção.
 - [x] CORS da origem do painel em produção (`Indoor:UrlPainel`), sem alterar
   a lista fixa da plataforma.
+
+## Rodada 2 — Ajustes do MVP
+
+Decisões: repetir mídia na playlist é permitido (seletor só marca "já
+adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
+"1 notícia a cada X anúncios" fica na playlist; o grupo continua "Operadora".
+
+### Entrega 1 — Posse das telas (RBAC) ✅
+
+- [x] A operadora é dona do hardware ([ADR-014](../api/docs/decisions/ADR-014-Posse-das-Telas-pela-Operadora.md)):
+  rotas `rede/telas` (cadastro com parceiro, identificação do aparelho,
+  pareamento, desvínculo, ativação, exclusão) e `parceiro/telas` só leitura
+  com `PUT {id}/playlist`.
+- [x] Trocar a tela de parceiro tira a playlist, desvincula a TV e descarta o
+  código; o parceiro não vê o código de pareamento.
+- [x] Migration `Business_IdentificacaoAparelhoTela`; `studio-indoor.sql` com
+  `tela` no módulo Rede, menu nos dois módulos e permissões novas.
+- [x] Painel: `Rede → Telas` (operadora) e `Mídia Indoor → Telas` somente
+  leitura com "Trocar playlist".
+- [x] Testes: unitários das duas visões e das políticas, integração, roteiro
+  HTTP de ponta a ponta (operadora, dois parceiros, TV e transferência) e
+  roteiro no navegador.
+
+### Entrega 2 — Player: troca de grade sem travar
+
+- [ ] Geração de item no loop (eventos atrasados ignorados), troca da fila no
+  fim do item, intervalo de 60 s, "Atualizar TV agora" no painel.
+
+### Entrega 3 — Seletor da grade
+
+- [ ] Badge "já adicionado" no seletor de mídias da grade (repetição permitida).
+
+### Entrega 4 — Notícias e randomização
+
+- [ ] Fontes e coletor RSS (Agência Brasil), imagens no storage com hash,
+  composição na playlist (notícia a cada X, embaralhar, posição fixa),
+  montagem da fila e tela de notícia no player.
+

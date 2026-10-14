@@ -2,7 +2,8 @@ using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Midias.Queries;
 using Atlas.Application.Business.Indoor.Playlists.Commands.DefinirItensPlaylist;
 using Atlas.Application.Business.Indoor.Playlists.Queries;
-using Atlas.Application.Business.Indoor.Telas.Commands.Pareamento;
+using Atlas.Application.Business.Rede.Telas.Commands.Pareamento;
+using Atlas.Application.Business.Rede.Telas.Queries;
 using Atlas.Application.Business.Indoor.Telas.Queries;
 using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Application.Common.Interfaces;
@@ -167,14 +168,20 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
 
             telas.Items.Should().HaveCount(3);
             telas.Items.Single(t => t.Id == aguardando).Should().BeEquivalentTo(new { Situacao = SituacaoTela.AguardandoPareamento }, o => o.ExcludingMissingMembers());
-            telas.Items.Single(t => t.Id == aguardando).CodigoPareamento.Should().MatchRegex("^[A-Z2-9]{8}$");
+            telas.Items.Single(t => t.Id == aguardando).CodigoPareamento.Should().BeNull("o parceiro não vê o código: parear é da operadora");
             telas.Items.Single(t => t.Id == online).Situacao.Should().Be(SituacaoTela.Online);
             telas.Items.Single(t => t.Id == online).VersaoApp.Should().Be("1.0.0");
             telas.Items.Single(t => t.Id == offline).Situacao.Should().Be(SituacaoTela.Offline);
 
+            var daRede = await new GetTelasRedeQueryHandler(context, Identity, TimeProvider.System)
+                .Handle(new GetTelasRedeQuery { ParceiroId = _parceiroA }, CancellationToken.None);
+            daRede.Items.Should().HaveCount(3);
+            daRede.Items.Single(t => t.Id == aguardando).CodigoPareamento.Should().MatchRegex("^[A-Z2-9]{8}$");
+            daRede.Items.Should().OnlyContain(t => t.ParceiroNome.Length > 0);
+
             var dePoisDeAmanha = new RelogioFixo(agora.AddDays(2));
-            var expirada = await new GetTelaByIdQueryHandler(context, Atual(_parceiroA), Identity, dePoisDeAmanha)
-                .Handle(new GetTelaByIdQuery(aguardando), CancellationToken.None);
+            var expirada = await new GetTelaRedeByIdQueryHandler(context, Identity, dePoisDeAmanha)
+                .Handle(new GetTelaRedeByIdQuery(aguardando), CancellationToken.None);
             expirada.CodigoPareamento.Should().BeNull();
         }
     }

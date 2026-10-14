@@ -8,8 +8,7 @@ using Atlas.Application.Business.Indoor.Playlists.Commands.DefinirItensPlaylist;
 using Atlas.Application.Business.Indoor.Playlists.Commands.EstadoPlaylist;
 using Atlas.Application.Business.Indoor.Playlists.Commands.SalvarPlaylist;
 using Atlas.Application.Business.Indoor.Playlists.Queries;
-using Atlas.Application.Business.Indoor.Telas.Commands.Pareamento;
-using Atlas.Application.Business.Indoor.Telas.Commands.SalvarTela;
+using Atlas.Application.Business.Indoor.Telas.Commands.DefinirPlaylist;
 using Atlas.Application.Business.Indoor.Telas.Queries;
 using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Indoor.Entities;
@@ -312,54 +311,58 @@ public class PainelIndoorTests : IDisposable
         (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors["Id"].Should().ContainMatch("*1 tela*");
     }
 
-    // ---------- Telas ----------
+    // ---------- Telas (visão do parceiro: só leitura e playlist) ----------
 
     [Fact]
-    public async Task CriarTela_ComPlaylistDeOutroParceiroDeveSerRecusada()
+    public async Task DefinirPlaylist_DeveTrocarAGradeDaTela()
+    {
+        var playlist = await CriarPlaylistNoBancoAsync(_parceiroA, "Grade");
+        var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção" };
+        _context.Telas.Add(tela);
+        await _context.SaveChangesAsync();
+
+        await new DefinirPlaylistDaTelaCommandHandler(_context, _parceiroAtual)
+            .Handle(new DefinirPlaylistDaTelaCommand(tela.Id, playlist.Id, 0), CancellationToken.None);
+
+        var dto = await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None);
+        dto.PlaylistId.Should().Be(playlist.Id);
+        dto.PlaylistNome.Should().Be("Grade");
+
+        await new DefinirPlaylistDaTelaCommandHandler(_context, _parceiroAtual)
+            .Handle(new DefinirPlaylistDaTelaCommand(tela.Id, null, 0), CancellationToken.None);
+        (await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None)).PlaylistId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DefinirPlaylist_DeOutroParceiroDeveSerRecusada()
     {
         var playlistB = await CriarPlaylistNoBancoAsync(_parceiroB, "Grade B");
+        var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção" };
+        _context.Telas.Add(tela);
+        await _context.SaveChangesAsync();
 
-        var acao = () => new CriarTelaCommandHandler(_context, _parceiroAtual)
-            .Handle(new CriarTelaCommand { Nome = "Recepção", PlaylistId = playlistB.Id }, CancellationToken.None);
+        var acao = () => new DefinirPlaylistDaTelaCommandHandler(_context, _parceiroAtual)
+            .Handle(new DefinirPlaylistDaTelaCommand(tela.Id, playlistB.Id, 1), CancellationToken.None);
 
         (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("PlaylistId");
     }
 
     [Fact]
-    public async Task GerarCodigo_DeveSerLegivelEValerVinteEQuatroHoras()
+    public async Task DefinirPlaylist_EmTelaDeOutroParceiroDeveDar404()
     {
-        var id = await new CriarTelaCommandHandler(_context, _parceiroAtual)
-            .Handle(new CriarTelaCommand { Nome = "Recepção" }, CancellationToken.None);
-
-        var codigo = await new GerarCodigoPareamentoCommandHandler(_context, _parceiroAtual, _relogio)
-            .Handle(new GerarCodigoPareamentoCommand(id, 0), CancellationToken.None);
-
-        codigo.Codigo.Should().MatchRegex("^[A-HJ-NP-Z2-9]{8}$");
-        codigo.ExpiraEm.Should().Be(Agora.AddHours(24));
-
-        var tela = await Telas().Handle(new GetTelaByIdQuery(id), CancellationToken.None);
-        tela.CodigoPareamento.Should().Be(codigo.Codigo);
-        tela.Situacao.Should().Be(SituacaoTela.AguardandoPareamento);
-
-        _relogio.Agora = Agora.AddHours(25);
-        (await Telas().Handle(new GetTelaByIdQuery(id), CancellationToken.None)).CodigoPareamento.Should().BeNull("o código expirou");
-    }
-
-    [Fact]
-    public async Task GerarCodigo_TelaInativaDeveSerRecusada()
-    {
-        var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção", Ativo = false };
-        _context.Telas.Add(tela);
+        var playlist = await CriarPlaylistNoBancoAsync(_parceiroA, "Grade");
+        var telaB = new Tela { ParceiroId = _parceiroB, Nome = "TV da tapiocaria" };
+        _context.Telas.Add(telaB);
         await _context.SaveChangesAsync();
 
-        var acao = () => new GerarCodigoPareamentoCommandHandler(_context, _parceiroAtual, _relogio)
-            .Handle(new GerarCodigoPareamentoCommand(tela.Id, 0), CancellationToken.None);
+        var acao = () => new DefinirPlaylistDaTelaCommandHandler(_context, _parceiroAtual)
+            .Handle(new DefinirPlaylistDaTelaCommand(telaB.Id, playlist.Id, 1), CancellationToken.None);
 
-        await acao.Should().ThrowAsync<ValidationException>();
+        await acao.Should().ThrowAsync<NotFoundException>();
     }
 
     [Fact]
-    public async Task Situacao_DeveSeguirASincronizacaoEODesvinculo()
+    public async Task Situacao_DeveSeguirASincronizacao()
     {
         var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção" };
         tela.Parear("tv-1", Agora.AddHours(-2));
@@ -372,12 +375,21 @@ public class PainelIndoorTests : IDisposable
 
         _relogio.Agora = Agora.AddMinutes(20);
         (await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None)).Situacao.Should().Be(SituacaoTela.Offline);
+    }
 
-        await new DesvincularTelaCommandHandler(_context, _parceiroAtual).Handle(new DesvincularTelaCommand(tela.Id, 0), CancellationToken.None);
-        (await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None)).Situacao.Should().Be(SituacaoTela.AguardandoPareamento);
+    [Fact]
+    public async Task Telas_ParceiroNaoVeOCodigoDePareamento()
+    {
+        var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção" };
+        tela.GerarCodigoPareamento("ABCD2345", Agora);
+        _context.Telas.Add(tela);
+        await _context.SaveChangesAsync();
 
-        var deNovo = () => new DesvincularTelaCommandHandler(_context, _parceiroAtual).Handle(new DesvincularTelaCommand(tela.Id, 0), CancellationToken.None);
-        await deNovo.Should().ThrowAsync<ValidationException>();
+        var dto = await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None);
+
+        dto.CodigoPareamento.Should().BeNull("parear é trabalho da operadora");
+        dto.CodigoPareamentoExpiraEm.Should().BeNull();
+        dto.ParceiroNome.Should().Be("Academia");
     }
 
     [Fact]

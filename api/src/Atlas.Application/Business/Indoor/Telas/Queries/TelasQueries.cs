@@ -7,6 +7,7 @@ using Atlas.Domain.Business.Constants;
 
 namespace Atlas.Application.Business.Indoor.Telas.Queries;
 
+/// <summary>As telas do parceiro do usuário logado (somente leitura: o hardware é da operadora).</summary>
 [Authorize(Policy = BusinessPermissionKeys.Telas.View)]
 public record GetTelasQuery : IRequest<PaginatedList<TelaDto>>
 {
@@ -48,7 +49,7 @@ public class GetTelasQueryHandler(
         var pagina = await query
             .OrderBy(t => t.Nome)
             .ThenBy(t => t.Id)
-            .ParaDto(timeProvider.GetUtcNow())
+            .ParaDto(timeProvider.GetUtcNow(), comPareamento: false)
             .ToEntityPaginatedListAsync(context, "tela", request.PaginationParams, cancellationToken);
 
         await identityService.PreencherNomesAsync(pagina.Items, cancellationToken);
@@ -74,7 +75,7 @@ public class GetTelaByIdQueryHandler(
         var tela = await context.Telas
             .AsNoTracking()
             .Where(t => t.Id == request.Id && t.ParceiroId == parceiro.ParceiroId)
-            .ParaDto(timeProvider.GetUtcNow())
+            .ParaDto(timeProvider.GetUtcNow(), comPareamento: false)
             .FirstOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(request.Id, tela);

@@ -44,7 +44,8 @@ liberada no CORS da API.
 | Rota | Quem usa | O quê |
 |---|---|---|
 | `/rede/parceiro` | Operadora | Parceiros: cadastro (cria o login do responsável), espaço em MB, bloquear/desbloquear |
-| `/indoor/tela` | Parceiro | TVs: playlist de cada uma, código de pareamento, conexão (Aguardando/Online/Offline), desvincular |
+| `/rede/tela` | Operadora | TVs da rede (o hardware é dela): parceiro, identificação do aparelho, código de pareamento, conexão, desvincular |
+| `/indoor/tela` | Parceiro | As TVs dele, somente leitura, com **Trocar playlist** |
 | `/indoor/midia` | Parceiro | Biblioteca: título, duração, período de exibição, ativar/inativar, pré-visualizar, espaço usado |
 | `/indoor/midia/enviar` | Parceiro | Envio de vídeo MP4 ou imagem JPG/PNG direto ao storage, com SHA-256 e progresso |
 | `/indoor/playlist` | Parceiro | Playlists (uma playlist toca em várias telas); "Clonar" duplica com a grade |

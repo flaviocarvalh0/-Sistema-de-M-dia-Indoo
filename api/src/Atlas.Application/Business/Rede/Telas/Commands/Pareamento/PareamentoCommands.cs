@@ -1,11 +1,11 @@
 using System.Security.Cryptography;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Application.Business.Indoor.Telas.Dtos;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Rede.Telas.Commands.SalvarTela;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
 
-namespace Atlas.Application.Business.Indoor.Telas.Commands.Pareamento;
+namespace Atlas.Application.Business.Rede.Telas.Commands.Pareamento;
 
 /// <summary>
 /// Gera o código que a pessoa digita na TV para pareá-la com esta tela
@@ -19,13 +19,12 @@ public record GerarCodigoPareamentoCommand(long Id, uint Version) : IRequest<Cod
 [Authorize(Policy = BusinessPermissionKeys.Telas.Update)]
 public record DesvincularTelaCommand(long Id, uint Version) : IRequest<uint>;
 
-public class GerarCodigoPareamentoCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual, TimeProvider timeProvider)
+public class GerarCodigoPareamentoCommandHandler(IApplicationDbContext context, TimeProvider timeProvider)
     : IRequestHandler<GerarCodigoPareamentoCommand, CodigoPareamentoDto>
 {
     public async Task<CodigoPareamentoDto> Handle(GerarCodigoPareamentoCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var tela = await RegistrosDoParceiro.CarregarAsync(context.Telas, parceiro.ParceiroId, request.Id, cancellationToken);
+        var tela = await RegrasTela.CarregarAsync(context, request.Id, cancellationToken);
 
         if (!tela.Ativo)
         {
@@ -43,13 +42,12 @@ public class GerarCodigoPareamentoCommandHandler(IApplicationDbContext context, 
     }
 }
 
-public class DesvincularTelaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class DesvincularTelaCommandHandler(IApplicationDbContext context)
     : IRequestHandler<DesvincularTelaCommand, uint>
 {
     public async Task<uint> Handle(DesvincularTelaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var tela = await RegistrosDoParceiro.CarregarAsync(context.Telas, parceiro.ParceiroId, request.Id, cancellationToken);
+        var tela = await RegrasTela.CarregarAsync(context, request.Id, cancellationToken);
 
         if (!tela.Pareada)
         {

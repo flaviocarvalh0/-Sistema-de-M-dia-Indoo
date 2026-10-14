@@ -157,9 +157,10 @@ envie o teste. Sem SMTP, a mensagem fica pendente em
 
 ### 3.4 Usuários da operadora
 
-Em **Atlas Studio → Usuários**, crie quem vai cadastrar os parceiros e
-coloque essas pessoas no grupo **Operadora**. O dono de cada parceiro entra
-sozinho no grupo **Proprietário de Parceiro** quando o parceiro é cadastrado.
+Em **Atlas Studio → Usuários**, crie quem vai cadastrar os parceiros e as
+TVs e coloque essas pessoas no grupo **Operadora**. O dono de cada parceiro
+entra sozinho no grupo **Proprietário de Parceiro** quando o parceiro é
+cadastrado.
 
 ## 4. App das TVs
 
@@ -191,7 +192,7 @@ APK só instalam por cima se forem assinadas com a mesma chave.
      desconhecidas*.
 3. Libere **Sobrepor a outros apps** para o Mídia Indoor (Android 10 ou mais
    novo). Sem isso, o app não abre sozinho quando a TV liga.
-4. Abra o app, digite o código gerado no painel e pareie.
+4. Abra o app, digite o código gerado em **Rede → Telas** e pareie.
 5. Desligue e ligue a TV para confirmar que o app abre sozinho.
 
 ## 5. Checklist de produção

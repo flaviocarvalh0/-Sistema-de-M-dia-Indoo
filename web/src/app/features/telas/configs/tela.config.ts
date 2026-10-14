@@ -6,6 +6,7 @@ export const SITUACAO_TELA_BADGE: Record<string, string> = {
   Offline: 'bg-danger',
 };
 
+/** Grid do parceiro (somente leitura). */
 export const TELA_COLUNAS: ColunaDef[] = [
   { campo: 'nome', titulo: 'Tela', principal: true, tipo: 'texto' },
   { campo: 'localizacao', titulo: 'Local', tipo: 'texto' },
@@ -15,15 +16,13 @@ export const TELA_COLUNAS: ColunaDef[] = [
   { campo: 'ativo', titulo: 'Situação', tipo: 'status' },
 ];
 
-/** Espelha CriarTelaCommandValidator / AtualizarTelaCommandValidator. */
-export function criarCamposTela(playlists: CampoOption[]): FormItemConfig[] {
+/** Único campo que o parceiro altera numa tela (DefinirPlaylistDaTelaCommand). */
+export function criarCampoPlaylist(playlists: CampoOption[]): FormItemConfig[] {
   return [
-    { type: 'texto', name: 'nome', label: 'Nome', required: true, col: 'col-md-6', placeholder: 'Ex.: TV da recepção' },
-    { type: 'texto', name: 'localizacao', label: 'Local', col: 'col-md-6', placeholder: 'Ex.: Térreo, ao lado do caixa' },
     {
       type: 'select', name: 'playlistId', label: 'Playlist', col: 'col-12',
       options: playlists,
-      hint: 'A mesma playlist pode tocar em várias telas. Sem playlist, a TV fica sem grade.',
+      hint: 'A TV passa a tocar esta grade na próxima sincronização. Sem playlist, ela mostra a tela de espera.',
     },
   ];
 }

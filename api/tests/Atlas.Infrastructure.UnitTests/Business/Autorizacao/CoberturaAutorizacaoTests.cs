@@ -1,7 +1,13 @@
 using System.Reflection;
 using Atlas.Application.Business.Dispositivo.Autenticacao;
 using Atlas.Application.Business.Dispositivo.Sincronizacao;
+using Atlas.Application.Business.Indoor.Telas.Commands.DefinirPlaylist;
+using Atlas.Application.Business.Indoor.Telas.Queries;
 using Atlas.Application.Business.Rede.Parceiros.Queries;
+using Atlas.Application.Business.Rede.Telas.Commands.EstadoTela;
+using Atlas.Application.Business.Rede.Telas.Commands.Pareamento;
+using Atlas.Application.Business.Rede.Telas.Commands.SalvarTela;
+using Atlas.Application.Business.Rede.Telas.Queries;
 using Atlas.Application.Common.Security;
 using Atlas.Domain.Business.Constants;
 using FluentAssertions;
@@ -67,5 +73,29 @@ public class CoberturaAutorizacaoTests
         var requests = Requests();
         requests.Should().HaveCountGreaterThanOrEqualTo(6);
         Anonimos.Except(requests).Should().BeEmpty("todo anônimo declarado precisa existir na varredura");
+    }
+
+    /// <summary>
+    /// Posse das telas: o hardware é da operadora. O parceiro tem só
+    /// <c>Telas.View</c>, então tudo que altera tela exige Create/Update/Delete,
+    /// e as consultas da rede exigem também <c>Parceiros.View</c> (senão o
+    /// parceiro listaria as telas dos outros).
+    /// </summary>
+    [Theory]
+    [InlineData(typeof(GetTelasRedeQuery), new[] { BusinessPermissionKeys.Telas.View, BusinessPermissionKeys.Parceiros.View })]
+    [InlineData(typeof(GetTelaRedeByIdQuery), new[] { BusinessPermissionKeys.Telas.View, BusinessPermissionKeys.Parceiros.View })]
+    [InlineData(typeof(CriarTelaCommand), new[] { BusinessPermissionKeys.Telas.Create })]
+    [InlineData(typeof(AtualizarTelaCommand), new[] { BusinessPermissionKeys.Telas.Update })]
+    [InlineData(typeof(GerarCodigoPareamentoCommand), new[] { BusinessPermissionKeys.Telas.Update })]
+    [InlineData(typeof(DesvincularTelaCommand), new[] { BusinessPermissionKeys.Telas.Update })]
+    [InlineData(typeof(AtivarTelaCommand), new[] { BusinessPermissionKeys.Telas.Update })]
+    [InlineData(typeof(InativarTelaCommand), new[] { BusinessPermissionKeys.Telas.Update })]
+    [InlineData(typeof(ExcluirTelaCommand), new[] { BusinessPermissionKeys.Telas.Delete })]
+    [InlineData(typeof(GetTelasQuery), new[] { BusinessPermissionKeys.Telas.View })]
+    [InlineData(typeof(GetTelaByIdQuery), new[] { BusinessPermissionKeys.Telas.View })]
+    [InlineData(typeof(DefinirPlaylistDaTelaCommand), new[] { BusinessPermissionKeys.Telas.View, BusinessPermissionKeys.Playlists.Update })]
+    public void Telas_PoliticasSeguemAPosseDoHardware(Type request, string[] politicas)
+    {
+        request.GetCustomAttributes<AuthorizeAttribute>().Select(a => a.Policy).Should().BeEquivalentTo(politicas);
     }
 }

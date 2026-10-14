@@ -1,0 +1,65 @@
+import { Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { CrudService, Page, PaginatedResponse, QueryParams, comErroLocal } from '@atlas/framework';
+import { CodigoPareamento, LinhaTela, TelaDto } from '../../telas/models/tela.model';
+import { paraLinhaTela } from '../../telas/services/tela.service';
+import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util';
+
+/**
+ * Telas da rede (operadora, dona do hardware).
+ *
+ *  - GET  /api/v1/business/rede/telas?parceiroId=&ativo=
+ *  - GET  /api/v1/business/rede/telas/{id}
+ *  - POST /api/v1/business/rede/telas                         → id
+ *  - PUT  /api/v1/business/rede/telas/{id}                    → nova versão (trocar o parceiro tira playlist e TV)
+ *  - POST /api/v1/business/rede/telas/{id}/codigo-pareamento?version= → { codigo, expiraEm, version }
+ *  - POST /api/v1/business/rede/telas/{id}/desvincular|ativar|inativar?version=
+ *  - DELETE /api/v1/business/rede/telas/{id}
+ */
+@Injectable({ providedIn: 'root' })
+export class TelaRedeService extends CrudService<TelaDto, number> {
+  protected readonly resource = 'api/v1/business/rede/telas';
+
+  listar(query: QueryParams, filtros: { parceiroId?: number | null; ativo?: boolean | null } = {}): Observable<Page<LinhaTela>> {
+    return this.http
+      .get<PaginatedResponse<TelaDto>>(this.baseUrl, {
+        params: paramsPaginacao(query, {
+          parceiroId: filtros.parceiroId == null ? null : String(filtros.parceiroId),
+          ativo: filtros.ativo == null ? null : String(filtros.ativo),
+        }),
+      })
+      .pipe(
+        map(resp => paraPage(resp, query)),
+        map(page => ({ ...page, content: page.content.map(paraLinhaTela) })),
+      );
+  }
+
+  /** Sai de modal com `errosInline: true`: erro no banner do modal. */
+  salvar(id: number | null, valor: Partial<TelaDto>, version?: number): Observable<unknown> {
+    const corpo = {
+      parceiroId: valor.parceiroId ? Number(valor.parceiroId) : 0,
+      nome: valor.nome,
+      localizacao: valor.localizacao || null,
+      identificacaoAparelho: valor.identificacaoAparelho || null,
+    };
+    return id
+      ? this.http.put(`${this.baseUrl}/${id}`, { id, ...corpo, version }, { context: comErroLocal() })
+      : this.http.post(this.baseUrl, corpo, { context: comErroLocal() });
+  }
+
+  gerarCodigo(id: number, version: number): Observable<CodigoPareamento> {
+    return this.http.post<CodigoPareamento>(`${this.baseUrl}/${id}/codigo-pareamento`, null, { params: { version } });
+  }
+
+  desvincular(id: number, version: number): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/${id}/desvincular`, null, { params: { version } });
+  }
+
+  definirAtivo(id: number, ativo: boolean, version: number): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/${id}/${ativo ? 'ativar' : 'inativar'}`, null, { params: { version } });
+  }
+
+  excluir(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+}
