@@ -241,7 +241,7 @@ export class MidiaListPageComponent implements OnInit {
       p.instagramPublico ? `@${p.instagramPublico}` : '',
       p.sitePublico ? 'site' : '',
     ].filter(Boolean);
-    return contatos.length ? `com ${contatos.join(', ')}` : 'só com o nome (e os QR codes dos anúncios)';
+    return contatos.length ? `com ${contatos.join(', ')}` : 'só com o nome (sem contatos cadastrados)';
   }
 
   editarPerfil(p: PerfilPublicoDto): void {

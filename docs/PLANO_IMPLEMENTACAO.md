@@ -282,7 +282,7 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   tela, "Trocar endereço", cache de 60 s, limite por IP, CSP com nonce; o
   mesmo conteúdo em JSON.
 - [x] Lista: estabelecimento primeiro, depois os anunciantes da grade de
-  hoje; contatos do perfil e dos QR codes dos anúncios ("Copiar Pix").
+  hoje; só os contatos cadastrados no perfil público.
 - [x] Painel: diretório na edição da tela com QR e endereço; perfil público
   no topo de Mídias; coluna "Diretório das TVs" em Parceiros.
 - [x] Player: `diretorio` na sincronização (regra 15), QR fixo pequeno que

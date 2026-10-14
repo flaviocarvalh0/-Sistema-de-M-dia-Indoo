@@ -9,8 +9,8 @@ namespace Atlas.Application.Business.Diretorio;
 
 /// <summary>
 /// A página pública de uma TV (sem login): os anunciantes que estão na grade
-/// de hoje e que aceitaram aparecer no diretório, com os contatos — os do
-/// perfil público e os dos QR codes das mídias (ADR-018).
+/// de hoje e que aceitaram aparecer no diretório, com os contatos do perfil
+/// público — só eles: os QR codes dos anúncios não entram (ADR-018).
 /// </summary>
 /// <remarks>
 /// Dupla autorização: a operadora liga o diretório na tela e cada parceiro
@@ -90,7 +90,7 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
                     && (i.Midia.InicioExibicao == null || i.Midia.InicioExibicao <= hoje)
                     && (i.Midia.FimExibicao == null || i.Midia.FimExibicao >= hoje))
                 .OrderBy(i => i.Ordem)
-                .Select(i => new { i.Midia.ParceiroId, i.DiasSemana, i.Midia.QrTipo, i.Midia.QrConteudo })
+                .Select(i => new { i.Midia.ParceiroId, i.DiasSemana })
                 .ToListAsync(cancellationToken)
             : [];
 
@@ -123,14 +123,6 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
                 if (p.SitePublico is { } site)
                 {
                     contatos.Add(new(TipoQrCode.Link, "Site", site));
-                }
-
-                foreach (var item in deHoje.Where(i => i.ParceiroId == p.Id))
-                {
-                    if (item is { QrTipo: { } tipo, QrConteudo: { } conteudo })
-                    {
-                        contatos.Add(new(tipo, Rotulo(tipo), conteudo));
-                    }
                 }
 
                 return new AnuncianteDiretorioDto

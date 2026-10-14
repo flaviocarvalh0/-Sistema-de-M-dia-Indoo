@@ -42,10 +42,11 @@ Restrições:
 
   O estabelecimento que hospeda a TV vem primeiro (permuta pelo espaço), mesmo
   sem anúncio na grade, desde que também tenha aceitado.
-- **Contatos:** WhatsApp, Instagram e site do perfil público, mais os QR codes
-  das mídias que estão na grade, sem repetir e com no máximo 6 por anunciante.
-  No diretório, o Pix vira o botão **"Copiar Pix"** (copia e cola), porque
-  ninguém lê um QR na própria tela.
+- **Contatos:** só o que o parceiro cadastrou no perfil público (WhatsApp,
+  Instagram e site), cada um com o destino legível ("(92) 99999-0000",
+  "@usuario"). Os QR codes dos anúncios **não** entram: na primeira versão
+  entravam, e um anúncio com outro número de WhatsApp aparecia como um
+  segundo botão que o parceiro não tinha cadastrado para a página.
 - **Endereço:** cada tela ganha um código aleatório de 10 caracteres (o
   alfabeto do pareamento, 32¹⁰ combinações), criado quando o diretório é
   ligado pela primeira vez.

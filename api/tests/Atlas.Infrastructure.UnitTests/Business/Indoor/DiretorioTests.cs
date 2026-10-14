@@ -116,47 +116,42 @@ public class DiretorioTests : IDisposable
     }
 
     [Fact]
-    public async Task Diretorio_ContatosDoPerfilEDosQrCodesSemRepetir()
+    public async Task Diretorio_SoOsContatosDoPerfil_OsQrCodesDosAnunciosNaoEntram()
     {
         var loja = Anunciante("Loja", aceitou: true);
         loja.WhatsappPublico = "5592999990000";
         loja.InstagramPublico = "loja";
         loja.SitePublico = "https://loja.test/";
+        var outroWhatsApp = Midia(loja);
+        outroWhatsApp.DefinirQrCode(new QrCodeDaMidia(TipoQrCode.WhatsApp, "5592988880000", "Quero a promoção", null, null, null, null,
+            PosicaoQrCode.InferiorDireito, TamanhoQrCode.Medio, "https://wa.me/5592988880000?text=Quero%20a%20promo%C3%A7%C3%A3o"));
         var pix = Midia(loja);
         pix.DefinirQrCode(new QrCodeDaMidia(TipoQrCode.Pix, "+5592999990000", null, null, "Loja", "Manaus", null,
             PosicaoQrCode.InferiorDireito, TamanhoQrCode.Medio, "00020126...6304ABCD"));
-        var mesmoSite = Midia(loja);
-        mesmoSite.DefinirQrCode(new QrCodeDaMidia(TipoQrCode.Link, "https://loja.test/", null, null, null, null, null,
-            PosicaoQrCode.InferiorDireito, TamanhoQrCode.Medio, "https://loja.test/"));
-        await Grade(pix, mesmoSite);
+        await Grade(outroWhatsApp, pix);
 
         var contatos = (await Consultar()).Anunciantes.Single().Contatos;
 
         contatos.Should().Equal(
             new ContatoDiretorioDto(TipoQrCode.WhatsApp, "WhatsApp", "https://wa.me/5592999990000", "(92) 99999-0000"),
             new ContatoDiretorioDto(TipoQrCode.Instagram, "Instagram", "https://instagram.com/loja", "@loja"),
-            new ContatoDiretorioDto(TipoQrCode.Link, "Site", "https://loja.test/", "loja.test"),
-            new ContatoDiretorioDto(TipoQrCode.Pix, "Copiar Pix", "00020126...6304ABCD"));
+            new ContatoDiretorioDto(TipoQrCode.Link, "Site", "https://loja.test/", "loja.test"));
     }
 
     [Fact]
-    public async Task Diretorio_MesmoWhatsAppDoPerfilEDoAnuncioViraUmBotaoSo_ComAMensagem()
+    public async Task Diretorio_SemContatosNoPerfilAparecemSoONomeEACategoria()
     {
-        var academia = Anunciante("Academia", aceitou: true);
-        academia.WhatsappPublico = "5592999990000";
-        var promo = Midia(academia);
-        promo.DefinirQrCode(new QrCodeDaMidia(TipoQrCode.WhatsApp, "5592999990000", "Quero a promoção", null, null, null, null,
-            PosicaoQrCode.InferiorDireito, TamanhoQrCode.Medio, "https://wa.me/5592999990000?text=Quero%20a%20promo%C3%A7%C3%A3o"));
-        var outroNumero = Midia(academia);
-        outroNumero.DefinirQrCode(new QrCodeDaMidia(TipoQrCode.WhatsApp, "5592988880000", null, null, null, null, null,
-            PosicaoQrCode.InferiorDireito, TamanhoQrCode.Medio, "https://wa.me/5592988880000"));
-        await Grade(promo, outroNumero);
+        var loja = Anunciante("Loja", aceitou: true);
+        loja.Categoria = "Ótica";
+        var comQr = Midia(loja);
+        comQr.DefinirQrCode(new QrCodeDaMidia(TipoQrCode.Link, "https://loja.test/", null, null, null, null, null,
+            PosicaoQrCode.InferiorDireito, TamanhoQrCode.Medio, "https://loja.test/"));
+        await Grade(comQr);
 
-        var contatos = (await Consultar()).Anunciantes.Single().Contatos;
+        var cartao = (await Consultar()).Anunciantes.Single();
 
-        contatos.Select(c => (c.Valor, c.Detalhe)).Should().Equal(
-            ("https://wa.me/5592999990000?text=Quero%20a%20promo%C3%A7%C3%A3o", "(92) 99999-0000"),
-            ("https://wa.me/5592988880000", "(92) 98888-0000"));
+        cartao.Categoria.Should().Be("Ótica");
+        cartao.Contatos.Should().BeEmpty();
     }
 
     [Theory]

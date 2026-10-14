@@ -37,7 +37,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Plano | "Mídias ativas: x de y" na lista, com aviso de plano completo também na página de envio |
 | Substituir arquivo | Troca o vídeo/imagem de uma mídia sem tirá-la das grades nem mudar a situação; as TVs baixam o novo pelo hash. O arquivo antigo sai do storage |
 | QR code | Opcional, na aba "QR code" da edição. O formulário pede só o que o tipo precisa: **Link** (endereço), **WhatsApp** (telefone e mensagem inicial), **Instagram** (usuário), **Telefone** (número) ou **Pix** (chave, nome e cidade de quem recebe e valor opcional — vira um Pix copia e cola do Banco Central). Legenda, canto da tela e tamanho escolhidos pelo parceiro. "Ver QR code" mostra a prévia para testar com o celular |
-| Diretório das TVs | Cartão no topo de Mídias: **Aparecer no diretório** (aceite do dono, desligado por padrão) com categoria, descrição, WhatsApp, Instagram e site. Os QR codes dos anúncios em exibição também viram botões ("Copiar Pix" no Pix) |
+| Diretório das TVs | Cartão no topo de Mídias: **Aparecer no diretório** (aceite do dono, desligado por padrão) com categoria, descrição, WhatsApp, Instagram e site. A página mostra só esses contatos (os QR codes dos anúncios não entram) |
 | Pré-visualizar | Link temporário de 1 h |
 | Excluir | Só mídia fora das grades; o arquivo sai do storage |
 | Espaço usado | Barra com uso e cota do parceiro |

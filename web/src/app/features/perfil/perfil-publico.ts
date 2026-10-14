@@ -62,7 +62,7 @@ export function criarCamposPerfilPublico(): FormItemConfig[] {
     {
       type: 'checkbox', name: 'exibirNoDiretorioPublico', label: 'Aparecer no diretório das TVs', col: 'col-12', value: false,
       placeholder: 'Aceito que meu nome e os contatos abaixo apareçam na página pública das TVs onde meus anúncios passam',
-      hint: 'Quem lê o QR code da TV vê a lista de anunciantes com estes contatos. Desmarque quando quiser sair; vale em até 1 minuto.',
+      hint: 'Quem lê o QR code da TV vê a lista de anunciantes com estes contatos (só estes; os QR codes dos anúncios não entram). Desmarque quando quiser sair; vale em até 1 minuto.',
     },
     { type: 'texto', name: 'categoria', label: 'Categoria', col: 'col-md-6', placeholder: 'Ex.: Padaria, Academia, Ótica' },
     {
