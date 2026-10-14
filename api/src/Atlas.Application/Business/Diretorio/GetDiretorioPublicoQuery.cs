@@ -45,7 +45,8 @@ public sealed record AnuncianteDiretorioDto
 /// <param name="Tipo">Define o botão: WhatsApp, Instagram, Link (site), Telefone ou Pix.</param>
 /// <param name="Rotulo">Texto do botão.</param>
 /// <param name="Valor">Endereço (<c>https:</c> ou <c>tel:</c>); no Pix, o copia e cola.</param>
-public sealed record ContatoDiretorioDto(TipoQrCode Tipo, string Rotulo, string Valor);
+/// <param name="Detalhe">Para onde vai, legível: "(92) 99999-0000", "@usuario", "site.com.br".</param>
+public sealed record ContatoDiretorioDto(TipoQrCode Tipo, string Rotulo, string Valor, string? Detalhe = null);
 
 public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext context, TimeProvider timeProvider)
     : IRequestHandler<GetDiretorioPublicoQuery, DiretorioPublicoDto>
@@ -138,7 +139,7 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
                     Categoria = p.Categoria,
                     Descricao = p.DescricaoPublica,
                     Anfitriao = p.Id == tela.ParceiroId,
-                    Contatos = contatos.DistinctBy(c => c.Valor).Take(MaximoContatos).ToList(),
+                    Contatos = SemRepetir(contatos).Take(MaximoContatos).ToList(),
                 };
             })
             .OrderByDescending(c => c.Anfitriao)
@@ -151,6 +152,73 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
             Anunciantes = cartoes,
             GeradoEm = agora,
         };
+    }
+
+    /// <summary>
+    /// Um botão por destino: o WhatsApp do perfil e o do QR de um anúncio
+    /// (o mesmo número, com mensagem pronta) viram um só — fica o com mensagem,
+    /// na posição do primeiro. Cada contato ganha o detalhe legível.
+    /// </summary>
+    public static List<ContatoDiretorioDto> SemRepetir(IEnumerable<ContatoDiretorioDto> contatos)
+    {
+        var resultado = new List<ContatoDiretorioDto>();
+        var posicoes = new Dictionary<string, int>();
+
+        foreach (var contato in contatos)
+        {
+            var (chave, detalhe) = Destino(contato);
+            var comDetalhe = contato with { Detalhe = detalhe };
+
+            if (!posicoes.TryGetValue(chave, out var i))
+            {
+                posicoes[chave] = resultado.Count;
+                resultado.Add(comDetalhe);
+            }
+            else if (contato.Valor.Contains("?text=", StringComparison.Ordinal) && !resultado[i].Valor.Contains("?text=", StringComparison.Ordinal))
+            {
+                resultado[i] = comDetalhe;
+            }
+        }
+
+        return resultado;
+    }
+
+    /// <summary>A identidade do destino (para não repetir) e o texto legível dele.</summary>
+    private static (string Chave, string? Detalhe) Destino(ContatoDiretorioDto contato)
+    {
+        var uri = Uri.TryCreate(contato.Valor, UriKind.Absolute, out var u) ? u : null;
+
+        switch (contato.Tipo)
+        {
+            case TipoQrCode.WhatsApp when uri is not null:
+                var numero = uri.AbsolutePath.Trim('/');
+                return ($"whatsapp:{numero}", TelefoneLegivel(numero));
+            case TipoQrCode.Telefone:
+                var digitos = new string(contato.Valor.Where(char.IsAsciiDigit).ToArray());
+                return ($"telefone:{digitos}", TelefoneLegivel(digitos));
+            case TipoQrCode.Instagram when uri is not null:
+                var usuario = uri.AbsolutePath.Trim('/');
+                return ($"instagram:{usuario.ToLowerInvariant()}", "@" + usuario);
+            case TipoQrCode.Link when uri is not null:
+                var host = uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? uri.Host[4..] : uri.Host;
+                var caminho = uri.AbsolutePath.TrimEnd('/');
+                return ($"link:{host.ToLowerInvariant()}{caminho}{uri.Query}", host + (caminho.Length > 0 ? caminho : string.Empty));
+            default:
+                return ($"{contato.Tipo}:{contato.Valor}", null);
+        }
+    }
+
+    /// <summary>"5592999990000" → "(92) 99999-0000"; outro formato volta como veio.</summary>
+    public static string TelefoneLegivel(string digitos)
+    {
+        // Os números ficam gravados com o país (55 + DDD + número).
+        if (!digitos.StartsWith("55", StringComparison.Ordinal) || digitos.Length is not (12 or 13))
+        {
+            return "+" + digitos;
+        }
+
+        var local = digitos[2..];
+        return $"({local[..2]}) {local[2..^4]}-{local[^4..]}";
     }
 
     public static string Rotulo(TipoQrCode tipo) => tipo switch

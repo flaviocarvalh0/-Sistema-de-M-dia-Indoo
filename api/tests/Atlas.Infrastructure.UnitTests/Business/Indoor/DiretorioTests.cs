@@ -133,11 +133,38 @@ public class DiretorioTests : IDisposable
         var contatos = (await Consultar()).Anunciantes.Single().Contatos;
 
         contatos.Should().Equal(
-            new ContatoDiretorioDto(TipoQrCode.WhatsApp, "WhatsApp", "https://wa.me/5592999990000"),
-            new ContatoDiretorioDto(TipoQrCode.Instagram, "Instagram", "https://instagram.com/loja"),
-            new ContatoDiretorioDto(TipoQrCode.Link, "Site", "https://loja.test/"),
+            new ContatoDiretorioDto(TipoQrCode.WhatsApp, "WhatsApp", "https://wa.me/5592999990000", "(92) 99999-0000"),
+            new ContatoDiretorioDto(TipoQrCode.Instagram, "Instagram", "https://instagram.com/loja", "@loja"),
+            new ContatoDiretorioDto(TipoQrCode.Link, "Site", "https://loja.test/", "loja.test"),
             new ContatoDiretorioDto(TipoQrCode.Pix, "Copiar Pix", "00020126...6304ABCD"));
     }
+
+    [Fact]
+    public async Task Diretorio_MesmoWhatsAppDoPerfilEDoAnuncioViraUmBotaoSo_ComAMensagem()
+    {
+        var academia = Anunciante("Academia", aceitou: true);
+        academia.WhatsappPublico = "5592999990000";
+        var promo = Midia(academia);
+        promo.DefinirQrCode(new QrCodeDaMidia(TipoQrCode.WhatsApp, "5592999990000", "Quero a promoção", null, null, null, null,
+            PosicaoQrCode.InferiorDireito, TamanhoQrCode.Medio, "https://wa.me/5592999990000?text=Quero%20a%20promo%C3%A7%C3%A3o"));
+        var outroNumero = Midia(academia);
+        outroNumero.DefinirQrCode(new QrCodeDaMidia(TipoQrCode.WhatsApp, "5592988880000", null, null, null, null, null,
+            PosicaoQrCode.InferiorDireito, TamanhoQrCode.Medio, "https://wa.me/5592988880000"));
+        await Grade(promo, outroNumero);
+
+        var contatos = (await Consultar()).Anunciantes.Single().Contatos;
+
+        contatos.Select(c => (c.Valor, c.Detalhe)).Should().Equal(
+            ("https://wa.me/5592999990000?text=Quero%20a%20promo%C3%A7%C3%A3o", "(92) 99999-0000"),
+            ("https://wa.me/5592988880000", "(92) 98888-0000"));
+    }
+
+    [Theory]
+    [InlineData("5592999990000", "(92) 99999-0000")]
+    [InlineData("559233330000", "(92) 3333-0000")]
+    [InlineData("14155550100", "+14155550100")]
+    public void Diretorio_TelefoneLegivel(string digitos, string esperado) =>
+        GetDiretorioPublicoQueryHandler.TelefoneLegivel(digitos).Should().Be(esperado);
 
     // ---------- 404 ----------
 
@@ -307,6 +334,26 @@ public class DiretorioTests : IDisposable
         html.Should().Contain("<style nonce=\"n0nce\">").And.Contain("<script nonce=\"n0nce\">");
         html.Should().Contain("noindex");
         PaginaDiretorio.Politica("n0nce").Should().Contain("script-src 'nonce-n0nce'").And.Contain("frame-ancestors 'none'");
+    }
+
+    [Fact]
+    public void Pagina_MostraODetalheEEscondeDescricaoIgualACategoria()
+    {
+        var html = PaginaDiretorio.Renderizar(new DiretorioPublicoDto
+        {
+            Anunciantes =
+            [
+                new AnuncianteDiretorioDto
+                {
+                    Nome = "Academia Shape", Categoria = "Academia", Descricao = "academia",
+                    Contatos = [new(TipoQrCode.WhatsApp, "WhatsApp", "https://wa.me/5592999990000", "(92) 99999-0000")],
+                },
+            ],
+        }, "n");
+
+        html.Should().Contain("<span class=\"detalhe\">(92) 99999-0000</span>");
+        html.Should().NotContain("class=\"descricao\"");
+        html.Should().Contain("Fale direto com o anunciante");
     }
 
     [Fact]
