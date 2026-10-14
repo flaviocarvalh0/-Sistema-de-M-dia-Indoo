@@ -63,6 +63,7 @@ class ItemGrade implements ArquivoRemoto {
     required this.duracaoSegundos,
     required this.diasSemana,
     this.posicaoFixa = false,
+    this.qrCode,
     this.url,
     this.inicioExibicao,
     this.fimExibicao,
@@ -79,6 +80,7 @@ class ItemGrade implements ArquivoRemoto {
         duracaoSegundos: (json['duracaoSegundos'] as num).toInt(),
         diasSemana: (json['diasSemana'] as num).toInt(),
         posicaoFixa: json['posicaoFixa'] as bool? ?? false,
+        qrCode: json['qrCode'] is Map<String, dynamic> ? QrCodeAnuncio.fromJson(json['qrCode'] as Map<String, dynamic>) : null,
         inicioExibicao: _data(json['inicioExibicao']),
         fimExibicao: _data(json['fimExibicao']),
       );
@@ -104,6 +106,9 @@ class ItemGrade implements ArquivoRemoto {
   /// Fica nesta posição quando a composição embaralha os anúncios.
   final bool posicaoFixa;
 
+  /// QR code por cima da mídia; nulo = sem QR code.
+  final QrCodeAnuncio? qrCode;
+
   /// Datas (sem hora) do período de exibição, em UTC à meia-noite.
   final DateTime? inicioExibicao;
   final DateTime? fimExibicao;
@@ -122,6 +127,43 @@ class ItemGrade implements ArquivoRemoto {
     if (valor is! String || valor.isEmpty) return null;
     final p = valor.split('-').map(int.parse).toList();
     return DateTime.utc(p[0], p[1], p[2]);
+  }
+}
+
+enum PosicaoQrCode { inferiorDireito, inferiorEsquerdo, superiorDireito, superiorEsquerdo }
+
+enum TamanhoQrCode { pequeno, medio, grande }
+
+/// QR code do anúncio: o conteúdo (link, tel: ou Pix copia e cola), a
+/// legenda e onde aparece. A TV gera a imagem do QR na hora, offline.
+class QrCodeAnuncio {
+  const QrCodeAnuncio({
+    required this.conteudo,
+    required this.legenda,
+    this.posicao = PosicaoQrCode.inferiorDireito,
+    this.tamanho = TamanhoQrCode.medio,
+  });
+
+  factory QrCodeAnuncio.fromJson(Map<String, dynamic> json) => QrCodeAnuncio(
+        conteudo: json['conteudo'] as String,
+        legenda: json['legenda'] as String? ?? '',
+        posicao: _enum(PosicaoQrCode.values, json['posicao']) ?? PosicaoQrCode.inferiorDireito,
+        tamanho: _enum(TamanhoQrCode.values, json['tamanho']) ?? TamanhoQrCode.medio,
+      );
+
+  final String conteudo;
+  final String legenda;
+  final PosicaoQrCode posicao;
+  final TamanhoQrCode tamanho;
+
+  /// A API manda o nome com inicial maiúscula (`InferiorDireito`).
+  static T? _enum<T extends Enum>(List<T> valores, Object? nome) {
+    if (nome is! String || nome.isEmpty) return null;
+    final procurado = nome[0].toLowerCase() + nome.substring(1);
+    for (final v in valores) {
+      if (v.name == procurado) return v;
+    }
+    return null;
   }
 }
 

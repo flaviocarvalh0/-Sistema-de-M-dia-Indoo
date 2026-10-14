@@ -26,6 +26,20 @@ public sealed record MidiaDto : IDtoAuditavel
     public DateOnly? FimExibicao { get; init; }
     public bool Ativo { get; init; }
 
+    /// <summary>QR code exibido por cima da mídia (nulo = sem QR code) e o que foi informado em cada campo.</summary>
+    public TipoQrCode? QrTipo { get; init; }
+    public string? QrDestino { get; init; }
+    public string? QrMensagem { get; init; }
+    public decimal? QrValor { get; init; }
+    public string? QrNomeRecebedor { get; init; }
+    public string? QrCidadeRecebedor { get; init; }
+    public string? QrLegenda { get; init; }
+    public PosicaoQrCode? QrPosicao { get; init; }
+    public TamanhoQrCode? QrTamanho { get; init; }
+
+    /// <summary>O texto codificado (link, tel: ou Pix copia e cola), para a prévia no painel.</summary>
+    public string? QrConteudo { get; init; }
+
     /// <summary>Em quantas playlists a mídia aparece (mídia em uso não pode ser excluída).</summary>
     public int QuantidadePlaylists { get; init; }
 
@@ -79,6 +93,16 @@ public static class MidiaProjecao
             InicioExibicao = m.InicioExibicao,
             FimExibicao = m.FimExibicao,
             Ativo = m.Ativo,
+            QrTipo = m.QrTipo,
+            QrDestino = m.QrDestino,
+            QrMensagem = m.QrMensagem,
+            QrValor = m.QrValor,
+            QrNomeRecebedor = m.QrNomeRecebedor,
+            QrCidadeRecebedor = m.QrCidadeRecebedor,
+            QrLegenda = m.QrLegenda,
+            QrPosicao = m.QrPosicao,
+            QrTamanho = m.QrTamanho,
+            QrConteudo = m.QrConteudo,
             QuantidadePlaylists = context.ItensPlaylist.Where(i => i.MidiaId == m.Id).Select(i => i.PlaylistId).Distinct().Count(),
             Created = m.Created,
             CreatedBy = m.CreatedBy,

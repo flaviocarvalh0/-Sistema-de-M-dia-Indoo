@@ -19,7 +19,7 @@ class BancoLocal {
     final db = await (fabrica ?? databaseFactory).openDatabase(
       caminho,
       options: OpenDatabaseOptions(
-        version: 2,
+        version: 3,
         onCreate: (db, _) async {
           await db.execute('CREATE TABLE estado (chave TEXT PRIMARY KEY, valor TEXT)');
           await db.execute('''
@@ -37,6 +37,7 @@ class BancoLocal {
               posicao_fixa INTEGER NOT NULL DEFAULT 0
             )''');
           await _criarNoticias(db);
+          await _criarQrCode(db);
         },
         // v2 (Entrega 4): posição fixa, notícias, composição e clima.
         onUpgrade: (db, de, para) async {
@@ -44,6 +45,8 @@ class BancoLocal {
             await db.execute('ALTER TABLE item_grade ADD COLUMN posicao_fixa INTEGER NOT NULL DEFAULT 0');
             await _criarNoticias(db);
           }
+          // v3: QR code por cima da mídia.
+          if (de < 3) await _criarQrCode(db);
         },
       ),
     );
@@ -61,6 +64,12 @@ class BancoLocal {
           tamanho_bytes INTEGER,
           tipo_conteudo TEXT
         )''');
+
+  static Future<void> _criarQrCode(DatabaseExecutor db) async {
+    for (final coluna in ['qr_conteudo TEXT', 'qr_legenda TEXT', 'qr_posicao TEXT', 'qr_tamanho TEXT']) {
+      await db.execute('ALTER TABLE item_grade ADD COLUMN $coluna');
+    }
+  }
 
   Future<void> fechar() => _db.close();
 
@@ -211,6 +220,10 @@ class BancoLocal {
         'duracao_segundos': i.duracaoSegundos,
         'dias_semana': i.diasSemana,
         'posicao_fixa': i.posicaoFixa ? 1 : 0,
+        'qr_conteudo': i.qrCode?.conteudo,
+        'qr_legenda': i.qrCode?.legenda,
+        'qr_posicao': i.qrCode?.posicao.name,
+        'qr_tamanho': i.qrCode?.tamanho.name,
         'inicio_exibicao': _data(i.inicioExibicao),
         'fim_exibicao': _data(i.fimExibicao),
       };
@@ -225,6 +238,14 @@ class BancoLocal {
         duracaoSegundos: l['duracao_segundos'] as int,
         diasSemana: l['dias_semana'] as int,
         posicaoFixa: (l['posicao_fixa'] as int? ?? 0) == 1,
+        qrCode: l['qr_conteudo'] is String
+            ? QrCodeAnuncio(
+                conteudo: l['qr_conteudo'] as String,
+                legenda: l['qr_legenda'] as String? ?? '',
+                posicao: PosicaoQrCode.values.asNameMap()[l['qr_posicao']] ?? PosicaoQrCode.inferiorDireito,
+                tamanho: TamanhoQrCode.values.asNameMap()[l['qr_tamanho']] ?? TamanhoQrCode.medio,
+              )
+            : null,
         inicioExibicao: _lerData(l['inicio_exibicao']),
         fimExibicao: _lerData(l['fim_exibicao']),
       );

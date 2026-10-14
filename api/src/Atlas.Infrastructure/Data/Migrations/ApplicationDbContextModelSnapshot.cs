@@ -466,6 +466,53 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("parceiro_id");
 
+                    b.Property<string>("QrCidadeRecebedor")
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("qr_cidade_recebedor");
+
+                    b.Property<string>("QrConteudo")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("qr_conteudo");
+
+                    b.Property<string>("QrDestino")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("qr_destino");
+
+                    b.Property<string>("QrLegenda")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("qr_legenda");
+
+                    b.Property<string>("QrMensagem")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("qr_mensagem");
+
+                    b.Property<string>("QrNomeRecebedor")
+                        .HasMaxLength(25)
+                        .HasColumnType("character varying(25)")
+                        .HasColumnName("qr_nome_recebedor");
+
+                    b.Property<int?>("QrPosicao")
+                        .HasColumnType("integer")
+                        .HasColumnName("qr_posicao");
+
+                    b.Property<int?>("QrTamanho")
+                        .HasColumnType("integer")
+                        .HasColumnName("qr_tamanho");
+
+                    b.Property<int?>("QrTipo")
+                        .HasColumnType("integer")
+                        .HasColumnName("qr_tipo");
+
+                    b.Property<decimal?>("QrValor")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("qr_valor");
+
                     b.Property<long>("TamanhoBytes")
                         .HasColumnType("bigint")
                         .HasColumnName("tamanho_bytes");
@@ -509,6 +556,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("ck_midia_hash", "hash ~ '^[0-9a-f]{64}$'");
 
                             t.HasCheckConstraint("ck_midia_periodo", "inicio_exibicao IS NULL OR fim_exibicao IS NULL OR fim_exibicao >= inicio_exibicao");
+
+                            t.HasCheckConstraint("ck_midia_qr_code_completo", "(qr_tipo IS NULL) = (qr_conteudo IS NULL) AND (qr_tipo IS NULL) = (qr_destino IS NULL) AND (qr_tipo IS NULL) = (qr_posicao IS NULL) AND (qr_tipo IS NULL) = (qr_tamanho IS NULL)");
+
+                            t.HasCheckConstraint("ck_midia_qr_valor", "qr_valor IS NULL OR qr_valor > 0");
 
                             t.HasCheckConstraint("ck_midia_tamanho", "tamanho_bytes BETWEEN 1 AND 52428800");
                         });

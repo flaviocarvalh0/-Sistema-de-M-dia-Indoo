@@ -80,6 +80,15 @@ O arquivo não passa pela API:
 O SHA-256 usa `crypto.subtle`, que só existe em página segura (HTTPS ou
 `localhost`). Fora disso o painel envia sem o hash e a API calcula sozinha.
 
+## QR code das mídias
+
+Na edição da mídia, a aba **QR code** mostra só os campos do tipo escolhido
+(`criarCamposQrCode` em `features/midias/configs/midia.config.ts`, com
+`hidden`). O serviço manda o campo do tipo como `qrDestino` e zera os outros
+(`corpoQrCode`); a API valida e monta o conteúdo (link, `wa.me`, `tel:` ou
+Pix copia e cola). A prévia da lista usa o `angularx-qrcode` com o mesmo
+conteúdo que vai para a TV.
+
 ## Publicar
 
 `npm run publicar` gera o build e publica no IIS — ver o cabeçalho de

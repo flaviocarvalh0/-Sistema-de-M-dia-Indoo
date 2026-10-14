@@ -258,3 +258,16 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   automática, roteiro no navegador, testes do player (fila, loop com
   notícias, sincronização, telas) e o player contra a API de verdade.
 
+
+### QR code nos anúncios ✅
+
+- [x] QR code opcional por mídia ([ADR-017](../api/docs/decisions/ADR-017-QR-Code-nos-Anuncios.md)):
+  Link, WhatsApp, Instagram, Telefone e Pix (copia e cola do Banco Central),
+  com legenda, canto e tamanho; o formulário pede só os campos do tipo.
+- [x] Conteúdo montado e validado na API; vai no item da sincronização
+  (`qrCode`, regra 14 do contrato) e muda a `versaoGrade`.
+- [x] Painel: aba "QR code" na edição, coluna na lista e prévia ("Ver QR code").
+- [x] Player: QR gerado na TV por cima da mídia (`qr_flutter`), banco local v3.
+- [x] Testes: montagem e validação de cada tipo (Pix conferido com o exemplo
+  do manual do Banco Central), restrições no Postgres, sincronização, banco
+  local e tela do player em vários tamanhos, roteiro no navegador.

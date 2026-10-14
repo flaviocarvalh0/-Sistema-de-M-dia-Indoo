@@ -68,6 +68,12 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
       "duracaoSegundos": 10,
       "diasSemana": 127,
       "posicaoFixa": false,
+      "qrCode": {
+        "conteudo": "https://wa.me/5592999990000?text=Quero%20o%20caf%C3%A9",
+        "legenda": "Fale no WhatsApp",
+        "posicao": "InferiorDireito",
+        "tamanho": "Medio"
+      },
       "inicioExibicao": null,
       "fimExibicao": null,
       "exibirHoje": true
@@ -130,6 +136,11 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
   leitura recente (6 h). `dias` traz hoje e os próximos dias.
 - `cotacoes` vem em toda resposta quando a playlist usa o cartão de cotações
   (nulo quando não usa): dólar e euro, só com cotação dos últimos 4 dias.
+- `qrCode` do item é nulo quando a mídia não tem QR code. `conteudo` é o
+  texto a codificar, já pronto (link, `tel:` ou Pix copia e cola);
+  `posicao` é `InferiorDireito`, `InferiorEsquerdo`, `SuperiorDireito` ou
+  `SuperiorEsquerdo`; `tamanho` é `Pequeno`, `Medio` ou `Grande`. Mudar o
+  QR code muda a `versaoGrade`.
 - `noticias` vem só quando a `versaoNoticias` mudou: vazia quando a playlist
   não intercala notícias. Notícia sem foto vem com `url`, `hash`,
   `tamanhoBytes` e `tipoConteudo` nulos.
@@ -199,3 +210,9 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
     variação do dia). Guardar o último recebido e mostrar enquanto valer
     (clima 6 h; cotação 4 dias), sempre com o `credito`. Sem dado válido, o
     cartão sai do rodízio.
+14. **QR code do anúncio:** com `qrCode`, a TV gera o QR (offline) e o
+    desenha por cima da mídia, no canto pedido, num cartão branco com a
+    legenda embaixo. Lado do QR: 22%, 30% ou 40% da menor dimensão da tela
+    (pequeno, médio, grande), com margem branca e correção de erro M. O
+    relógio vai para o outro canto de cima se o QR ocupar o dele. Notícias e
+    cartões não têm QR.

@@ -13,6 +13,7 @@ import '../sincronizacao/sincronizador.dart';
 import 'cartoes_view.dart';
 import 'noticia_view.dart';
 import 'painel_info.dart';
+import 'qr_code_sobreposto.dart';
 import 'pareamento_page.dart';
 import 'sobreposicao_relogio_clima.dart';
 
@@ -186,8 +187,14 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                 duration: const Duration(milliseconds: 400),
                 child: KeyedSubtree(key: ValueKey(_loop.geracao), child: _conteudo(situacao)),
               ),
+              // QR code do anúncio na tela (só durante o anúncio, não nas notícias).
+              if (_loop.atual?.qrCode case final qr?) QrCodeSobreposto(key: ValueKey('qr-${_loop.geracao}'), qrCode: qr),
               if (situacao != null)
                 SobreposicaoRelogioClima(
+                  // O QR code no canto superior direito empurra o relógio para a esquerda.
+                  alinhamento: _loop.atual?.qrCode?.posicao == PosicaoQrCode.superiorDireito
+                      ? Alignment.topLeft
+                      : Alignment.topRight,
                   fusoHorario: situacao.fusoHorario,
                   exibirRelogio: situacao.composicao.exibirRelogio,
                   clima: situacao.composicao.exibirClima ? situacao.clima : null,

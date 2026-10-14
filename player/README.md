@@ -83,7 +83,7 @@ lib/
   dados/
     api_dispositivo.dart          POST /autenticar e GET /sincronizacao (dio), erros tipados
     modelos.dart                  Pareamento, RespostaSincronizacao, ItemGrade, Composicao, Noticia, Clima
-    banco_local.dart              grade, notícias, composição, clima e estado (sqflite, versão 2)
+    banco_local.dart              grade (com o QR code), notícias, composição, clima e estado (sqflite, versão 3)
     credenciais.dart              token, id do aparelho e servidor (flutter_secure_storage)
   sincronizacao/
     baixador_midia.dart           .part → SHA-256 em blocos → renomeia; 3 tentativas (mídias e imagens das notícias)
@@ -98,6 +98,7 @@ lib/
     noticia_view.dart             notícia em tela cheia: foto, título animado e crédito
     sobreposicao_relogio_clima.dart   relógio (fuso do estabelecimento) e clima no canto
     cartoes_view.dart             cartões "Previsão do tempo" e "Cotações" (dólar e euro)
+    qr_code_sobreposto.dart       QR code do anúncio por cima da mídia (qr_flutter, gerado na TV)
     painel_info.dart              painel de informações (botão OK do controle)
 ```
 

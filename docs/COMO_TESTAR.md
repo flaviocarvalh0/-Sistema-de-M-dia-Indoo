@@ -193,6 +193,13 @@ da API).
     até 1 minuto a fila passa a intercalar notícias, com a hora e a
     temperatura no canto (o clima precisa da cidade preenchida no cadastro do
     estabelecimento).
+13. **QR code:** como dono, edite uma mídia e abra a aba **QR code**. Escolha
+    **WhatsApp**, informe o telefone com DDD e uma mensagem e salve. A coluna
+    **QR code** mostra o tipo; o ícone de QR da linha (**Ver QR code**) abre a
+    prévia — aponte a câmera do celular para conferir. Teste também o
+    **Pix** (chave, nome e cidade; valor opcional): uma chave inválida ou um
+    campo faltando mostra o erro sem salvar. Na TV, o QR aparece por cima do
+    anúncio no canto e no tamanho escolhidos.
 
 ## 8. App das TVs (`player/`)
 
@@ -216,6 +223,9 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
    painel: a TV continua tocando e mostra "TV não pareada · pressione OK".
 5. Botão **OK** do controle (Enter no teclado do emulador) mostra o painel de
    informações da TV.
+6. Cadastre um QR code numa mídia (passo 7, item 13): na próxima
+   sincronização a TV mostra o QR por cima do anúncio. Leia com o celular a
+   uns 2 m da tela; se não ler, use o tamanho **Grande**.
 
 TV de verdade na rede: veja `player/README.md` (API ouvindo em `*` — não em `0.0.0.0`, que deixa o painel lento —,
 endereço `https://<IP do PC>:7216`).

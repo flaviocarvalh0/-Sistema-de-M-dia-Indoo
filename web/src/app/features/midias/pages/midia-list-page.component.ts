@@ -1,12 +1,13 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { QRCodeComponent } from 'angularx-qrcode';
 import {
   AcaoLinha, AtlasAuthService, ConfirmModalService, EventoFiltro, EventoPaginacao, FormItemConfig,
   FormModalService, ListagemDinamicaComponent, QueryParams, ToastService,
 } from '@atlas/framework';
 import { MidiaService } from '../services/midia.service';
 import { LinhaMidia, MidiaDto, TipoMidia, UsoArmazenamento } from '../models/midia.model';
-import { MIDIA_COLUNAS, criarCamposMidia } from '../configs/midia.config';
+import { MIDIA_COLUNAS, TIPO_QR_ROTULO, camposQrDaMidia, criarCamposMidia, criarCamposQrCode } from '../configs/midia.config';
 import { preencherCampos } from '../../../shared/utils/form.util';
 import { formatarBytes } from '../../../shared/models/indoor.util';
 
@@ -16,13 +17,14 @@ const ENTIDADE = 'midia';
 /**
  * Biblioteca de vídeos e imagens do parceiro. O envio e a troca de arquivo
  * têm página própria (`/indoor/midia/enviar`); aqui se edita título, duração
- * e período, ativa/inativa (dentro do limite do plano) e exclui (só mídia
- * fora de playlists). As grades são montadas pela operadora.
+ * e período, o QR code exibido por cima da mídia, ativa/inativa (dentro do
+ * limite do plano) e exclui (só mídia fora de playlists). As grades são
+ * montadas pela operadora.
  */
 @Component({
   selector: 'app-midia-list-page',
   standalone: true,
-  imports: [ListagemDinamicaComponent],
+  imports: [ListagemDinamicaComponent, QRCodeComponent],
   template: `
     @if (uso(); as u) {
       <div class="card mb-3">
@@ -92,6 +94,31 @@ const ENTIDADE = 'midia';
       (onPaginationChange)="onPaginacao($event)"
       (onFilterChange)="onFiltro($event)">
     </atlas-listagem-dinamica>
+
+    @if (qrAberto(); as m) {
+      <div class="card mt-3" data-teste="previa-qr" style="max-width: 760px">
+        <div class="card-header d-flex align-items-center gap-2">
+          <strong class="me-auto">QR code de {{ m.titulo }}</strong>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="qrAberto.set(null)" aria-label="Fechar">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="card-body d-flex flex-wrap gap-4 align-items-center">
+          <div class="text-center">
+            <qrcode [qrdata]="m.qrConteudo!" [width]="220" [margin]="2" errorCorrectionLevel="M" />
+            <div class="small fw-semibold mt-1">{{ m.qrLegenda || legendaPadrao(m) }}</div>
+          </div>
+          <div class="small flex-grow-1" style="min-width: 240px">
+            <div><span class="text-muted">Tipo:</span> {{ rotuloQr(m) }}</div>
+            <div class="text-break"><span class="text-muted">Abre:</span> {{ m.qrConteudo }}</div>
+            <div class="mt-2 text-muted">
+              Aponte a câmera do celular para conferir antes de ir para as TVs. Na TV ele aparece no
+              {{ posicaoTexto(m) }}, por cima da mídia.
+            </div>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class MidiaListPageComponent implements OnInit {
@@ -125,6 +152,23 @@ export class MidiaListPageComponent implements OnInit {
   tipo = signal<TipoMidia | null>(null);
   ativo = signal<boolean | null>(null);
   uso = signal<UsoArmazenamento | null>(null);
+  /** Mídia com a prévia do QR code aberta. */
+  qrAberto = signal<LinhaMidia | null>(null);
+
+  rotuloQr(m: MidiaDto): string {
+    return m.qrTipo ? TIPO_QR_ROTULO[m.qrTipo] : '';
+  }
+
+  /** Igual a MontadorQrCode.LegendaPadrao na API. */
+  legendaPadrao(m: MidiaDto): string {
+    return ({ WhatsApp: 'Fale no WhatsApp', Instagram: 'Siga no Instagram', Telefone: 'Ligue para nós', Pix: 'Pague com Pix' } as Record<string, string>)[m.qrTipo ?? ''] ?? 'Aponte a câmera';
+  }
+
+  posicaoTexto(m: MidiaDto): string {
+    return ({
+      InferiorEsquerdo: 'canto inferior esquerdo', SuperiorDireito: 'canto superior direito', SuperiorEsquerdo: 'canto superior esquerdo',
+    } as Record<string, string>)[m.qrPosicao ?? ''] ?? 'canto inferior direito';
+  }
 
   percentualUso = computed(() => {
     const u = this.uso();
@@ -139,6 +183,7 @@ export class MidiaListPageComponent implements OnInit {
 
   acoesLinha: AcaoLinha[] = [
     { id: 'visualizar', label: 'Pré-visualizar', icone: 'bi bi-play-circle', classe: 'btn-outline-secondary' },
+    { id: 'qr', label: 'Ver QR code', icone: 'bi bi-qr-code', classe: 'btn-outline-secondary', visivel: (m: LinhaMidia) => !!m.qrTipo },
     {
       id: 'substituir', label: 'Substituir arquivo', icone: 'bi bi-arrow-repeat', classe: 'btn-outline-primary',
       visivel: () => this.podeAtualizar(),
@@ -162,6 +207,8 @@ export class MidiaListPageComponent implements OnInit {
     this.service.listar(this.query, { tipo: this.tipo(), ativo: this.ativo() }).subscribe({
       next: page => {
         this.itens.set(page.content);
+        const qr = this.qrAberto();
+        if (qr) this.qrAberto.set(page.content.find(m => m.id === qr.id && m.qrTipo) ?? null);
         this.total.set(page.totalElements);
         this.carregando.set(false);
       },
@@ -193,6 +240,7 @@ export class MidiaListPageComponent implements OnInit {
     this.service.getById(item.id).subscribe(midia => {
       const campos: FormItemConfig[] = [
         { type: 'section', label: 'Mídia', children: preencherCampos(criarCamposMidia(midia.tipo === 'Video'), midia) },
+        { type: 'section', label: 'QR code', children: preencherCampos(criarCamposQrCode(), camposQrDaMidia(midia)) },
         {
           type: 'section', label: 'Histórico', children: [
             { type: 'history', name: 'historico', label: '', col: 'col-12', entityName: ENTIDADE },
@@ -219,6 +267,7 @@ export class MidiaListPageComponent implements OnInit {
 
   onAcaoLinha(ev: { acaoId: string; item: LinhaMidia }): void {
     if (ev.acaoId === 'visualizar') this.visualizar(ev.item);
+    if (ev.acaoId === 'qr') this.qrAberto.set(ev.item);
     if (ev.acaoId === 'substituir') this.router.navigate(['/indoor/midia/enviar'], { queryParams: { substituir: ev.item.id } });
     if (ev.acaoId === 'ativar') this.definirAtivo(ev.item, true);
     if (ev.acaoId === 'inativar') this.definirAtivo(ev.item, false);

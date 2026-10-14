@@ -31,6 +31,7 @@ Cada ADR registra uma decisão arquitetural relevante, seu contexto, as alternat
 | [ADR-014](ADR-014-Posse-das-Telas-pela-Operadora.md) | Posse das Telas pela Operadora | Aceito (em parte substituído pelo 015) |
 | [ADR-015](ADR-015-Playlists-da-Operadora-e-Plano-do-Anunciante.md) | Playlists da Operadora e Plano do Anunciante | Aceito |
 | [ADR-016](ADR-016-Composicao-da-Fila-na-TV-Noticias-e-Clima.md) | Composição da Fila na TV, Notícias e Clima | Aceito |
+| [ADR-017](ADR-017-QR-Code-nos-Anuncios.md) | QR Code nos Anúncios | Aceito |
 ## Como criar um ADR
 
 1. Copie o arquivo [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md).

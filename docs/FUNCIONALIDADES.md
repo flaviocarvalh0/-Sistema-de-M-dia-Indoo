@@ -36,6 +36,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Ativar / inativar | Inativa sai do loop das TVs, mas continua nas grades. Mídia nova nasce ativa se o plano tiver vaga e inativa se estiver completo; ativar além do plano é recusado com a explicação |
 | Plano | "Mídias ativas: x de y" na lista, com aviso de plano completo também na página de envio |
 | Substituir arquivo | Troca o vídeo/imagem de uma mídia sem tirá-la das grades nem mudar a situação; as TVs baixam o novo pelo hash. O arquivo antigo sai do storage |
+| QR code | Opcional, na aba "QR code" da edição. O formulário pede só o que o tipo precisa: **Link** (endereço), **WhatsApp** (telefone e mensagem inicial), **Instagram** (usuário), **Telefone** (número) ou **Pix** (chave, nome e cidade de quem recebe e valor opcional — vira um Pix copia e cola do Banco Central). Legenda, canto da tela e tamanho escolhidos pelo parceiro. "Ver QR code" mostra a prévia para testar com o celular |
 | Pré-visualizar | Link temporário de 1 h |
 | Excluir | Só mídia fora das grades; o arquivo sai do storage |
 | Espaço usado | Barra com uso e cota do parceiro |
@@ -108,6 +109,7 @@ escolhe a playlist.
 | Notícias | Foto em tela cheia, título animado e crédito da fonte; sem foto, fundo da marca. Mais de 48 h, sai da tela mesmo offline |
 | Relógio e clima | No canto da tela: hora do estabelecimento e temperatura da cidade dele (Open-Meteo, com crédito). O clima some depois de 6 h sem atualizar |
 | Cartões | Previsão do tempo com ícones e cotações com seta de alta ou baixa, em tela cheia, com o crédito da fonte. Funcionam offline enquanto o dado valer (tempo 6 h, cotação 4 dias) |
+| QR code | Por cima do anúncio, no canto escolhido, num cartão branco com a legenda; gerado na TV, funciona offline. O médio ocupa 30% da altura da tela |
 | Tela de espera | Sem nada para hoje, mostra o nome da tela |
 | Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, notícias, clima, servidor e versão |
 | Sempre no ar | Tela cheia, sempre acesa, abre sozinho ao ligar a TV |
@@ -131,5 +133,6 @@ escolhe a playlist.
   existe no modelo, sem tela).
 - Operadora acessar o painel de um parceiro ("acessar como").
 - Relatório de exibições (prova de veiculação).
+- Contagem de leituras do QR code (o QR é estático e leva direto ao destino).
 - Fontes de notícias por playlist (hoje as fontes ativas valem para toda a rede).
 - Agendamento por horário do dia (hoje: dia da semana e período).

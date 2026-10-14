@@ -3,6 +3,9 @@
  * Enums chegam como NOME (JsonStringEnumConverter).
  */
 export type TipoMidia = 'Video' | 'Imagem';
+export type TipoQrCode = 'Link' | 'WhatsApp' | 'Instagram' | 'Telefone' | 'Pix';
+export type PosicaoQrCode = 'InferiorDireito' | 'InferiorEsquerdo' | 'SuperiorDireito' | 'SuperiorEsquerdo';
+export type TamanhoQrCode = 'Pequeno' | 'Medio' | 'Grande';
 
 export interface MidiaDto {
   id: number;
@@ -21,6 +24,19 @@ export interface MidiaDto {
   fimExibicao?: string | null;
   ativo: boolean;
   quantidadePlaylists: number;
+  /** QR code por cima da mídia (nulo = sem QR code) e o que foi informado. */
+  qrTipo?: TipoQrCode | null;
+  /** Link, telefone, usuário do Instagram ou chave Pix, conforme o tipo. */
+  qrDestino?: string | null;
+  qrMensagem?: string | null;
+  qrValor?: number | null;
+  qrNomeRecebedor?: string | null;
+  qrCidadeRecebedor?: string | null;
+  qrLegenda?: string | null;
+  qrPosicao?: PosicaoQrCode | null;
+  qrTamanho?: TamanhoQrCode | null;
+  /** O texto codificado (link, tel: ou Pix copia e cola). */
+  qrConteudo?: string | null;
   /** Só no detalhe: endereço temporário para pré-visualizar. */
   urlVisualizacao?: string | null;
   created: string;
@@ -31,7 +47,7 @@ export interface MidiaDto {
 }
 
 /** Linha da grid: o DTO mais as colunas calculadas. */
-export type LinhaMidia = MidiaDto & { tipoRotulo: string; tamanho: string; duracao: string; periodo: string };
+export type LinhaMidia = MidiaDto & { tipoRotulo: string; tamanho: string; duracao: string; periodo: string; qrCode: string };
 
 export interface UsoArmazenamento {
   usadoBytes: number;

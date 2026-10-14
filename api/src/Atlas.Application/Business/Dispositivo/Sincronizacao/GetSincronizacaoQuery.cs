@@ -5,6 +5,7 @@ using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Conteudo.Clima;
 using Atlas.Application.Business.Dispositivo.Common;
 using Atlas.Application.Business.Indoor.Armazenamento;
+using Atlas.Application.Business.Indoor.Midias.Common;
 using Atlas.Domain.Business.Conteudo.Entities;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
@@ -115,6 +116,18 @@ public sealed record DiaPrevisaoDto
     public string Icone { get; init; } = null!;
 }
 
+public sealed record QrCodeSincronizacaoDto
+{
+    /// <summary>O que o QR code codifica (link, tel: ou Pix copia e cola).</summary>
+    public string Conteudo { get; init; } = null!;
+
+    /// <summary>Texto curto embaixo do QR code.</summary>
+    public string Legenda { get; init; } = null!;
+
+    public PosicaoQrCode Posicao { get; init; }
+    public TamanhoQrCode Tamanho { get; init; }
+}
+
 public sealed record ComposicaoFilaDto
 {
     /// <summary>Uma notícia depois de cada N anúncios; 0 = sem notícias.</summary>
@@ -199,6 +212,9 @@ public sealed record ItemSincronizacaoDto
     /// <summary>Fica nesta posição quando a composição embaralha os anúncios.</summary>
     public bool PosicaoFixa { get; init; }
 
+    /// <summary>QR code por cima da mídia; nulo = sem QR code. A TV gera a imagem do QR.</summary>
+    public QrCodeSincronizacaoDto? QrCode { get; init; }
+
     public DateOnly? InicioExibicao { get; init; }
     public DateOnly? FimExibicao { get; init; }
 
@@ -272,7 +288,12 @@ public class GetSincronizacaoQueryHandler(
                     i.DiasSemana,
                     i.Midia.InicioExibicao,
                     i.Midia.FimExibicao,
-                    i.PosicaoFixa))
+                    i.PosicaoFixa,
+                    i.Midia.QrTipo,
+                    i.Midia.QrConteudo,
+                    i.Midia.QrLegenda,
+                    i.Midia.QrPosicao,
+                    i.Midia.QrTamanho))
                 .ToListAsync(cancellationToken)
             : [];
 
@@ -458,6 +479,15 @@ public class GetSincronizacaoQueryHandler(
                 DuracaoSegundos = item.DuracaoSegundos,
                 DiasSemana = (int)item.DiasSemana,
                 PosicaoFixa = item.PosicaoFixa,
+                QrCode = item.QrTipo is { } tipoQr && item.QrConteudo is { } conteudoQr
+                    ? new QrCodeSincronizacaoDto
+                    {
+                        Conteudo = conteudoQr,
+                        Legenda = item.QrLegenda ?? MontadorQrCode.LegendaPadrao(tipoQr),
+                        Posicao = item.QrPosicao ?? PosicaoQrCode.InferiorDireito,
+                        Tamanho = item.QrTamanho ?? TamanhoQrCode.Medio,
+                    }
+                    : null,
                 InicioExibicao = item.Inicio,
                 FimExibicao = item.Fim,
                 ExibirHoje = item.DiasSemana.Inclui(hoje.DayOfWeek)
@@ -516,7 +546,11 @@ public class GetSincronizacaoQueryHandler(
                 .Append(i.Inicio?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(':')
                 .Append(i.Fim?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(':')
                 .Append(i.DuracaoSegundos).Append(':')
-                .Append(i.PosicaoFixa ? 'f' : '-');
+                .Append(i.PosicaoFixa ? 'f' : '-').Append(':')
+                .Append(i.QrConteudo).Append(':')
+                .Append(i.QrLegenda).Append(':')
+                .Append((int?)i.QrPosicao).Append(':')
+                .Append((int?)i.QrTamanho);
         }
 
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(texto.ToString())));
@@ -557,7 +591,12 @@ public class GetSincronizacaoQueryHandler(
         DiasSemana DiasSemana,
         DateOnly? Inicio,
         DateOnly? Fim,
-        bool PosicaoFixa = false);
+        bool PosicaoFixa = false,
+        TipoQrCode? QrTipo = null,
+        string? QrConteudo = null,
+        string? QrLegenda = null,
+        PosicaoQrCode? QrPosicao = null,
+        TamanhoQrCode? QrTamanho = null);
 }
 
 public class GetSincronizacaoQueryValidator : AbstractValidator<GetSincronizacaoQuery>

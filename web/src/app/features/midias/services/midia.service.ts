@@ -4,6 +4,8 @@ import { Observable, map } from 'rxjs';
 import { CrudService, Page, PaginatedResponse, QueryParams, comErroLocal } from '@atlas/framework';
 import { EnvioPreparado, LinhaMidia, MidiaDto, NovaMidia, SubstituicaoArquivo, TipoMidia, UsoArmazenamento } from '../models/midia.model';
 import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util';
+import { paraNumero } from '../../../shared/utils/form.util';
+import { TIPO_QR_ROTULO } from '../configs/midia.config';
 import { formatarBytes, formatarData, formatarDuracao } from '../../../shared/models/indoor.util';
 
 /**
@@ -69,14 +71,18 @@ export class MidiaService extends CrudService<MidiaDto, number> {
     return this.http.put<number>(`${this.baseUrl}/${corpo.id}/arquivo`, corpo, { context: comErroLocal() });
   }
 
-  /** Sai de modal com `errosInline: true`: erro no banner do modal. */
-  atualizar(id: number, valor: Partial<MidiaDto>, version: number): Observable<number> {
+  /**
+   * Sai de modal com `errosInline: true`: erro no banner do modal. O QR code
+   * vai junto: sem tipo, a mídia fica sem QR code.
+   */
+  atualizar(id: number, valor: Partial<MidiaDto> & Record<string, any>, version: number): Observable<number> {
     return this.http.put<number>(`${this.baseUrl}/${id}`, {
       id,
       titulo: valor.titulo,
       duracaoSegundos: Number(valor.duracaoSegundos),
       inicioExibicao: valor.inicioExibicao || null,
       fimExibicao: valor.fimExibicao || null,
+      ...corpoQrCode(valor),
       version,
     }, { context: comErroLocal() });
   }
@@ -100,9 +106,34 @@ export function descreverPeriodo(inicio?: string | null, fim?: string | null): s
   return 'Sempre';
 }
 
+/** Os campos do formulário do QR code no formato do AtualizarMidiaCommand. */
+export function corpoQrCode(valor: Record<string, any>) {
+  const tipo = valor['qrTipo'] || null;
+  const destino = {
+    Link: valor['qrLink'],
+    WhatsApp: valor['qrTelefone'],
+    Telefone: valor['qrTelefone'],
+    Instagram: valor['qrInstagram'],
+    Pix: valor['qrChavePix'],
+  }[tipo as string] ?? null;
+  const valorPix = paraNumero(valor['qrValor']);
+  return {
+    qrTipo: tipo,
+    qrDestino: tipo ? destino || null : null,
+    qrMensagem: tipo === 'WhatsApp' ? valor['qrMensagem'] || null : null,
+    qrValor: tipo === 'Pix' && valorPix > 0 ? valorPix : null,
+    qrNomeRecebedor: tipo === 'Pix' ? valor['qrNomeRecebedor'] || null : null,
+    qrCidadeRecebedor: tipo === 'Pix' ? valor['qrCidadeRecebedor'] || null : null,
+    qrLegenda: tipo ? valor['qrLegenda'] || null : null,
+    qrPosicao: tipo ? valor['qrPosicao'] || 'InferiorDireito' : null,
+    qrTamanho: tipo ? valor['qrTamanho'] || 'Medio' : null,
+  };
+}
+
 function paraLinha(m: MidiaDto): LinhaMidia {
   return {
     ...m,
+    qrCode: m.qrTipo ? TIPO_QR_ROTULO[m.qrTipo] : '—',
     tipoRotulo: TIPO_MIDIA_ROTULO[m.tipo] ?? m.tipo,
     tamanho: formatarBytes(m.tamanhoBytes),
     duracao: formatarDuracao(m.duracaoSegundos),

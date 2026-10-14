@@ -28,6 +28,7 @@ class SobreposicaoRelogioClima extends StatefulWidget {
     required this.exibirRelogio,
     required this.clima,
     this.agora = DateTime.now,
+    this.alinhamento = Alignment.topRight,
   });
 
   final String fusoHorario;
@@ -38,6 +39,9 @@ class SobreposicaoRelogioClima extends StatefulWidget {
 
   /// Relógio injetável (testes).
   final DateTime Function() agora;
+
+  /// Canto da tela (vai para a esquerda quando o QR code do anúncio ocupa a direita).
+  final Alignment alinhamento;
 
   @override
   State<SobreposicaoRelogioClima> createState() => _SobreposicaoRelogioClimaState();
@@ -85,7 +89,7 @@ class _SobreposicaoRelogioClimaState extends State<SobreposicaoRelogioClima> {
     final data = '${_dias[local.weekday % 7]}, ${local.day} ${_meses[local.month - 1]}';
 
     return Align(
-      alignment: Alignment.topRight,
+      alignment: widget.alinhamento,
       child: Padding(
         padding: EdgeInsets.all(base),
         child: Container(

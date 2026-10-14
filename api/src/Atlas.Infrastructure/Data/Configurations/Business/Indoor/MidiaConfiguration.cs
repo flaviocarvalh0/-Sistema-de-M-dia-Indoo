@@ -22,7 +22,23 @@ public class MidiaConfiguration : IEntityTypeConfiguration<Midia>
             table.HasCheckConstraint(
                 "ck_midia_periodo",
                 "inicio_exibicao IS NULL OR fim_exibicao IS NULL OR fim_exibicao >= inicio_exibicao");
+
+            // QR code completo (tipo, destino, posição, tamanho e conteúdo) ou nenhum.
+            table.HasCheckConstraint(
+                "ck_midia_qr_code_completo",
+                "(qr_tipo IS NULL) = (qr_conteudo IS NULL) AND (qr_tipo IS NULL) = (qr_destino IS NULL) "
+                + "AND (qr_tipo IS NULL) = (qr_posicao IS NULL) AND (qr_tipo IS NULL) = (qr_tamanho IS NULL)");
+
+            table.HasCheckConstraint("ck_midia_qr_valor", "qr_valor IS NULL OR qr_valor > 0");
         });
+
+        builder.Property(m => m.QrDestino).HasMaxLength(500);
+        builder.Property(m => m.QrMensagem).HasMaxLength(200);
+        builder.Property(m => m.QrValor).HasPrecision(12, 2);
+        builder.Property(m => m.QrNomeRecebedor).HasMaxLength(25);
+        builder.Property(m => m.QrCidadeRecebedor).HasMaxLength(15);
+        builder.Property(m => m.QrLegenda).HasMaxLength(Midia.TamanhoMaximoLegendaQrCode);
+        builder.Property(m => m.QrConteudo).HasMaxLength(Midia.TamanhoMaximoConteudoQrCode);
 
         builder.Property(m => m.Titulo).HasMaxLength(150).IsRequired();
         builder.Property(m => m.ChaveArmazenamento).HasMaxLength(300).IsRequired();

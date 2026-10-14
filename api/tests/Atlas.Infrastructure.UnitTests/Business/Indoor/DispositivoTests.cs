@@ -3,6 +3,8 @@ using Atlas.Application.Business.Dispositivo.Autenticacao;
 using Atlas.Application.Business.Dispositivo.Common;
 using Atlas.Application.Business.Dispositivo.Sincronizacao;
 using Atlas.Application.Business.Indoor.Armazenamento;
+using Atlas.Application.Business.Indoor.Midias.Commands.AtualizarMidia;
+using Atlas.Application.Business.Indoor.Midias.Common;
 using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Conteudo.Entities;
 using Atlas.Domain.Business.Indoor.Entities;
@@ -475,6 +477,30 @@ public class DispositivoTests : IDisposable
         foreach (var c in _context.Cotacoes) c.CotadaEm = Agora.AddDays(-5);
         await _context.SaveChangesAsync();
         (await Sincronizar(credencial, new GetSincronizacaoQuery())).Cotacoes.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Sincronizar_QrCodeDaMidiaVaiNoItemEMudaAVersao()
+    {
+        var midia = Midia("Promo");
+        var credencial = await ParearComGradeAsync((midia, DiasSemana.Todos), (Midia("Sem QR"), DiasSemana.Todos));
+        var antes = await Sincronizar(credencial, new GetSincronizacaoQuery());
+        antes.Itens!.Should().OnlyContain(i => i.QrCode == null);
+
+        midia.DefinirQrCode(MontadorQrCode.Montar(new AtualizarMidiaCommand
+        {
+            QrTipo = TipoQrCode.Instagram, QrDestino = "@padaria", QrTamanho = TamanhoQrCode.Grande,
+        })!);
+        await _context.SaveChangesAsync();
+
+        var depois = await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoGrade = antes.VersaoGrade });
+        depois.Alterada.Should().BeTrue("o QR code faz parte do que a TV mostra");
+        depois.Itens![0].QrCode.Should().BeEquivalentTo(new QrCodeSincronizacaoDto
+        {
+            Conteudo = "https://instagram.com/padaria", Legenda = "Siga no Instagram",
+            Posicao = PosicaoQrCode.InferiorDireito, Tamanho = TamanhoQrCode.Grande,
+        });
+        depois.Itens![1].QrCode.Should().BeNull();
     }
 
     [Fact]

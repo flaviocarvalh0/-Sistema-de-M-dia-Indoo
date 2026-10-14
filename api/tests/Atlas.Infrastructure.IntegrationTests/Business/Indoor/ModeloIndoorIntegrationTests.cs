@@ -91,6 +91,57 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
         midia.EstaVigente(new DateOnly(2026, 11, 30)).Should().BeTrue();
     }
 
+    [Fact]
+    public async Task Midia_DevePersistirEApagarOQrCode()
+    {
+        var id = await CriarMidiaAsync();
+        var pix = new QrCodeDaMidia(
+            TipoQrCode.Pix, "+5592999990000", null, 12.5m, "Padaria Centro", "Manaus", "Pague com Pix",
+            PosicaoQrCode.SuperiorEsquerdo, TamanhoQrCode.Grande, "000201...6304ABCD");
+
+        await using (var context = fixture.CreateDbContext())
+        {
+            (await context.Midias.SingleAsync(m => m.Id == id)).DefinirQrCode(pix);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = fixture.CreateDbContext())
+        {
+            var midia = await context.Midias.SingleAsync(m => m.Id == id);
+            midia.QrTipo.Should().Be(TipoQrCode.Pix);
+            midia.QrValor.Should().Be(12.5m);
+            midia.QrPosicao.Should().Be(PosicaoQrCode.SuperiorEsquerdo);
+            midia.QrTamanho.Should().Be(TamanhoQrCode.Grande);
+            midia.QrConteudo.Should().Be("000201...6304ABCD");
+            midia.RemoverQrCode();
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = fixture.CreateDbContext())
+        {
+            var midia = await context.Midias.SingleAsync(m => m.Id == id);
+            midia.QrTipo.Should().BeNull();
+            midia.QrConteudo.Should().BeNull();
+        }
+    }
+
+    [Theory]
+    [InlineData("ck_midia_qr_code_completo")]
+    [InlineData("ck_midia_qr_valor")]
+    public async Task Midia_DeveRecusarQrCodeInvalidoNoBanco(string restricao)
+    {
+        var id = await CriarMidiaAsync();
+        await using var context = fixture.CreateDbContext();
+
+        // Tipo sem conteúdo (QR pela metade) ou valor do Pix zerado.
+        var acao = () => restricao == "ck_midia_qr_code_completo"
+            ? context.Database.ExecuteSqlAsync($"UPDATE indoor.midia SET qr_tipo = 1 WHERE id = {id}")
+            : context.Database.ExecuteSqlAsync($"UPDATE indoor.midia SET qr_valor = 0 WHERE id = {id}");
+
+        (await acao.Should().ThrowAsync<PostgresException>())
+            .Which.ConstraintName.Should().Be(restricao);
+    }
+
     [Theory]
     [InlineData("ck_midia_hash")]
     [InlineData("ck_midia_periodo")]
