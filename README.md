@@ -11,7 +11,10 @@ que já têm.
 | [`web/`](web/README.md) | Painel administrativo Angular | `@atlas/framework` |
 | [`player/`](player/README.md) | App das TVs (Android TV) | Flutter |
 
+- [Catálogo de funcionalidades](docs/FUNCIONALIDADES.md)
+- [Guia de implantação](docs/IMPLANTACAO.md)
 - [Plano de implementação](docs/PLANO_IMPLEMENTACAO.md)
 - [Como testar na sua máquina](docs/COMO_TESTAR.md)
 - [Contrato do app das TVs](docs/CONTRATO_DISPOSITIVO.md)
 - [Modelo de dados](api/docs/MODELO_DADOS.md)
+- [Decisões de arquitetura (ADRs)](api/docs/decisions/README.md)

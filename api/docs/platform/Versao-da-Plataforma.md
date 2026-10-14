@@ -64,6 +64,8 @@ Contornados no produto, sem alterar a plataforma:
 
 | Problema | Efeito | Contorno |
 |---|---|---|
+| CORS com origens fixas no `Program.cs` (só endereços de desenvolvimento) | O painel publicado em outro endereço não consegue chamar a API | `CorsDoPainel` (filtro de inicialização do Business) libera a origem de `Indoor:UrlPainel` antes do CORS da plataforma, só para requisições dessa origem |
+| Usuário `admin`, grupo Administradores e ícones só são semeados em **Development** | Em produção, a primeira subida não cria o administrador nem os ícones (o `studio-indoor.sql` exige os ícones) | Primeira subida única em Development contra o banco de produção (ver `docs/IMPLANTACAO.md`, 2.4) |
 | Login em modo **Bearer** emite a claim `sub` duplicada (corrigido no commit `ba81daf`, posterior à tag) | O próprio JwtBearer recusa o token: 401 em qualquer rota | O painel usa modo Cookie; o token das TVs é do módulo Indoor |
 | O inspetor do histórico (`PostgreSqlEntityHistorySchemaInspector`) lê colunas `char(n)` como `character`, sem tamanho | A segunda subida da API acusa esquema incompatível na tabela histórica e não sobe | Entidades de negócio usam `varchar(n)` + check constraint, nunca `IsFixedLength()` |
 

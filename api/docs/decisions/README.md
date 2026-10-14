@@ -25,6 +25,9 @@ Cada ADR registra uma decisão arquitetural relevante, seu contexto, as alternat
 | [ADR-008](ADR-008-Gestao-de-Configuracoes-e-Segredos.md) | Gestão de Configurações e Segredos | Aceito |
 | [ADR-009](ADR-009-Estrategia-de-Versionamento-Historico-de-Entidades.md) | Estratégia de Versionamento Histórico de Entidades | Aceito |
 | [ADR-010](ADR-010-Estrategia-de-Mensagens-e-Entrega-de-Emails.md) | Estratégia de Mensagens e Entrega de E-mails | Aceito |
+| [ADR-011](ADR-011-Autenticacao-Propria-dos-Dispositivos.md) | Autenticação Própria dos Dispositivos (TVs) | Aceito |
+| [ADR-012](ADR-012-Armazenamento-Externo-de-Midias.md) | Armazenamento Externo das Mídias com URLs Assinadas | Aceito |
+| [ADR-013](ADR-013-Player-Offline-First.md) | Player das TVs Offline-First | Aceito |
 ## Como criar um ADR
 
 1. Copie o arquivo [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md).

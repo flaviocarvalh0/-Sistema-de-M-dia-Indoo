@@ -166,5 +166,11 @@ build verde, testes passando e docs atualizadas.
 
 ## Etapa 8 — Fechamento
 
-- [ ] Catálogo de funcionalidades, ADRs (esquema Dispositivo, storage externo)
-  e guia de implantação.
+- [x] [Catálogo de funcionalidades](FUNCIONALIDADES.md) do produto.
+- [x] ADRs: [011 — autenticação própria dos dispositivos](../api/docs/decisions/ADR-011-Autenticacao-Propria-dos-Dispositivos.md),
+  [012 — armazenamento externo das mídias](../api/docs/decisions/ADR-012-Armazenamento-Externo-de-Midias.md) e
+  [013 — player offline-first](../api/docs/decisions/ADR-013-Player-Offline-First.md).
+- [x] [Guia de implantação](IMPLANTACAO.md): API, banco, Supabase, painel,
+  SMTP, APK das TVs e checklist de produção.
+- [x] CORS da origem do painel em produção (`Indoor:UrlPainel`), sem alterar
+  a lista fixa da plataforma.

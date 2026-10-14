@@ -18,6 +18,7 @@ public static class IndoorComposicao
     {
         builder.AddBusinessServices();
         builder.Services.AddIndoorRateLimiting();
+        builder.Services.AddTransient<IStartupFilter, CorsDoPainel>();
 
         // Antes do tratador da plataforma (AddWebServices vem depois no Program.cs).
         builder.Services.AddExceptionHandler<IndoorExceptionHandler>();
