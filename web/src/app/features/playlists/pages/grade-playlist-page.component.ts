@@ -5,7 +5,8 @@ import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } fro
 import { AtlasAuthService, ToastService, extrairMensagemErro } from '@atlas/framework';
 import { PlaylistService } from '../services/playlist.service';
 import { PlaylistDto } from '../models/playlist.model';
-import { MidiaService, TIPO_MIDIA_ROTULO, descreverPeriodo } from '../../midias/services/midia.service';
+import { MidiaRedeService } from '../services/midia-rede.service';
+import { TIPO_MIDIA_ROTULO, descreverPeriodo } from '../../midias/services/midia.service';
 import { MidiaDto, TipoMidia } from '../../midias/models/midia.model';
 import {
   DIAS_SEMANA, DIAS_UTEIS, FIM_DE_SEMANA, TODOS_OS_DIAS, descreverDias, formatarDuracao,
@@ -16,6 +17,7 @@ interface ItemEdicao {
   chave: number;
   id?: number;
   midiaId: number;
+  parceiroNome: string;
   titulo: string;
   tipo: TipoMidia;
   duracaoSegundos: number;
@@ -27,8 +29,10 @@ interface ItemEdicao {
 let sequenciaChave = 0;
 
 /**
- * Grade da playlist: a sequência do loop (arrastar para reordenar) e os dias
- * da semana de cada item. Salva a grade inteira de uma vez
+ * Grade da playlist, montada pela operadora com as mídias ativas de todos os
+ * parceiros: a sequência do loop (arrastar para reordenar) e os dias da
+ * semana de cada item. A mesma mídia pode entrar mais de uma vez (o seletor
+ * só avisa "já na grade"). Salva a grade inteira de uma vez
  * (`PUT {id}/itens`), com a versão para não sobrescrever edição concorrente.
  */
 @Component({
@@ -42,10 +46,11 @@ let sequenciaChave = 0;
     .cdk-drop-list-dragging .item-grade:not(.cdk-drag-placeholder) { transition: transform 200ms ease; }
     .alca { cursor: grab; }
     .dia { min-width: 2.6rem; }
+    .seletor { max-height: 280px; overflow-y: auto; }
   `],
   template: `
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-      <a routerLink="/indoor/playlist" class="btn btn-sm btn-outline-secondary" aria-label="Voltar">
+      <a routerLink="/rede/playlist" class="btn btn-sm btn-outline-secondary" aria-label="Voltar">
         <i class="bi bi-arrow-left"></i>
       </a>
       <div class="me-auto">
@@ -72,19 +77,44 @@ let sequenciaChave = 0;
 
     @if (podeEditar) {
       <div class="card mb-3">
-        <div class="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
-          <label class="small fw-semibold" for="nova-midia">Adicionar mídia</label>
-          <select id="nova-midia" class="form-select form-select-sm" style="max-width: 420px" [(ngModel)]="midiaEscolhida">
-            <option [ngValue]="null">Escolha uma mídia ativa…</option>
-            @for (m of midias(); track m.id) {
-              <option [ngValue]="m.id">{{ m.titulo }} ({{ rotuloTipo(m.tipo) }}, {{ duracao(m.duracaoSegundos) }})</option>
-            }
-          </select>
-          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="midiaEscolhida == null" (click)="adicionar()">
-            <i class="bi bi-plus-lg me-1"></i>Adicionar ao fim
-          </button>
+        <div class="card-body py-2">
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+            <span class="small fw-semibold me-1">Adicionar mídia</span>
+            <input type="search" class="form-control form-control-sm" style="max-width: 280px"
+                   placeholder="Buscar por título ou parceiro…" aria-label="Buscar mídia"
+                   [ngModel]="busca()" (ngModelChange)="busca.set($event)" />
+            <select class="form-select form-select-sm" style="max-width: 240px" aria-label="Filtrar por parceiro"
+                    [ngModel]="parceiroFiltro()" (ngModelChange)="parceiroFiltro.set($event)">
+              <option [ngValue]="null">Todos os parceiros</option>
+              @for (p of parceiros(); track p.id) {
+                <option [ngValue]="p.id">{{ p.nome }}</option>
+              }
+            </select>
+            <span class="small text-muted">Só mídias ativas entram na grade.</span>
+          </div>
           @if (!midias().length && !carregando()) {
-            <span class="small text-muted">Nenhuma mídia ativa — envie uma em Mídias.</span>
+            <div class="small text-muted">Nenhuma mídia ativa na rede — os parceiros enviam e ativam em Mídia Indoor → Mídias.</div>
+          } @else if (!midiasFiltradas().length) {
+            <div class="small text-muted">Nenhuma mídia ativa com esse filtro.</div>
+          } @else {
+            <ul class="list-group list-group-flush seletor" aria-label="Mídias disponíveis">
+              @for (m of midiasFiltradas(); track m.id) {
+                <li class="list-group-item px-1 py-1 d-flex flex-wrap align-items-center gap-2">
+                  <i class="bi" [class.bi-camera-video]="m.tipo === 'Video'" [class.bi-image]="m.tipo === 'Imagem'"></i>
+                  <div class="flex-grow-1" style="min-width: 200px">
+                    <span class="fw-semibold">{{ m.titulo }}</span>
+                    <span class="small text-muted"> · {{ m.parceiroNome }} · {{ rotuloTipo(m.tipo) }}, {{ duracao(m.duracaoSegundos) }}</span>
+                    @if (m.parceiroBloqueado) { <span class="badge bg-danger ms-1">parceiro bloqueado</span> }
+                  </div>
+                  @if (vezesNaGrade(m.id); as vezes) {
+                    <span class="badge text-bg-info" [title]="'Esta mídia já está na grade ' + vezes + 'x'">Já adicionado ({{ vezes }}×)</span>
+                  }
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="adicionar(m)">
+                    <i class="bi bi-plus-lg me-1"></i>Adicionar ao fim
+                  </button>
+                </li>
+              }
+            </ul>
           }
         </div>
       </div>
@@ -109,6 +139,7 @@ let sequenciaChave = 0;
                 <div class="fw-semibold">
                   <i class="bi me-1" [class.bi-camera-video]="item.tipo === 'Video'" [class.bi-image]="item.tipo === 'Imagem'"></i>
                   {{ item.titulo }}
+                  <span class="small text-muted fw-normal">· {{ item.parceiroNome }}</span>
                   @if (!item.midiaAtiva) { <span class="badge bg-warning text-dark ms-1">mídia inativa</span> }
                 </div>
                 <div class="small text-muted">{{ duracao(item.duracaoSegundos) }} · {{ item.periodo }} · {{ descreverDias(item.diasSemana) }}</div>
@@ -145,7 +176,7 @@ let sequenciaChave = 0;
 export class GradePlaylistPageComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private service = inject(PlaylistService);
-  private midiaService = inject(MidiaService);
+  private midiaRede = inject(MidiaRedeService);
   private toast = inject(ToastService);
   private atlasAuth = inject(AtlasAuthService);
 
@@ -165,7 +196,30 @@ export class GradePlaylistPageComponent implements OnInit {
   erro = signal<string | null>(null);
   private original = signal('');
 
-  midiaEscolhida: number | null = null;
+  busca = signal('');
+  parceiroFiltro = signal<number | null>(null);
+
+  /** Parceiros que têm mídia ativa, para o filtro do seletor. */
+  parceiros = computed(() => {
+    const porId = new Map<number, string>();
+    for (const m of this.midias()) porId.set(m.parceiroId, m.parceiroNome);
+    return [...porId].map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome));
+  });
+
+  midiasFiltradas = computed(() => {
+    const termo = this.busca().trim().toLowerCase();
+    const parceiro = this.parceiroFiltro();
+    return this.midias().filter(m =>
+      (parceiro == null || m.parceiroId === parceiro)
+      && (!termo || m.titulo.toLowerCase().includes(termo) || m.parceiroNome.toLowerCase().includes(termo)));
+  });
+
+  /** Quantas vezes cada mídia já aparece na grade em edição. */
+  private contagem = computed(() => {
+    const vezes = new Map<number, number>();
+    for (const i of this.itens()) vezes.set(i.midiaId, (vezes.get(i.midiaId) ?? 0) + 1);
+    return vezes;
+  });
 
   duracaoCiclo = computed(() => formatarDuracao(this.itens().reduce((s, i) => s + i.duracaoSegundos, 0)));
   alterada = computed(() => this.assinatura(this.itens()) !== this.original());
@@ -176,11 +230,15 @@ export class GradePlaylistPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregar();
-    if (this.podeEditar) this.midiaService.listarParaGrade().subscribe(m => this.midias.set(m));
+    if (this.podeEditar) this.midiaRede.listarAtivas().subscribe(m => this.midias.set(m));
   }
 
   rotuloTipo(tipo: TipoMidia): string {
     return TIPO_MIDIA_ROTULO[tipo] ?? tipo;
+  }
+
+  vezesNaGrade(midiaId: number): number {
+    return this.contagem().get(midiaId) ?? 0;
   }
 
   soltar(ev: CdkDragDrop<ItemEdicao[]>): void {
@@ -189,12 +247,11 @@ export class GradePlaylistPageComponent implements OnInit {
     this.itens.set(lista);
   }
 
-  adicionar(): void {
-    const m = this.midias().find(x => x.id === this.midiaEscolhida);
-    if (!m) return;
+  adicionar(m: MidiaDto): void {
     this.itens.update(lista => [...lista, {
       chave: ++sequenciaChave,
       midiaId: m.id,
+      parceiroNome: m.parceiroNome,
       titulo: m.titulo,
       tipo: m.tipo,
       duracaoSegundos: m.duracaoSegundos,
@@ -202,7 +259,6 @@ export class GradePlaylistPageComponent implements OnInit {
       midiaAtiva: m.ativo,
       periodo: descreverPeriodo(m.inicioExibicao, m.fimExibicao),
     }]);
-    this.midiaEscolhida = null;
   }
 
   remover(indice: number): void {
@@ -271,6 +327,7 @@ export class GradePlaylistPageComponent implements OnInit {
       chave: ++sequenciaChave,
       id: i.id,
       midiaId: i.midiaId,
+      parceiroNome: i.parceiroNome,
       titulo: i.titulo,
       tipo: i.tipo,
       duracaoSegundos: i.duracaoSegundos,

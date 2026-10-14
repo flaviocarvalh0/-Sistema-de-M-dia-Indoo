@@ -29,7 +29,8 @@ Content-Type: application/json
   "nomeResponsavel": "Maria Souza",
   "email": "{{emailDono}}",
   "cidade": "Manaus",
-  "fusoHorario": "America/Manaus"
+  "fusoHorario": "America/Manaus",
+  "limiteMidiasAtivas": 2
 }
 
 ### 3. Senha temporária do dono
@@ -115,19 +116,33 @@ GET {{api}}/api/v1/business/parceiro/midias
 ###
 GET {{api}}/api/v1/business/parceiro/midias/{{video.response.body.$}}
 
-### 9. Playlist
+### 8b. Uso do plano: midiasAtivas de limiteMidiasAtivas
+GET {{api}}/api/v1/business/parceiro/midias/armazenamento
+
+### 9. A operadora monta a playlist com as mídias dos parceiros
+# O login por cookie é um só por vez: entra de novo como operadora.
+POST {{api}}/api/Auth/login
+Content-Type: application/json
+
+{ "userName": "admin", "password": "{{senhaAdmin}}", "mode": "Cookie" }
+
+###
+GET {{api}}/api/v1/business/rede/midias?ativo=true&parceiroId={{parceiro.response.body.$}}
+
+###
 # @name playlist
-POST {{api}}/api/v1/business/parceiro/playlists
+POST {{api}}/api/v1/business/rede/playlists
 Content-Type: application/json
 
 { "nome": "Grade principal" }
 
 ###
 # @name grade
-GET {{api}}/api/v1/business/parceiro/playlists/{{playlist.response.body.$}}
+GET {{api}}/api/v1/business/rede/playlists/{{playlist.response.body.$}}
 
 ### 9. Itens na ordem do loop (diasSemana: domingo=1, segunda=2, ... sábado=64; 62 = seg a sex; 127 = todos)
-PUT {{api}}/api/v1/business/parceiro/playlists/{{playlist.response.body.$}}/itens
+# Só mídia ativa entra; a mesma mídia pode aparecer mais de uma vez.
+PUT {{api}}/api/v1/business/rede/playlists/{{playlist.response.body.$}}/itens
 Content-Type: application/json
 
 {
@@ -140,21 +155,20 @@ Content-Type: application/json
 }
 
 ###
-GET {{api}}/api/v1/business/parceiro/playlists/{{playlist.response.body.$}}
+GET {{api}}/api/v1/business/rede/playlists/{{playlist.response.body.$}}
 
-### 10. A operadora cadastra a tela (o hardware é dela) e escolhe o parceiro
-# O login por cookie é um só por vez: entra de novo como operadora.
-POST {{api}}/api/Auth/login
-Content-Type: application/json
-
-{ "userName": "admin", "password": "{{senhaAdmin}}", "mode": "Cookie" }
-
-###
+### 10. A operadora cadastra a tela no estabelecimento (host) com a playlist
 # @name tela
 POST {{api}}/api/v1/business/rede/telas
 Content-Type: application/json
 
-{ "parceiroId": {{parceiro.response.body.$}}, "nome": "Recepção", "localizacao": "Entrada", "identificacaoAparelho": "SN-0001" }
+{
+  "parceiroId": {{parceiro.response.body.$}},
+  "nome": "Recepção",
+  "localizacao": "Entrada",
+  "identificacaoAparelho": "SN-0001",
+  "playlistId": {{playlist.response.body.$}}
+}
 
 ###
 # @name telaDetalhe
@@ -167,17 +181,11 @@ POST {{api}}/api/v1/business/rede/telas/{{tela.response.body.$}}/codigo-pareamen
 ###
 GET {{api}}/api/v1/business/rede/telas?parceiroId={{parceiro.response.body.$}}
 
-### 11b. O dono escolhe a playlist da tela (é o que ele pode mudar nela)
+### 11b. O dono vê onde os anúncios dele passam (somente leitura)
 POST {{api}}/api/Auth/login
 Content-Type: application/json
 
 { "userName": "{{emailDono}}", "password": "{{senhaNova}}", "mode": "Cookie" }
-
-###
-PUT {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}/playlist
-Content-Type: application/json
-
-{ "id": {{tela.response.body.$}}, "playlistId": {{playlist.response.body.$}}, "version": {{codigoTela.response.body.version}} }
 
 ###
 GET {{api}}/api/v1/business/parceiro/telas

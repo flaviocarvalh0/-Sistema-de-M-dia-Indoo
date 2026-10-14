@@ -1,15 +1,17 @@
 using Atlas.Application.Business.Indoor.Common;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Rede.Playlists.Commands.SalvarPlaylist;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
 
-namespace Atlas.Application.Business.Indoor.Playlists.Commands.DefinirItensPlaylist;
+namespace Atlas.Application.Business.Rede.Playlists.Commands.DefinirItensPlaylist;
 
 /// <summary>
 /// Grava a grade inteira de uma vez, na ordem da lista (a posição vira a
 /// ordem do loop) — é o que a tela de arrastar e soltar envia. Item com id
-/// atualiza, sem id entra, ausente sai.
+/// atualiza, sem id entra, ausente sai. A operadora monta a grade com mídias
+/// de qualquer parceiro; a mesma mídia pode entrar mais de uma vez (cota
+/// dupla).
 /// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Playlists.Update)]
 public record DefinirItensPlaylistCommand : IRequest<uint>
@@ -23,23 +25,30 @@ public record DefinirItensPlaylistCommand : IRequest<uint>
     public sealed record ItemInformado(long? Id, long MidiaId, DiasSemana DiasSemana);
 }
 
-public class DefinirItensPlaylistCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class DefinirItensPlaylistCommandHandler(IApplicationDbContext context)
     : IRequestHandler<DefinirItensPlaylistCommand, uint>
 {
     public async Task<uint> Handle(DefinirItensPlaylistCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var playlist = await RegistrosDoParceiro.CarregarAsync(
-            context.Playlists.Include(p => p.Itens), parceiro.ParceiroId, request.Id, cancellationToken);
+        var playlist = await RegrasPlaylist.CarregarAsync(context.Playlists.Include(p => p.Itens), request.Id, cancellationToken);
 
-        // Só mídias do próprio parceiro: o banco não cruza o parceiro na FK.
         var midias = request.Itens.Select(i => i.MidiaId).Distinct().ToList();
-        var encontradas = await context.Midias
-            .CountAsync(m => midias.Contains(m.Id) && m.ParceiroId == parceiro.ParceiroId, cancellationToken);
+        var ativas = await context.Midias
+            .Where(m => midias.Contains(m.Id))
+            .ToDictionaryAsync(m => m.Id, m => m.Ativo, cancellationToken);
 
-        if (encontradas != midias.Count)
+        if (ativas.Count != midias.Count)
         {
             throw new ValidationException(nameof(request.Itens), ["Uma das mídias não foi encontrada. Recarregue a lista de mídias."]);
+        }
+
+        // Só entra na grade mídia que o parceiro ativou (é o que o plano dele
+        // paga). Itens que já estavam ficam, mesmo se a mídia foi inativada
+        // depois: ela só não toca até ser ativada de novo.
+        var jaNaGrade = playlist.Itens.Select(i => (i.Id, i.MidiaId)).ToHashSet();
+        if (request.Itens.Any(i => !ativas[i.MidiaId] && !(i.Id is { } id && jaNaGrade.Contains((id, i.MidiaId)))))
+        {
+            throw new ValidationException(nameof(request.Itens), ["Só mídias ativas podem entrar na grade."]);
         }
 
         context.ConferirVersao(playlist, request.Version);

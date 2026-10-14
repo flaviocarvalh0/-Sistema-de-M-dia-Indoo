@@ -23,8 +23,10 @@ public sealed class DispositivoAtual(ICredencialDispositivo credencial, IApplica
 
         var tela = await context.Telas
             .AsNoTracking()
-            .Where(t => t.Id == telaId && t.ParceiroId == parceiroId)
-            .Select(t => new { t.DispositivoId, t.VersaoCredencial, t.Ativo, t.Parceiro.Situacao })
+            // Sem conferir o parceiro: a operadora pode mudar a TV de host sem
+            // desparear (a TV é dela). O que revoga é a VersaoCredencial.
+            .Where(t => t.Id == telaId)
+            .Select(t => new { t.DispositivoId, t.VersaoCredencial, t.Ativo })
             .FirstOrDefaultAsync(cancellationToken);
 
         // Tela apagada, TV desvinculada ou outra TV pareada no lugar: o token
@@ -34,7 +36,10 @@ public sealed class DispositivoAtual(ICredencialDispositivo credencial, IApplica
             throw new UnauthorizedAccessException();
         }
 
-        if (!tela.Ativo || tela.Situacao == SituacaoParceiro.Bloqueado)
+        // Só a tela inativa suspende a TV. Host bloqueado não: a TV é da
+        // operadora e segue tocando os outros anunciantes (as mídias de
+        // parceiros bloqueados saem da grade na sincronização).
+        if (!tela.Ativo)
         {
             throw new ForbiddenAccessException();
         }

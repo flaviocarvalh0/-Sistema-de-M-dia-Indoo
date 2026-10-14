@@ -213,9 +213,32 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
 - [x] Testes do loop com relógio simulado (13), conferidos removendo a
   proteção: o teste de vídeo depois de vídeo falha sem ela.
 
-### Entrega 3 — Seletor da grade
+### Entrega 1B — Playlist da operadora e plano do anunciante ✅
 
-- [ ] Badge "já adicionado" no seletor de mídias da grade (repetição permitida).
+- [x] Playlist da rede ([ADR-015](../api/docs/decisions/ADR-015-Playlists-da-Operadora-e-Plano-do-Anunciante.md)):
+  rotas `rede/playlists` só da operadora; nome único na rede; item novo só
+  com mídia ativa. A operadora lê as mídias de todos em `rede/midias`.
+- [x] Tela com host (fuso) e playlist escolhidos pela operadora; trocar não
+  desvincula a TV. A rota `PUT parceiro/telas/{id}/playlist` saiu.
+- [x] Plano: `Parceiro.LimiteMidiasAtivas` (padrão 1). Mídia nova nasce
+  inativa com o plano completo; ativar além dá 400; reduzir não inativa nada.
+- [x] Substituir arquivo (`PUT parceiro/midias/{id}/arquivo`): mesmas
+  conferências do envio, cota descontando o arquivo antigo, hash novo.
+- [x] "Onde meus anúncios passam": telas onde o parceiro tem mídia ativa.
+- [x] TV: host bloqueado não afeta; mídias de anunciante bloqueado saem da
+  grade; 403 só para tela inativa.
+- [x] Migration `Business_PlaylistDaOperadoraELimiteMidias` (renomeia nomes
+  repetidos antes do índice único); `studio-indoor.sql` com Playlists no
+  módulo Rede e menu "Onde meus anúncios passam".
+- [x] Painel: Rede → Playlists com seletor de mídias da rede, plano e
+  "Substituir arquivo" em Mídias, campo de plano no parceiro.
+- [x] Testes: unitários, integração, roteiro HTTP de ponta a ponta e roteiro
+  no navegador (operadora e anunciante).
+
+### Entrega 3 — Seletor da grade ✅
+
+- [x] Badge "Já adicionado (N×)" no seletor de mídias da grade (repetição
+  permitida), entregue junto da 1B.
 
 ### Entrega 4 — Notícias e randomização
 

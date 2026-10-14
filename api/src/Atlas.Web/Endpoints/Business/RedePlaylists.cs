@@ -1,8 +1,8 @@
-using Atlas.Application.Business.Indoor.Playlists.Commands.DefinirItensPlaylist;
-using Atlas.Application.Business.Indoor.Playlists.Commands.EstadoPlaylist;
-using Atlas.Application.Business.Indoor.Playlists.Commands.SalvarPlaylist;
-using Atlas.Application.Business.Indoor.Playlists.Dtos;
-using Atlas.Application.Business.Indoor.Playlists.Queries;
+using Atlas.Application.Business.Rede.Playlists.Commands.DefinirItensPlaylist;
+using Atlas.Application.Business.Rede.Playlists.Commands.EstadoPlaylist;
+using Atlas.Application.Business.Rede.Playlists.Commands.SalvarPlaylist;
+using Atlas.Application.Business.Rede.Playlists.Dtos;
+using Atlas.Application.Business.Rede.Playlists.Queries;
 using Atlas.Application.Common.Models.Pagination;
 using Atlas.Domain.Business.Constants;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -10,16 +10,19 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Web.Endpoints.Business;
 
-/// <summary>Playlists (grades) do parceiro do usuário logado.</summary>
-public class ParceiroPlaylists : IEndpointGroup
+/// <summary>
+/// Playlists (grades) da rede, montadas pela operadora com as mídias dos
+/// parceiros (anunciantes). O parceiro não decide onde o anúncio dele passa.
+/// </summary>
+public class RedePlaylists : IEndpointGroup
 {
-    public static string? RoutePrefix => "/api/v1/business/parceiro/playlists";
+    public static string? RoutePrefix => "/api/v1/business/rede/playlists";
 
     public static void Map(RouteGroupBuilder groupBuilder)
     {
         groupBuilder
-            .WithTags("Mídia Indoor — Parceiro: Playlists")
-            .WithDescription("Grades de exibição do parceiro do usuário logado, reaproveitáveis entre telas.");
+            .WithTags("Mídia Indoor — Rede: Playlists")
+            .WithDescription("Grades de exibição da rede, reaproveitáveis entre telas.");
 
         groupBuilder.MapGet(GetPlaylists).RequireAuthorization(BusinessPermissionKeys.Playlists.View);
         groupBuilder.MapGet(GetPlaylistById, "{id:long}").RequireAuthorization(BusinessPermissionKeys.Playlists.View);

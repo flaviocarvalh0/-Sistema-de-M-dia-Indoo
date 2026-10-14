@@ -2,7 +2,7 @@ import { HttpBackend, HttpClient, HttpEvent, HttpHeaders } from '@angular/common
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { CrudService, Page, PaginatedResponse, QueryParams, comErroLocal } from '@atlas/framework';
-import { EnvioPreparado, LinhaMidia, MidiaDto, NovaMidia, TipoMidia, UsoArmazenamento } from '../models/midia.model';
+import { EnvioPreparado, LinhaMidia, MidiaDto, NovaMidia, SubstituicaoArquivo, TipoMidia, UsoArmazenamento } from '../models/midia.model';
 import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util';
 import { formatarBytes, formatarData, formatarDuracao } from '../../../shared/models/indoor.util';
 
@@ -15,6 +15,7 @@ import { formatarBytes, formatarData, formatarDuracao } from '../../../shared/mo
  *  - POST /api/v1/business/parceiro/midias/envio            → { chave, urlEnvio, expiraEm }
  *  - POST /api/v1/business/parceiro/midias                  → id (depois do PUT no storage)
  *  - PUT  /api/v1/business/parceiro/midias/{id}             → nova versão
+ *  - PUT  /api/v1/business/parceiro/midias/{id}/arquivo     → nova versão (troca o arquivo)
  *  - POST /api/v1/business/parceiro/midias/{id}/ativar|inativar?version=
  *  - DELETE /api/v1/business/parceiro/midias/{id}
  */
@@ -42,11 +43,6 @@ export class MidiaService extends CrudService<MidiaDto, number> {
       );
   }
 
-  /** Todas as mídias ativas, para escolher na grade da playlist. */
-  listarParaGrade(): Observable<MidiaDto[]> {
-    return this.listar({ pageIndex: 0, pageSize: 1000 }, { ativo: true }).pipe(map(p => p.content));
-  }
-
   usoArmazenamento(): Observable<UsoArmazenamento> {
     return this.http.get<UsoArmazenamento>(`${this.baseUrl}/armazenamento`);
   }
@@ -66,6 +62,11 @@ export class MidiaService extends CrudService<MidiaDto, number> {
 
   criar(midia: NovaMidia): Observable<number> {
     return this.http.post<number>(this.baseUrl, midia, { context: comErroLocal() });
+  }
+
+  /** Troca o arquivo (já enviado ao storage) de uma mídia existente; a TV baixa de novo pelo hash novo. */
+  substituirArquivo(corpo: SubstituicaoArquivo): Observable<number> {
+    return this.http.put<number>(`${this.baseUrl}/${corpo.id}/arquivo`, corpo, { context: comErroLocal() });
   }
 
   /** Sai de modal com `errosInline: true`: erro no banner do modal. */

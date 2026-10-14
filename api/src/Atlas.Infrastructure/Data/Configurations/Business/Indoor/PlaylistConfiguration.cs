@@ -13,13 +13,9 @@ public class PlaylistConfiguration : IEntityTypeConfiguration<Playlist>
         builder.Property(p => p.Nome).HasMaxLength(100).IsRequired();
         builder.Property(p => p.Descricao).HasMaxLength(300);
 
-        builder.HasIndex(p => new { p.ParceiroId, p.Nome })
+        // A playlist é da rede (da operadora), não de um parceiro.
+        builder.HasIndex(p => p.Nome)
             .IsUnique();
-
-        builder.HasOne(p => p.Parceiro)
-            .WithMany()
-            .HasForeignKey(p => p.ParceiroId)
-            .OnDelete(DeleteBehavior.Restrict);
 
         // Os itens são parte da playlist: removidos da lista, somem do banco.
         builder.HasMany(p => p.Itens)

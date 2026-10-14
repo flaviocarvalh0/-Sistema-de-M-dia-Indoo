@@ -28,7 +28,8 @@ Cada ADR registra uma decisão arquitetural relevante, seu contexto, as alternat
 | [ADR-011](ADR-011-Autenticacao-Propria-dos-Dispositivos.md) | Autenticação Própria dos Dispositivos (TVs) | Aceito |
 | [ADR-012](ADR-012-Armazenamento-Externo-de-Midias.md) | Armazenamento Externo das Mídias com URLs Assinadas | Aceito |
 | [ADR-013](ADR-013-Player-Offline-First.md) | Player das TVs Offline-First | Aceito |
-| [ADR-014](ADR-014-Posse-das-Telas-pela-Operadora.md) | Posse das Telas pela Operadora | Aceito |
+| [ADR-014](ADR-014-Posse-das-Telas-pela-Operadora.md) | Posse das Telas pela Operadora | Aceito (em parte substituído pelo 015) |
+| [ADR-015](ADR-015-Playlists-da-Operadora-e-Plano-do-Anunciante.md) | Playlists da Operadora e Plano do Anunciante | Aceito |
 ## Como criar um ADR
 
 1. Copie o arquivo [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md).

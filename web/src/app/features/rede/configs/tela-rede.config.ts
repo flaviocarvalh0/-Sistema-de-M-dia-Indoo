@@ -2,7 +2,7 @@ import { CampoOption, ColunaDef, FormItemConfig } from '@atlas/framework';
 import { SITUACAO_TELA_BADGE } from '../../telas/configs/tela.config';
 
 export const TELA_REDE_COLUNAS: ColunaDef[] = [
-  { campo: 'parceiroNome', titulo: 'Parceiro', tipo: 'texto' },
+  { campo: 'parceiroNome', titulo: 'Estabelecimento', tipo: 'texto' },
   { campo: 'nome', titulo: 'Tela', principal: true, tipo: 'texto' },
   { campo: 'localizacao', titulo: 'Local', tipo: 'texto' },
   { campo: 'identificacaoAparelho', titulo: 'Aparelho', tipo: 'texto' },
@@ -13,13 +13,15 @@ export const TELA_REDE_COLUNAS: ColunaDef[] = [
 ];
 
 /** Espelha CriarTelaCommandValidator / AtualizarTelaCommandValidator (Rede). */
-export function criarCamposTelaRede(parceiros: CampoOption[], edicao: boolean): FormItemConfig[] {
+export function criarCamposTelaRede(parceiros: CampoOption[], playlists: CampoOption[]): FormItemConfig[] {
   return [
     {
-      type: 'select', name: 'parceiroId', label: 'Parceiro', required: true, col: 'col-12', options: parceiros,
-      hint: edicao
-        ? 'Trocar o parceiro tira a playlist, desvincula a TV e descarta o código pendente.'
-        : 'Quem vai escolher o que esta TV toca.',
+      type: 'select', name: 'parceiroId', label: 'Estabelecimento (host)', required: true, col: 'col-md-6', options: parceiros,
+      hint: 'O parceiro que cede o espaço. O fuso horário da grade vem dele.',
+    },
+    {
+      type: 'select', name: 'playlistId', label: 'Playlist', col: 'col-md-6', options: playlists,
+      hint: 'O que esta TV toca. Sem playlist, ela mostra a tela de espera. Vale na próxima sincronização.',
     },
     { type: 'texto', name: 'nome', label: 'Nome', required: true, col: 'col-md-6', placeholder: 'Ex.: TV da recepção' },
     { type: 'texto', name: 'localizacao', label: 'Local', col: 'col-md-6', placeholder: 'Ex.: Térreo, ao lado do caixa' },

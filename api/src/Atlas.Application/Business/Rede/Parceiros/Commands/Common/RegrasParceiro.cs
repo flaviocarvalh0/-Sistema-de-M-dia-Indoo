@@ -31,6 +31,13 @@ internal static class RegrasParceiro
             .Must(FusosHorarios.Valido)
             .WithMessage("Selecione um fuso horário válido (ex.: America/Sao_Paulo).");
 
+    public const int LimiteMidiasAtivasMaximo = 1000;
+
+    public static IRuleBuilderOptions<T, int> LimiteMidiasAtivas<T>(this IRuleBuilder<T, int> regra) =>
+        regra
+            .InclusiveBetween(1, LimiteMidiasAtivasMaximo)
+            .WithMessage($"O limite de mídias ativas deve ficar entre 1 e {LimiteMidiasAtivasMaximo}.");
+
     public static IRuleBuilderOptions<T, int> CotaParceiro<T>(this IRuleBuilder<T, int> regra) =>
         regra
             .InclusiveBetween(1, CotaMaximaMb)

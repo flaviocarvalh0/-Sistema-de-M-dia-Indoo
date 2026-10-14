@@ -32,7 +32,8 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
     {
         await using var context = fixture.CreateDbContext();
         await context.Telas.Where(t => t.ParceiroId == _parceiroId).ExecuteDeleteAsync();
-        await context.Playlists.Where(p => p.ParceiroId == _parceiroId).ExecuteDeleteAsync();
+        // Playlists são da rede (sem parceiro): as deste teste levam o sufixo no nome.
+        await context.Playlists.Where(p => p.Nome.EndsWith(_sufixo)).ExecuteDeleteAsync();
         await context.Midias.Where(m => m.ParceiroId == _parceiroId).ExecuteDeleteAsync();
         await context.Parceiros.Where(p => p.Id == _parceiroId).ExecuteDeleteAsync();
     }
@@ -45,7 +46,7 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
         long playlistId;
         await using (var context = fixture.CreateDbContext())
         {
-            var playlist = new Playlist { ParceiroId = _parceiroId, Nome = "Grade principal" };
+            var playlist = new Playlist { Nome = $"Grade principal {_sufixo}" };
             playlist.DefinirItens(
             [
                 new ItemPlaylistInformado(null, midiaA, DiasSemana.DiasUteis),
@@ -127,7 +128,7 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
         var midia = await CriarMidiaAsync();
 
         await using var context = fixture.CreateDbContext();
-        var playlist = new Playlist { ParceiroId = _parceiroId, Nome = "Sem dias" };
+        var playlist = new Playlist { Nome = $"Sem dias {_sufixo}" };
         playlist.Itens.Add(new ItemPlaylist { MidiaId = midia, DiasSemana = DiasSemana.Nenhum });
         context.Playlists.Add(playlist);
 

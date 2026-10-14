@@ -11,7 +11,7 @@ import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util'
  *  - GET  /api/v1/business/rede/telas?parceiroId=&ativo=
  *  - GET  /api/v1/business/rede/telas/{id}
  *  - POST /api/v1/business/rede/telas                         → id
- *  - PUT  /api/v1/business/rede/telas/{id}                    → nova versão (trocar o parceiro tira playlist e TV)
+ *  - PUT  /api/v1/business/rede/telas/{id}                    → nova versão (host e playlist; a TV continua pareada)
  *  - POST /api/v1/business/rede/telas/{id}/codigo-pareamento?version= → { codigo, expiraEm, version }
  *  - POST /api/v1/business/rede/telas/{id}/desvincular|ativar|inativar?version=
  *  - DELETE /api/v1/business/rede/telas/{id}
@@ -41,6 +41,7 @@ export class TelaRedeService extends CrudService<TelaDto, number> {
       nome: valor.nome,
       localizacao: valor.localizacao || null,
       identificacaoAparelho: valor.identificacaoAparelho || null,
+      playlistId: valor.playlistId ? Number(valor.playlistId) : null,
     };
     return id
       ? this.http.put(`${this.baseUrl}/${id}`, { id, ...corpo, version }, { context: comErroLocal() })

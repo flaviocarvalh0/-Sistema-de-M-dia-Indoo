@@ -22,5 +22,6 @@ public class CriarParceiroCommandValidator : AbstractValidator<CriarParceiroComm
         RuleFor(x => x.Cidade).CidadeParceiro();
         RuleFor(x => x.FusoHorario).FusoHorarioParceiro();
         RuleFor(x => x.CotaArmazenamentoMb).CotaParceiro();
+        RuleFor(x => x.LimiteMidiasAtivas).LimiteMidiasAtivas();
     }
 }

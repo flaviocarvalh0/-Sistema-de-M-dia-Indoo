@@ -250,10 +250,6 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("nome");
 
-                    b.Property<long>("ParceiroId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("parceiro_id");
-
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -263,9 +259,9 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_playlist");
 
-                    b.HasIndex("ParceiroId", "Nome")
+                    b.HasIndex("Nome")
                         .IsUnique()
-                        .HasDatabaseName("ix_playlist_parceiro_id_nome");
+                        .HasDatabaseName("ix_playlist_nome");
 
                     b.ToTable("playlist", "indoor");
                 });
@@ -431,6 +427,12 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("last_modified_by");
 
+                    b.Property<int>("LimiteMidiasAtivas")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("limite_midias_ativas");
+
                     b.Property<string>("MotivoBloqueio")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -477,6 +479,8 @@ namespace Atlas.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("ck_parceiro_cota", "cota_armazenamento_mb BETWEEN 1 AND 1048576");
 
                             t.HasCheckConstraint("ck_parceiro_documento", "documento IS NULL OR documento ~ '^[0-9]{11}$' OR documento ~ '^[0-9A-Z]{12}[0-9]{2}$'");
+
+                            t.HasCheckConstraint("ck_parceiro_limite_midias_ativas", "limite_midias_ativas BETWEEN 1 AND 1000");
 
                             t.HasCheckConstraint("ck_parceiro_motivo_bloqueio", "situacao <> 2 OR motivo_bloqueio IS NOT NULL");
 
@@ -1832,18 +1836,6 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_midia_parceiros_parceiro_id");
-
-                    b.Navigation("Parceiro");
-                });
-
-            modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.Playlist", b =>
-                {
-                    b.HasOne("Atlas.Domain.Business.Parceiros.Entities.Parceiro", "Parceiro")
-                        .WithMany()
-                        .HasForeignKey("ParceiroId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_playlist_parceiros_parceiro_id");
 
                     b.Navigation("Parceiro");
                 });

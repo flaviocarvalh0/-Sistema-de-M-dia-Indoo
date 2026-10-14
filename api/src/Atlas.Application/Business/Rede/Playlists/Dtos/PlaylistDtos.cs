@@ -2,7 +2,7 @@ using Atlas.Application.Business.Common;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
 
-namespace Atlas.Application.Business.Indoor.Playlists.Dtos;
+namespace Atlas.Application.Business.Rede.Playlists.Dtos;
 
 public sealed record PlaylistDto : IDtoAuditavel
 {
@@ -36,6 +36,10 @@ public sealed record ItemPlaylistDto
     public int Ordem { get; init; }
     public long MidiaId { get; init; }
     public string Titulo { get; init; } = null!;
+
+    /// <summary>Anunciante dono da mídia.</summary>
+    public long ParceiroId { get; init; }
+    public string ParceiroNome { get; init; } = null!;
     public TipoMidia Tipo { get; init; }
     public int DuracaoSegundos { get; init; }
 
@@ -77,6 +81,8 @@ public static class PlaylistProjecao
                 Ordem = i.Ordem,
                 MidiaId = i.MidiaId,
                 Titulo = i.Midia.Titulo,
+                ParceiroId = i.Midia.ParceiroId,
+                ParceiroNome = i.Midia.Parceiro.Nome,
                 Tipo = i.Midia.Tipo,
                 DuracaoSegundos = i.Midia.DuracaoSegundos,
                 DiasSemana = (int)i.DiasSemana,

@@ -4,17 +4,19 @@ using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Application.Common.Extensions.Pagination;
 using Atlas.Application.Common.Models.Pagination;
 using Atlas.Domain.Business.Constants;
+using Atlas.Domain.Business.Indoor.Entities;
 
 namespace Atlas.Application.Business.Indoor.Telas.Queries;
 
-/// <summary>As telas do parceiro do usuário logado (somente leitura: o hardware é da operadora).</summary>
+/// <summary>
+/// "Onde meus anúncios passam": as telas ativas cuja playlist (ativa) tem
+/// alguma mídia ativa do parceiro do usuário logado. Somente leitura.
+/// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Telas.View)]
 public record GetTelasQuery : IRequest<PaginatedList<TelaDto>>
 {
     public PaginationParams PaginationParams { get; init; } = new();
     public string? SearchTerm { get; init; }
-    public bool? Ativo { get; init; }
-    public long? PlaylistId { get; init; }
 }
 
 public class GetTelasQueryHandler(
@@ -27,22 +29,13 @@ public class GetTelasQueryHandler(
     public async Task<PaginatedList<TelaDto>> Handle(GetTelasQuery request, CancellationToken cancellationToken)
     {
         var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var query = context.Telas.AsNoTracking().Where(t => t.ParceiroId == parceiro.ParceiroId);
-
-        if (request.Ativo is { } ativo)
-        {
-            query = query.Where(t => t.Ativo == ativo);
-        }
-
-        if (request.PlaylistId is { } playlistId)
-        {
-            query = query.Where(t => t.PlaylistId == playlistId);
-        }
+        var query = context.Telas.AsNoTracking().OndePassa(parceiro.ParceiroId);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var termo = request.SearchTerm.Trim().ToLower();
             query = query.Where(t => t.Nome.ToLower().Contains(termo)
+                || t.Parceiro.Nome.ToLower().Contains(termo)
                 || (t.Localizacao != null && t.Localizacao.ToLower().Contains(termo)));
         }
 
@@ -74,7 +67,8 @@ public class GetTelaByIdQueryHandler(
 
         var tela = await context.Telas
             .AsNoTracking()
-            .Where(t => t.Id == request.Id && t.ParceiroId == parceiro.ParceiroId)
+            .OndePassa(parceiro.ParceiroId)
+            .Where(t => t.Id == request.Id)
             .ParaDto(timeProvider.GetUtcNow(), comPareamento: false)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -85,3 +79,18 @@ public class GetTelaByIdQueryHandler(
         return tela;
     }
 }
+
+internal static class TelasDoAnunciante
+{
+    /// <summary>
+    /// Telas que exibem o parceiro agora: tela e playlist ativas, com algum
+    /// item de mídia ativa dele. Mídia de anunciante bloqueado não toca, e um
+    /// anunciante bloqueado nem chega aqui (o painel dele é barrado antes).
+    /// </summary>
+    public static IQueryable<Tela> OndePassa(this IQueryable<Tela> telas, long parceiroId) =>
+        telas.Where(t => t.Ativo
+            && t.Playlist != null
+            && t.Playlist.Ativo
+            && t.Playlist.Itens.Any(i => i.Midia.ParceiroId == parceiroId && i.Midia.Ativo));
+}
+

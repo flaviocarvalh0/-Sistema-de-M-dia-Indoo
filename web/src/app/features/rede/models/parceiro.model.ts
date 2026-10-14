@@ -15,6 +15,9 @@ export interface ParceiroDto {
   fusoHorario: string;
   cotaArmazenamentoMb: number;
   armazenamentoUsadoBytes: number;
+  /** Quantas mídias o parceiro pode ter ativas ao mesmo tempo (plano). */
+  limiteMidiasAtivas: number;
+  midiasAtivas: number;
   quantidadeTelas: number;
   situacao: SituacaoParceiro;
   motivoBloqueio?: string | null;
@@ -27,4 +30,4 @@ export interface ParceiroDto {
 }
 
 /** Linha da grid: o DTO mais as colunas calculadas. */
-export type LinhaParceiro = ParceiroDto & { usoArmazenamento: string };
+export type LinhaParceiro = ParceiroDto & { usoArmazenamento: string; usoMidiasAtivas: string };

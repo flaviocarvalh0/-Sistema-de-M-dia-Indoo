@@ -43,13 +43,12 @@ public class AutenticarDispositivoCommandHandler(
         var codigo = NormalizarCodigo(request.CodigoPareamento);
         var agora = timeProvider.GetUtcNow();
 
+        // O host vem junto: o nome dele vai na resposta (a TV mostra).
         var tela = await context.Telas
             .Include(t => t.Parceiro)
             .FirstOrDefaultAsync(t => t.CodigoPareamento == codigo, cancellationToken);
 
-        if (tela is null
-            || !tela.CodigoPareamentoValido(codigo, agora)
-            || tela.Parceiro.Situacao == SituacaoParceiro.Bloqueado)
+        if (tela is null || !tela.CodigoPareamentoValido(codigo, agora))
         {
             throw new ValidationException(nameof(request.CodigoPareamento), [MensagemCodigoInvalido]);
         }

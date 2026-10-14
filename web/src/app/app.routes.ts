@@ -85,7 +85,8 @@ export const routes: Routes = [
       // tabela em kebab-case). Divergir disso faz o link do menu apontar para
       // uma URL que este arquivo não registra.
 
-      // Módulo "Mídia Indoor" (/indoor) — o painel do parceiro.
+      // Módulo "Mídia Indoor" (/indoor) — o painel do parceiro (anunciante):
+      // as mídias dele e onde elas passam.
       {
         path: 'indoor',
         children: [
@@ -113,27 +114,12 @@ export const routes: Routes = [
               import('./features/midias/pages/envio-midia-page.component')
                 .then(m => m.EnvioMidiaPageComponent)
           },
-          {
-            path: 'playlist',
-            canActivate: [atlasPermissionGuard],
-            data: { entity: 'playlist', action: 'View' },
-            loadComponent: () =>
-              import('./features/playlists/pages/playlist-list-page.component')
-                .then(m => m.PlaylistListPageComponent)
-          },
-          {
-            path: 'playlist/:id/grade',
-            canActivate: [atlasPermissionGuard],
-            data: { entity: 'playlist', action: 'View' },
-            loadComponent: () =>
-              import('./features/playlists/pages/grade-playlist-page.component')
-                .then(m => m.GradePlaylistPageComponent)
-          },
-          { path: '', redirectTo: 'tela', pathMatch: 'full' },
+          { path: '', redirectTo: 'midia', pathMatch: 'full' },
         ]
       },
 
-      // Módulo "Rede" (/rede) — a operadora: parceiros e telas (hardware).
+      // Módulo "Rede" (/rede) — a operadora: parceiros, telas (hardware) e
+      // playlists (as grades da rede).
       {
         path: 'rede',
         children: [
@@ -155,6 +141,24 @@ export const routes: Routes = [
               import('./features/rede/pages/tela-rede-list-page.component')
                 .then(m => m.TelaRedeListPageComponent)
           },
+          {
+            // Grades da rede: a operadora monta com as mídias dos parceiros.
+            path: 'playlist',
+            canActivate: [atlasPermissionGuard],
+            data: { entity: 'playlist', action: 'View' },
+            loadComponent: () =>
+              import('./features/playlists/pages/playlist-list-page.component')
+                .then(m => m.PlaylistListPageComponent)
+          },
+          {
+            path: 'playlist/:id/grade',
+            canActivate: [atlasPermissionGuard],
+            data: { entity: 'playlist', action: 'View' },
+            loadComponent: () =>
+              import('./features/playlists/pages/grade-playlist-page.component')
+                .then(m => m.GradePlaylistPageComponent)
+          },
+
           { path: '', redirectTo: 'parceiro', pathMatch: 'full' },
         ]
       },

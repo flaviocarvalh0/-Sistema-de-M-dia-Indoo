@@ -14,9 +14,10 @@ import { formatarBytes } from '../../../shared/models/indoor.util';
 const ENTIDADE = 'midia';
 
 /**
- * Biblioteca de vídeos e imagens do parceiro. O envio tem página própria
- * (`/indoor/midia/enviar`); aqui se edita título, duração e período,
- * ativa/inativa e exclui (só mídia fora de playlists).
+ * Biblioteca de vídeos e imagens do parceiro. O envio e a troca de arquivo
+ * têm página própria (`/indoor/midia/enviar`); aqui se edita título, duração
+ * e período, ativa/inativa (dentro do limite do plano) e exclui (só mídia
+ * fora de playlists). As grades são montadas pela operadora.
  */
 @Component({
   selector: 'app-midia-list-page',
@@ -33,6 +34,15 @@ const ENTIDADE = 'midia';
           <div class="progress" role="progressbar" style="height: 8px"
                [attr.aria-valuenow]="percentualUso()" aria-valuemin="0" aria-valuemax="100">
             <div class="progress-bar" [class.bg-danger]="percentualUso() >= 90" [style.width.%]="percentualUso()"></div>
+          </div>
+          <div class="d-flex flex-wrap justify-content-between gap-2 small mt-2" data-teste="plano">
+            <span>
+              <i class="bi bi-collection-play me-1"></i>Mídias ativas: <strong>{{ u.midiasAtivas }} de {{ u.limiteMidiasAtivas }}</strong>
+              @if (u.midiasAtivas >= u.limiteMidiasAtivas) { <span class="badge text-bg-warning ms-1">plano completo</span> }
+            </span>
+            @if (u.midiasAtivas >= u.limiteMidiasAtivas) {
+              <span class="text-muted">Para trocar o anúncio, use "Substituir arquivo" ou inative uma mídia antes de ativar outra.</span>
+            }
           </div>
         </div>
       </div>
@@ -67,7 +77,7 @@ const ENTIDADE = 'midia';
       entityName="${ENTIDADE}"
       campoId="id"
       [autoInjetarId]="false"
-      mensagemVazio="Nenhuma mídia. Envie um vídeo ou imagem para montar as playlists."
+      mensagemVazio="Nenhuma mídia. Envie um vídeo ou imagem; a operadora inclui nas grades das TVs."
       [itens]="itens()"
       [totalElementos]="total()"
       [colunas]="colunas"
@@ -129,6 +139,10 @@ export class MidiaListPageComponent implements OnInit {
 
   acoesLinha: AcaoLinha[] = [
     { id: 'visualizar', label: 'Pré-visualizar', icone: 'bi bi-play-circle', classe: 'btn-outline-secondary' },
+    {
+      id: 'substituir', label: 'Substituir arquivo', icone: 'bi bi-arrow-repeat', classe: 'btn-outline-primary',
+      visivel: () => this.podeAtualizar(),
+    },
     {
       id: 'inativar', label: 'Inativar', icone: 'bi bi-pause-circle', classe: 'btn-outline-warning',
       visivel: (m: LinhaMidia) => m.ativo && this.podeAtualizar(),
@@ -205,13 +219,14 @@ export class MidiaListPageComponent implements OnInit {
 
   onAcaoLinha(ev: { acaoId: string; item: LinhaMidia }): void {
     if (ev.acaoId === 'visualizar') this.visualizar(ev.item);
+    if (ev.acaoId === 'substituir') this.router.navigate(['/indoor/midia/enviar'], { queryParams: { substituir: ev.item.id } });
     if (ev.acaoId === 'ativar') this.definirAtivo(ev.item, true);
     if (ev.acaoId === 'inativar') this.definirAtivo(ev.item, false);
   }
 
   onExcluir(m: LinhaMidia): void {
     if (m.quantidadePlaylists > 0) {
-      this.toast.warning(`"${m.titulo}" está em ${m.quantidadePlaylists} playlist(s). Tire das playlists ou inative.`);
+      this.toast.warning(`"${m.titulo}" está em ${m.quantidadePlaylists} grade(s) da operadora. Inative a mídia ou peça à operadora para tirá-la.`);
       return;
     }
     this.confirmModal.confirm({
@@ -247,7 +262,7 @@ export class MidiaListPageComponent implements OnInit {
 
   private definirAtivo(m: LinhaMidia, ativo: boolean): void {
     this.service.definirAtivo(m.id, ativo, m.version).subscribe(() => {
-      this.toast.success(ativo ? 'Mídia ativada.' : 'Mídia inativada: sai do loop das TVs, mas continua nas playlists.');
+      this.toast.success(ativo ? 'Mídia ativada.' : 'Mídia inativada: sai do loop das TVs, mas continua nas grades.');
       this.carregar();
     });
   }

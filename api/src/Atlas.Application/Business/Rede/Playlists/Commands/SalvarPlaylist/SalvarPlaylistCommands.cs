@@ -1,11 +1,13 @@
 using Atlas.Application.Business.Indoor.Common;
-using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
 
-namespace Atlas.Application.Business.Indoor.Playlists.Commands.SalvarPlaylist;
+namespace Atlas.Application.Business.Rede.Playlists.Commands.SalvarPlaylist;
 
-/// <summary>Cria a playlist vazia; os itens vêm em <c>DefinirItensPlaylistCommand</c>.</summary>
+/// <summary>
+/// Cria a playlist vazia (a operadora monta as grades da rede); os itens vêm
+/// em <c>DefinirItensPlaylistCommand</c>.
+/// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Playlists.Create)]
 public record CriarPlaylistCommand : IRequest<long>, IDadosPlaylist
 {
@@ -28,19 +30,17 @@ public interface IDadosPlaylist
     string? Descricao { get; }
 }
 
-public class CriarPlaylistCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class CriarPlaylistCommandHandler(IApplicationDbContext context)
     : IRequestHandler<CriarPlaylistCommand, long>
 {
     public async Task<long> Handle(CriarPlaylistCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
         var nome = request.Nome.Trim();
 
-        await RegrasPlaylist.GarantirNomeLivreAsync(context, parceiro.ParceiroId, nome, null, cancellationToken);
+        await RegrasPlaylist.GarantirNomeLivreAsync(context, nome, null, cancellationToken);
 
         var playlist = new Playlist
         {
-            ParceiroId = parceiro.ParceiroId,
             Nome = nome,
             Descricao = RegistrosDoParceiro.Limpar(request.Descricao),
         };
@@ -52,16 +52,15 @@ public class CriarPlaylistCommandHandler(IApplicationDbContext context, IParceir
     }
 }
 
-public class AtualizarPlaylistCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class AtualizarPlaylistCommandHandler(IApplicationDbContext context)
     : IRequestHandler<AtualizarPlaylistCommand, uint>
 {
     public async Task<uint> Handle(AtualizarPlaylistCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var playlist = await RegistrosDoParceiro.CarregarAsync(context.Playlists, parceiro.ParceiroId, request.Id, cancellationToken);
+        var playlist = await RegrasPlaylist.CarregarAsync(context.Playlists, request.Id, cancellationToken);
         var nome = request.Nome.Trim();
 
-        await RegrasPlaylist.GarantirNomeLivreAsync(context, parceiro.ParceiroId, nome, playlist.Id, cancellationToken);
+        await RegrasPlaylist.GarantirNomeLivreAsync(context, nome, playlist.Id, cancellationToken);
 
         context.ConferirVersao(playlist, request.Version);
         playlist.Nome = nome;
@@ -73,9 +72,19 @@ public class AtualizarPlaylistCommandHandler(IApplicationDbContext context, IPar
 
 internal static class RegrasPlaylist
 {
+    /// <summary>A playlist, rastreada; inexistente dá 404.</summary>
+    public static async Task<Playlist> CarregarAsync(IQueryable<Playlist> conjunto, long id, CancellationToken cancellationToken)
+    {
+        var playlist = await conjunto.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
+        Guard.Against.NotFound(id, playlist);
+
+        return playlist;
+    }
+
+    /// <summary>O nome é único na rede.</summary>
     public static async Task GarantirNomeLivreAsync(
         IApplicationDbContext context,
-        long parceiroId,
         string nome,
         long? idAtual,
         CancellationToken cancellationToken)
@@ -83,7 +92,7 @@ internal static class RegrasPlaylist
         var normalizado = nome.ToLower();
 
         if (await context.Playlists.AnyAsync(
-                p => p.ParceiroId == parceiroId && p.Nome.ToLower() == normalizado && p.Id != idAtual,
+                p => p.Nome.ToLower() == normalizado && p.Id != idAtual,
                 cancellationToken))
         {
             throw new ValidationException(nameof(Playlist.Nome), ["Já existe uma playlist com este nome."]);

@@ -22,6 +22,8 @@ public class ParceiroConfiguration : IEntityTypeConfiguration<Parceiro>
             table.HasCheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{10,11}$'");
 
             table.HasCheckConstraint("ck_parceiro_cota", "cota_armazenamento_mb BETWEEN 1 AND 1048576");
+
+            table.HasCheckConstraint("ck_parceiro_limite_midias_ativas", "limite_midias_ativas BETWEEN 1 AND 1000");
         });
 
         builder.HasIndex(p => p.Situacao);
@@ -42,6 +44,11 @@ public class ParceiroConfiguration : IEntityTypeConfiguration<Parceiro>
 
         builder.Property(p => p.CotaArmazenamentoMb)
             .HasDefaultValue(Parceiro.CotaPadraoMb);
+
+        // Parceiros que já existiam entram com o plano padrão (1 ativa); quem
+        // já tinha mais ativas continua assim (direito adquirido).
+        builder.Property(p => p.LimiteMidiasAtivas)
+            .HasDefaultValue(Parceiro.LimiteMidiasAtivasPadrao);
 
         builder.Ignore(p => p.Bloqueado);
         builder.Ignore(p => p.CotaArmazenamentoBytes);

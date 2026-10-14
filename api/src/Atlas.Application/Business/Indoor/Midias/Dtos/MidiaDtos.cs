@@ -1,3 +1,4 @@
+using Atlas.Domain.Business.Parceiros.Enums;
 using Atlas.Application.Business.Common;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
@@ -7,6 +8,14 @@ namespace Atlas.Application.Business.Indoor.Midias.Dtos;
 public sealed record MidiaDto : IDtoAuditavel
 {
     public long Id { get; init; }
+
+    /// <summary>Anunciante dono da mídia (a operadora vê as de todos).</summary>
+    public long ParceiroId { get; init; }
+    public string ParceiroNome { get; init; } = null!;
+
+    /// <summary>Mídia de parceiro bloqueado não toca em nenhuma TV.</summary>
+    public bool ParceiroBloqueado { get; init; }
+
     public string Titulo { get; init; } = null!;
     public TipoMidia Tipo { get; init; }
     public string TipoConteudo { get; init; } = null!;
@@ -39,7 +48,18 @@ public sealed record MidiaDto : IDtoAuditavel
 public sealed record EnvioMidiaDto(string Chave, Uri UrlEnvio, DateTimeOffset ExpiraEm);
 
 /// <summary>Uso do storage pelo parceiro, para o painel mostrar antes do envio.</summary>
-public sealed record UsoArmazenamentoDto(long UsadoBytes, long CotaBytes, long TamanhoMaximoArquivoBytes);
+/// <summary>Espaço e plano do parceiro, para o painel avisar antes de enviar ou ativar.</summary>
+/// <param name="UsadoBytes">Soma das mídias gravadas (ativas ou não).</param>
+/// <param name="CotaBytes">Espaço contratado.</param>
+/// <param name="TamanhoMaximoArquivoBytes">Limite por arquivo.</param>
+/// <param name="MidiasAtivas">Mídias ativas agora.</param>
+/// <param name="LimiteMidiasAtivas">Quantas o plano permite ao mesmo tempo.</param>
+public sealed record UsoArmazenamentoDto(
+    long UsadoBytes,
+    long CotaBytes,
+    long TamanhoMaximoArquivoBytes,
+    int MidiasAtivas,
+    int LimiteMidiasAtivas);
 
 public static class MidiaProjecao
 {
@@ -47,6 +67,9 @@ public static class MidiaProjecao
         query.Select(m => new MidiaDto
         {
             Id = m.Id,
+            ParceiroId = m.ParceiroId,
+            ParceiroNome = m.Parceiro.Nome,
+            ParceiroBloqueado = m.Parceiro.Situacao == SituacaoParceiro.Bloqueado,
             Titulo = m.Titulo,
             Tipo = m.Tipo,
             TipoConteudo = m.TipoConteudo,

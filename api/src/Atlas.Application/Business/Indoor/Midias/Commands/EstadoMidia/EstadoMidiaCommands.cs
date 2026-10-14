@@ -1,5 +1,6 @@
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Common;
+using Atlas.Application.Business.Indoor.Midias.Common;
 using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
@@ -7,7 +8,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Atlas.Application.Business.Indoor.Midias.Commands.EstadoMidia;
 
-/// <summary>Volta a mídia às grades em que ela está.</summary>
+/// <summary>
+/// Volta a mídia às grades em que ela está. Respeita o plano do parceiro
+/// (<c>LimiteMidiasAtivas</c>): passar do limite dá 400.
+/// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Midias.Update)]
 public record AtivarMidiaCommand(long Id, uint Version) : IRequest<uint>;
 
@@ -29,6 +33,11 @@ public class AtivarMidiaCommandHandler(IApplicationDbContext context, IParceiroA
     {
         var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
         var midia = await RegistrosDoParceiro.CarregarAsync(context.Midias, parceiro.ParceiroId, request.Id, cancellationToken);
+
+        if (!midia.Ativo)
+        {
+            await LimiteMidiasAtivas.GarantirVagaAsync(context, parceiro.ParceiroId, cancellationToken);
+        }
 
         context.ConferirVersao(midia, request.Version);
         midia.Ativo = true;

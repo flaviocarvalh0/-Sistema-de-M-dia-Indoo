@@ -11,7 +11,8 @@ export const PARCEIRO_COLUNAS: ColunaDef[] = [
   { campo: 'nome', titulo: 'Parceiro', principal: true, tipo: 'texto' },
   { campo: 'nomeResponsavel', titulo: 'Responsável', tipo: 'texto' },
   { campo: 'cidade', titulo: 'Cidade', tipo: 'texto' },
-  { campo: 'quantidadeTelas', titulo: 'Telas', tipo: 'numero' },
+  { campo: 'quantidadeTelas', titulo: 'Telas no local', tipo: 'numero' },
+  { campo: 'usoMidiasAtivas', titulo: 'Mídias ativas', tipo: 'texto' },
   { campo: 'usoArmazenamento', titulo: 'Armazenamento', tipo: 'texto' },
   { campo: 'situacao', titulo: 'Situação', tipo: 'badge', badgeMap: SITUACAO_PARCEIRO_BADGE },
 ];
@@ -22,8 +23,12 @@ export const PARCEIRO_COLUNAS: ColunaDef[] = [
  */
 export function criarCamposParceiro(edicao: boolean): FormItemConfig[] {
   return [
-    { type: 'texto', name: 'nome', label: 'Nome do parceiro', required: true, col: 'col-md-8', placeholder: 'Ex.: Academia Centro' },
-    { type: 'numero', name: 'cotaArmazenamentoMb', label: 'Espaço (MB)', required: true, col: 'col-md-4', value: 200, min: 1, max: 1024,
+    { type: 'texto', name: 'nome', label: 'Nome do parceiro', required: true, col: 'col-12', placeholder: 'Ex.: Academia Centro' },
+    { type: 'numero', name: 'limiteMidiasAtivas', label: 'Mídias ativas (plano)', required: true, col: 'col-md-6', value: 1, min: 1, max: 1000,
+      hint: edicao
+        ? 'Reduzir não inativa nada: só impede ativar novas além do limite.'
+        : 'Quantas mídias podem estar ativas ao mesmo tempo.' },
+    { type: 'numero', name: 'cotaArmazenamentoMb', label: 'Espaço (MB)', required: true, col: 'col-md-6', value: 200, min: 1, max: 1024,
       hint: 'Soma dos vídeos e imagens.' },
     { type: 'texto', name: 'nomeResponsavel', label: 'Responsável', required: !edicao, col: 'col-md-6' },
     { type: 'texto', name: 'email', label: 'E-mail de acesso', required: true, col: 'col-md-6', disabled: edicao,

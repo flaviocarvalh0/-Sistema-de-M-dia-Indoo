@@ -5,8 +5,9 @@ using Atlas.Domain.Business.Indoor.Entities;
 namespace Atlas.Application.Business.Rede.Telas.Commands.SalvarTela;
 
 /// <summary>
-/// A operadora cadastra a tela (o hardware é dela) e escolhe o parceiro que
-/// vai gerir o conteúdo. A TV é pareada depois, com o código gerado aqui.
+/// A operadora cadastra a tela (o hardware é dela), o parceiro que hospeda a
+/// TV (o "host": o estabelecimento que cede o espaço) e a playlist que ela
+/// exibe. A TV é pareada depois, com o código gerado aqui.
 /// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Telas.Create)]
 public record CriarTelaCommand : IRequest<long>, IDadosTela
@@ -15,11 +16,12 @@ public record CriarTelaCommand : IRequest<long>, IDadosTela
     public string Nome { get; init; } = string.Empty;
     public string? Localizacao { get; init; }
     public string? IdentificacaoAparelho { get; init; }
+    public long? PlaylistId { get; init; }
 }
 
 /// <summary>
-/// Dados da tela. Trocar o parceiro tira a playlist (era do parceiro
-/// anterior), desvincula a TV e descarta o código pendente.
+/// Dados da tela, inclusive o host e a playlist (vale na próxima
+/// sincronização da TV).
 /// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Telas.Update)]
 public record AtualizarTelaCommand : IRequest<uint>, IDadosTela
@@ -29,6 +31,7 @@ public record AtualizarTelaCommand : IRequest<uint>, IDadosTela
     public string Nome { get; init; } = string.Empty;
     public string? Localizacao { get; init; }
     public string? IdentificacaoAparelho { get; init; }
+    public long? PlaylistId { get; init; }
     public uint Version { get; init; }
 }
 
@@ -38,6 +41,7 @@ public interface IDadosTela
     string Nome { get; }
     string? Localizacao { get; }
     string? IdentificacaoAparelho { get; }
+    long? PlaylistId { get; }
 }
 
 public class CriarTelaCommandHandler(IApplicationDbContext context)
@@ -49,6 +53,7 @@ public class CriarTelaCommandHandler(IApplicationDbContext context)
 
         await RegrasTela.GarantirParceiroAsync(context, request.ParceiroId, cancellationToken);
         await RegrasTela.GarantirNomeLivreAsync(context, request.ParceiroId, nome, null, cancellationToken);
+        await RegrasTela.GarantirPlaylistAsync(context, request.PlaylistId, cancellationToken);
 
         var tela = new Tela
         {
@@ -56,6 +61,7 @@ public class CriarTelaCommandHandler(IApplicationDbContext context)
             Nome = nome,
             Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao),
             IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho),
+            PlaylistId = request.PlaylistId,
         };
 
         context.Telas.Add(tela);
@@ -79,12 +85,14 @@ public class AtualizarTelaCommandHandler(IApplicationDbContext context)
         }
 
         await RegrasTela.GarantirNomeLivreAsync(context, request.ParceiroId, nome, tela.Id, cancellationToken);
+        await RegrasTela.GarantirPlaylistAsync(context, request.PlaylistId, cancellationToken);
 
         context.ConferirVersao(tela, request.Version);
-        tela.TransferirPara(request.ParceiroId);
+        tela.ParceiroId = request.ParceiroId;
         tela.Nome = nome;
         tela.Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao);
         tela.IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho);
+        tela.PlaylistId = request.PlaylistId;
 
         return await context.SalvarAsync(tela, cancellationToken);
     }
@@ -111,7 +119,15 @@ internal static class RegrasTela
         }
     }
 
-    /// <summary>O nome é único dentro do parceiro (é como ele reconhece a TV).</summary>
+    public static async Task GarantirPlaylistAsync(IApplicationDbContext context, long? playlistId, CancellationToken cancellationToken)
+    {
+        if (playlistId is { } id && !await context.Playlists.AnyAsync(p => p.Id == id, cancellationToken))
+        {
+            throw new ValidationException(nameof(Tela.PlaylistId), ["Playlist não encontrada."]);
+        }
+    }
+
+    /// <summary>O nome é único dentro do host (é como ele reconhece a TV).</summary>
     public static async Task GarantirNomeLivreAsync(
         IApplicationDbContext context,
         long parceiroId,
@@ -150,7 +166,7 @@ internal static class ValidacaoTela
     public static void RegrasDados<T>(this AbstractValidator<T> validador) where T : IDadosTela
     {
         validador.RuleFor(x => x.ParceiroId)
-            .GreaterThan(0).WithMessage("Escolha o parceiro da tela.");
+            .GreaterThan(0).WithMessage("Escolha o parceiro onde a TV está instalada.");
 
         validador.RuleFor(x => x.Nome)
             .NotEmpty().WithMessage("O nome da tela é obrigatório.")
@@ -161,5 +177,9 @@ internal static class ValidacaoTela
 
         validador.RuleFor(x => x.IdentificacaoAparelho)
             .MaximumLength(100).WithMessage("A identificação do aparelho deve ter no máximo 100 caracteres.");
+
+        validador.RuleFor(x => x.PlaylistId)
+            .GreaterThan(0).WithMessage("Playlist inválida.")
+            .When(x => x.PlaylistId is not null);
     }
 }

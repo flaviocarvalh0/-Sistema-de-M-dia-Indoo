@@ -1,35 +1,27 @@
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { CrudService, Page, PaginatedResponse, QueryParams, comErroLocal } from '@atlas/framework';
+import { CrudService, Page, PaginatedResponse, QueryParams } from '@atlas/framework';
 import { LinhaTela, SituacaoTela, TelaDto } from '../models/tela.model';
 import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util';
 
 /**
- * Telas do parceiro do usuário logado. O hardware é da operadora (Rede →
- * Telas): aqui o parceiro só consulta as TVs dele e escolhe a playlist.
+ * "Onde meus anúncios passam": as TVs ativas cuja playlist tem uma mídia
+ * ativa do parceiro logado. Somente leitura (telas e grades são da operadora).
  *
- *  - GET /api/v1/business/parceiro/telas?ativo=&playlistId=
+ *  - GET /api/v1/business/parceiro/telas?searchTerm=
  *  - GET /api/v1/business/parceiro/telas/{id}
- *  - PUT /api/v1/business/parceiro/telas/{id}/playlist   { id, playlistId, version } → nova versão
  */
 @Injectable({ providedIn: 'root' })
 export class TelaService extends CrudService<TelaDto, number> {
   protected readonly resource = 'api/v1/business/parceiro/telas';
 
-  listar(query: QueryParams, ativo: boolean | null = null): Observable<Page<LinhaTela>> {
+  listar(query: QueryParams): Observable<Page<LinhaTela>> {
     return this.http
-      .get<PaginatedResponse<TelaDto>>(this.baseUrl, {
-        params: paramsPaginacao(query, { ativo: ativo == null ? null : String(ativo) }),
-      })
+      .get<PaginatedResponse<TelaDto>>(this.baseUrl, { params: paramsPaginacao(query) })
       .pipe(
         map(resp => paraPage(resp, query)),
         map(page => ({ ...page, content: page.content.map(paraLinhaTela) })),
       );
-  }
-
-  /** Sai de modal com `errosInline: true`: erro no banner do modal. */
-  definirPlaylist(id: number, playlistId: number | null, version: number): Observable<number> {
-    return this.http.put<number>(`${this.baseUrl}/${id}/playlist`, { id, playlistId, version }, { context: comErroLocal() });
   }
 }
 

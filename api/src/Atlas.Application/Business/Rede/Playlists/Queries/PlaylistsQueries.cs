@@ -1,12 +1,12 @@
 using Atlas.Application.Business.Common;
-using Atlas.Application.Business.Indoor.Playlists.Dtos;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Rede.Playlists.Dtos;
 using Atlas.Application.Common.Extensions.Pagination;
 using Atlas.Application.Common.Models.Pagination;
 using Atlas.Domain.Business.Constants;
 
-namespace Atlas.Application.Business.Indoor.Playlists.Queries;
+namespace Atlas.Application.Business.Rede.Playlists.Queries;
 
+/// <summary>As playlists da rede (operadora).</summary>
 [Authorize(Policy = BusinessPermissionKeys.Playlists.View)]
 public record GetPlaylistsQuery : IRequest<PaginatedList<PlaylistDto>>
 {
@@ -15,13 +15,12 @@ public record GetPlaylistsQuery : IRequest<PaginatedList<PlaylistDto>>
     public bool? Ativo { get; init; }
 }
 
-public class GetPlaylistsQueryHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual, IIdentityService identityService)
+public class GetPlaylistsQueryHandler(IApplicationDbContext context, IIdentityService identityService)
     : IRequestHandler<GetPlaylistsQuery, PaginatedList<PlaylistDto>>
 {
     public async Task<PaginatedList<PlaylistDto>> Handle(GetPlaylistsQuery request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var query = context.Playlists.AsNoTracking().Where(p => p.ParceiroId == parceiro.ParceiroId);
+        var query = context.Playlists.AsNoTracking();
 
         if (request.Ativo is { } ativo)
         {
@@ -50,16 +49,14 @@ public class GetPlaylistsQueryHandler(IApplicationDbContext context, IParceiroAt
 [Authorize(Policy = BusinessPermissionKeys.Playlists.View)]
 public record GetPlaylistByIdQuery(long Id) : IRequest<PlaylistDto>;
 
-public class GetPlaylistByIdQueryHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual, IIdentityService identityService)
+public class GetPlaylistByIdQueryHandler(IApplicationDbContext context, IIdentityService identityService)
     : IRequestHandler<GetPlaylistByIdQuery, PlaylistDto>
 {
     public async Task<PlaylistDto> Handle(GetPlaylistByIdQuery request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-
         var playlist = await context.Playlists
             .AsNoTracking()
-            .Where(p => p.Id == request.Id && p.ParceiroId == parceiro.ParceiroId)
+            .Where(p => p.Id == request.Id)
             .ParaDto(context)
             .FirstOrDefaultAsync(cancellationToken);
 

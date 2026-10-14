@@ -1,3 +1,4 @@
+using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Rede.Parceiros.Commands.Common;
 using Atlas.Domain.Business.Constants;
@@ -19,6 +20,9 @@ public record AtualizarParceiroCommand : IRequest<uint>
     public string? Cidade { get; init; }
     public string FusoHorario { get; init; } = FusosHorarios.Padrao;
     public int CotaArmazenamentoMb { get; init; }
+
+    /// <summary>Plano: mídias ativas ao mesmo tempo. Baixar não inativa nada (direito adquirido).</summary>
+    public int LimiteMidiasAtivas { get; init; } = Parceiro.LimiteMidiasAtivasPadrao;
     public string? ObservacaoInterna { get; init; }
     public uint Version { get; init; }
 }
@@ -42,6 +46,7 @@ public class AtualizarParceiroCommandHandler(IApplicationDbContext context)
         parceiro.Cidade = Limpar(request.Cidade);
         parceiro.FusoHorario = request.FusoHorario.Trim();
         parceiro.CotaArmazenamentoMb = request.CotaArmazenamentoMb;
+        parceiro.LimiteMidiasAtivas = request.LimiteMidiasAtivas;
         parceiro.ObservacaoInterna = Limpar(request.ObservacaoInterna);
 
         await context.SaveChangesAsync(cancellationToken);
@@ -69,6 +74,7 @@ public class AtualizarParceiroCommandValidator : AbstractValidator<AtualizarParc
         RuleFor(x => x.Cidade).CidadeParceiro();
         RuleFor(x => x.FusoHorario).FusoHorarioParceiro();
         RuleFor(x => x.CotaArmazenamentoMb).CotaParceiro();
+        RuleFor(x => x.LimiteMidiasAtivas).LimiteMidiasAtivas();
 
         RuleFor(x => x.Version)
             .GreaterThan(0u).WithMessage("A versão do registro é obrigatória.");

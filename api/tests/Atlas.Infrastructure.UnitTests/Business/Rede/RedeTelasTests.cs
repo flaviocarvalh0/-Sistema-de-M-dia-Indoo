@@ -58,7 +58,7 @@ public class RedeTelasTests : IDisposable
         tela.Nome.Should().Be("Recepção");
         tela.Localizacao.Should().Be("Térreo");
         tela.IdentificacaoAparelho.Should().Be("00:1A:2B:3C:4D:5E");
-        tela.PlaylistId.Should().BeNull("a playlist é escolhida pelo parceiro");
+        tela.PlaylistId.Should().BeNull("sem playlist informada");
         tela.Situacao.Should().Be(SituacaoTela.AguardandoPareamento);
     }
 
@@ -83,13 +83,13 @@ public class RedeTelasTests : IDisposable
     }
 
     [Fact]
-    public async Task Atualizar_TrocarDeParceiroTiraPlaylistDesvinculaEDescartaCodigo()
+    public async Task Atualizar_TrocarDeHostMantemPlaylistETV()
     {
-        var playlist = new Playlist { ParceiroId = _parceiroA, Nome = "Grade" };
+        // A playlist é da rede e a TV é da operadora: mudar o host não mexe nelas.
+        var playlist = new Playlist { Nome = "Grade" };
         _context.Playlists.Add(playlist);
         var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção", Playlist = playlist };
         tela.Parear("tv-1", Agora.AddHours(-1));
-        tela.GerarCodigoPareamento("ABCD2345", Agora);
         _context.Telas.Add(tela);
         await _context.SaveChangesAsync();
         var credencialAntes = tela.VersaoCredencial;
@@ -99,21 +99,35 @@ public class RedeTelasTests : IDisposable
             Id = tela.Id,
             ParceiroId = _parceiroB,
             Nome = "Balcão",
+            PlaylistId = playlist.Id,
             Version = 0,
         }, CancellationToken.None);
 
         var salva = await _context.Telas.AsNoTracking().SingleAsync();
         salva.ParceiroId.Should().Be(_parceiroB);
-        salva.PlaylistId.Should().BeNull("a playlist era do parceiro anterior");
-        salva.DispositivoId.Should().BeNull("a TV não pode continuar tocando o conteúdo do parceiro anterior");
-        salva.VersaoCredencial.Should().BeGreaterThan(credencialAntes, "o token da TV antiga deixa de valer");
-        salva.CodigoPareamento.Should().BeNull();
+        salva.PlaylistId.Should().Be(playlist.Id);
+        salva.DispositivoId.Should().Be("tv-1");
+        salva.VersaoCredencial.Should().Be(credencialAntes);
+    }
+
+    [Fact]
+    public async Task CriarEAtualizar_EscolhemAPlaylist_InexistenteERecusada()
+    {
+        var playlist = new Playlist { Nome = "Grade" };
+        _context.Playlists.Add(playlist);
+        await _context.SaveChangesAsync();
+
+        var id = await Criar(new CriarTelaCommand { ParceiroId = _parceiroA, Nome = "Recepção", PlaylistId = playlist.Id });
+        (await Obter(id)).PlaylistNome.Should().Be("Grade");
+
+        var acao = () => Criar(new CriarTelaCommand { ParceiroId = _parceiroA, Nome = "Outra", PlaylistId = 999 });
+        (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("PlaylistId");
     }
 
     [Fact]
     public async Task Atualizar_MesmoParceiroMantemPlaylistETV()
     {
-        var playlist = new Playlist { ParceiroId = _parceiroA, Nome = "Grade" };
+        var playlist = new Playlist { Nome = "Grade" };
         _context.Playlists.Add(playlist);
         var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção", Playlist = playlist };
         tela.Parear("tv-1", Agora.AddHours(-1));
@@ -126,6 +140,7 @@ public class RedeTelasTests : IDisposable
             ParceiroId = _parceiroA,
             Nome = "Recepção principal",
             IdentificacaoAparelho = "SN-123",
+            PlaylistId = playlist.Id,
             Version = 0,
         }, CancellationToken.None);
 

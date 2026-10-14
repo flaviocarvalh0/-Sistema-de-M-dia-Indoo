@@ -1,11 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpEventType } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, filter, last, switchMap, tap } from 'rxjs';
 import { ToastService, extrairMensagemErro } from '@atlas/framework';
 import { MidiaService } from '../services/midia.service';
-import { UsoArmazenamento } from '../models/midia.model';
+import { MidiaDto, UsoArmazenamento } from '../models/midia.model';
 import { DURACAO_MAXIMA_SEGUNDOS } from '../configs/midia.config';
 import { formatarBytes } from '../../../shared/models/indoor.util';
 
@@ -26,6 +26,11 @@ type Etapa = 'escolha' | 'hash' | 'envio' | 'registro';
  *  2. PUT do arquivo direto no storage, com progresso;
  *  3. POST da mídia com o SHA-256 calculado aqui — a API confere o arquivo
  *     enviado e as TVs usam o hash para validar o download.
+ *
+ * Com `?substituir={id}`, troca o arquivo de uma mídia existente
+ * (`PUT {id}/arquivo`): ela continua nas mesmas grades e ativa, e as TVs
+ * baixam o arquivo novo pelo hash novo. É o caminho para trocar o anúncio
+ * sem esbarrar no limite de mídias ativas do plano.
  */
 @Component({
   selector: 'app-envio-midia-page',
@@ -36,8 +41,22 @@ type Etapa = 'escolha' | 'hash' | 'envio' | 'registro';
       <a routerLink="/indoor/midia" class="btn btn-sm btn-outline-secondary me-2" aria-label="Voltar">
         <i class="bi bi-arrow-left"></i>
       </a>
-      <h4 class="mb-0">Enviar mídia</h4>
+      <h4 class="mb-0">{{ substituindo() ? 'Substituir arquivo' : 'Enviar mídia' }}</h4>
     </div>
+
+    @if (substituindo(); as m) {
+      <div class="alert alert-info small py-2" style="max-width: 760px">
+        <i class="bi bi-arrow-repeat me-1"></i>
+        Trocando o arquivo de <strong>{{ m.titulo }}</strong>. A mídia continua nas mesmas grades, com o mesmo
+        título e período; as TVs baixam o arquivo novo na próxima sincronização.
+      </div>
+    } @else if (planoCompleto()) {
+      <div class="alert alert-warning small py-2" style="max-width: 760px" data-teste="aviso-plano">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Seu plano permite {{ uso()?.limiteMidiasAtivas }} mídia(s) ativa(s) e todas estão em uso: esta nova será
+        salva <strong>inativa</strong>. Para trocar o anúncio no ar, use "Substituir arquivo" na mídia atual.
+      </div>
+    }
 
     <div class="card" style="max-width: 760px">
       <div class="card-body">
@@ -65,10 +84,12 @@ type Etapa = 'escolha' | 'hash' | 'envio' | 'registro';
               <div class="small text-muted mt-1">{{ a.name }} · {{ tamanhoArquivo() }}</div>
             </div>
             <div class="col-md-7">
-              <div class="mb-3">
-                <label class="form-label" for="titulo">Título</label>
-                <input id="titulo" class="form-control" maxlength="150" [(ngModel)]="titulo" [disabled]="enviando()">
-              </div>
+              @if (!substituindo()) {
+                <div class="mb-3">
+                  <label class="form-label" for="titulo">Título</label>
+                  <input id="titulo" class="form-control" maxlength="150" [(ngModel)]="titulo" [disabled]="enviando()">
+                </div>
+              }
               <div class="mb-3">
                 <label class="form-label" for="duracao">Duração na tela (s)</label>
                 <input id="duracao" type="number" class="form-control" min="1" [max]="duracaoMaxima"
@@ -77,16 +98,18 @@ type Etapa = 'escolha' | 'hash' | 'envio' | 'registro';
                   {{ tipo() === 'Video' ? 'Preenchida com a duração do vídeo.' : 'Tempo que a imagem fica na tela.' }}
                 </div>
               </div>
-              <div class="row g-2">
-                <div class="col-6">
-                  <label class="form-label" for="inicio">Exibir a partir de</label>
-                  <input id="inicio" type="date" class="form-control" [(ngModel)]="inicioExibicao" [disabled]="enviando()">
+              @if (!substituindo()) {
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label" for="inicio">Exibir a partir de</label>
+                    <input id="inicio" type="date" class="form-control" [(ngModel)]="inicioExibicao" [disabled]="enviando()">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label" for="fim">Exibir até</label>
+                    <input id="fim" type="date" class="form-control" [(ngModel)]="fimExibicao" [disabled]="enviando()">
+                  </div>
                 </div>
-                <div class="col-6">
-                  <label class="form-label" for="fim">Exibir até</label>
-                  <input id="fim" type="date" class="form-control" [(ngModel)]="fimExibicao" [disabled]="enviando()">
-                </div>
-              </div>
+              }
             </div>
           </div>
         }
@@ -107,7 +130,7 @@ type Etapa = 'escolha' | 'hash' | 'envio' | 'registro';
         <div class="d-flex justify-content-end gap-2">
           <a routerLink="/indoor/midia" class="btn btn-outline-secondary" [class.disabled]="enviando()">Cancelar</a>
           <button type="button" class="btn btn-primary" [disabled]="!podeEnviar()" (click)="enviar()">
-            <i class="bi bi-cloud-arrow-up me-1"></i>Enviar
+            <i class="bi bi-cloud-arrow-up me-1"></i>{{ substituindo() ? 'Substituir' : 'Enviar' }}
           </button>
         </div>
       </div>
@@ -118,12 +141,15 @@ export class EnvioMidiaPageComponent implements OnInit {
   private service = inject(MidiaService);
   private toast = inject(ToastService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   readonly duracaoMaxima = DURACAO_MAXIMA_SEGUNDOS;
 
   arquivo = signal<File | null>(null);
   previa = signal<string | null>(null);
   uso = signal<UsoArmazenamento | null>(null);
+  /** A mídia cujo arquivo está sendo trocado (`?substituir=`). */
+  substituindo = signal<MidiaDto | null>(null);
   etapa = signal<Etapa>('escolha');
   progresso = signal(0);
   erro = signal<string | null>(null);
@@ -140,9 +166,15 @@ export class EnvioMidiaPageComponent implements OnInit {
   enviando = computed(() => this.etapa() !== 'escolha');
   tamanhoArquivo = computed(() => formatarBytes(this.arquivo()?.size));
   limiteArquivo = computed(() => formatarBytes(this.uso()?.tamanhoMaximoArquivoBytes ?? 50 * 1024 * 1024));
-  disponivel = computed(() => {
+  /** O arquivo trocado libera o espaço dele. */
+  private livreBytes = computed(() => {
     const u = this.uso();
-    return u ? formatarBytes(Math.max(0, u.cotaBytes - u.usadoBytes)) : '';
+    return u ? Math.max(0, u.cotaBytes - u.usadoBytes + (this.substituindo()?.tamanhoBytes ?? 0)) : 0;
+  });
+  disponivel = computed(() => (this.uso() ? formatarBytes(this.livreBytes()) : ''));
+  planoCompleto = computed(() => {
+    const u = this.uso();
+    return !!u && u.midiasAtivas >= u.limiteMidiasAtivas;
   });
   textoEtapa = computed(() => ({
     escolha: '',
@@ -153,6 +185,13 @@ export class EnvioMidiaPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.service.usoArmazenamento().subscribe(u => this.uso.set(u));
+    const id = Number(this.route.snapshot.queryParamMap.get('substituir'));
+    if (id) {
+      this.service.getById(id).subscribe({
+        next: m => this.substituindo.set(m),
+        error: () => this.router.navigate(['/indoor/midia']),
+      });
+    }
   }
 
   onArquivo(ev: Event): void {
@@ -169,7 +208,7 @@ export class EnvioMidiaPageComponent implements OnInit {
       this.erro.set('Formato não aceito. Use vídeo MP4 ou imagem JPG/PNG.');
     } else if (u && arquivo.size > u.tamanhoMaximoArquivoBytes) {
       this.erro.set(`O arquivo tem ${formatarBytes(arquivo.size)}; o limite é ${formatarBytes(u.tamanhoMaximoArquivoBytes)}.`);
-    } else if (u && u.usadoBytes + arquivo.size > u.cotaBytes) {
+    } else if (u && arquivo.size > this.livreBytes()) {
       this.erro.set(`Sem espaço: restam ${this.disponivel()}. Exclua mídias que não usa mais.`);
     }
     if (this.erro()) {
@@ -179,8 +218,15 @@ export class EnvioMidiaPageComponent implements OnInit {
 
     this.arquivo.set(arquivo);
     this.previa.set(URL.createObjectURL(arquivo));
-    this.titulo = arquivo.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim().slice(0, 150);
-    this.duracaoSegundos = tipo === 'Imagem' ? DURACAO_PADRAO_IMAGEM : null;
+    const atual = this.substituindo();
+    if (atual) {
+      this.titulo = atual.titulo;
+      // Imagem nova mantém a duração na tela de antes; vídeo lê a do arquivo.
+      this.duracaoSegundos = tipo === 'Imagem' ? atual.duracaoSegundos : null;
+    } else {
+      this.titulo = arquivo.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim().slice(0, 150);
+      this.duracaoSegundos = tipo === 'Imagem' ? DURACAO_PADRAO_IMAGEM : null;
+    }
   }
 
   onMetadados(ev: Event): void {
@@ -213,23 +259,36 @@ export class EnvioMidiaPageComponent implements OnInit {
       hash = null;
     }
 
+    const atual = this.substituindo();
+    const nasceInativa = !atual && this.planoCompleto();
     this.etapa.set('envio');
     this.service.prepararEnvio(arquivo.type, arquivo.size).pipe(
       switchMap(envio => this.enviarArquivo(envio.urlEnvio, arquivo).pipe(
         tap(() => this.etapa.set('registro')),
-        switchMap(() => this.service.criar({
-          titulo: this.titulo.trim(),
-          chave: envio.chave,
-          tipoConteudo: arquivo.type,
-          hash,
-          duracaoSegundos: Number(this.duracaoSegundos),
-          inicioExibicao: this.inicioExibicao || null,
-          fimExibicao: this.fimExibicao || null,
-        })),
+        switchMap(() => atual
+          ? this.service.substituirArquivo({
+            id: atual.id,
+            chave: envio.chave,
+            tipoConteudo: arquivo.type,
+            hash,
+            duracaoSegundos: Number(this.duracaoSegundos),
+            version: atual.version,
+          })
+          : this.service.criar({
+            titulo: this.titulo.trim(),
+            chave: envio.chave,
+            tipoConteudo: arquivo.type,
+            hash,
+            duracaoSegundos: Number(this.duracaoSegundos),
+            inicioExibicao: this.inicioExibicao || null,
+            fimExibicao: this.fimExibicao || null,
+          })),
       )),
     ).subscribe({
       next: () => {
-        this.toast.success('Mídia enviada. Inclua-a numa playlist para ir às TVs.');
+        if (atual) this.toast.success('Arquivo substituído. As TVs baixam o novo na próxima sincronização.');
+        else if (nasceInativa) this.toast.warning('Mídia enviada como inativa: o limite de mídias ativas do seu plano está completo.');
+        else this.toast.success('Mídia enviada e ativa. A operadora inclui nas grades das TVs.');
         this.limparPrevia();
         this.router.navigate(['/indoor/midia']);
       },

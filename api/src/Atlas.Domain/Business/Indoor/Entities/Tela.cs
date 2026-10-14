@@ -6,10 +6,10 @@ using Atlas.Domain.Platform.Attributes;
 namespace Atlas.Domain.Business.Indoor.Entities;
 
 /// <summary>
-/// TV (TV box) instalada num parceiro. O hardware é da operadora: ela
-/// cadastra a tela, escolhe o parceiro e pareia a TV (código de uso único que
-/// a TV troca por um token próprio). O parceiro só escolhe a
-/// <see cref="Playlist"/> que a tela exibe.
+/// TV (TV box) da operadora, instalada num parceiro (o "host", que cede o
+/// espaço e ganha cotas de anúncio). A operadora cadastra a tela, pareia a TV
+/// (código de uso único que a TV troca por um token próprio) e escolhe a
+/// <see cref="Playlist"/> que ela exibe. O fuso horário da grade é o do host.
 /// </summary>
 /// <remarks>
 /// O que muda a cada sincronização (último contato, versão do app) fica em
@@ -112,28 +112,6 @@ public class Tela : BaseAuditableEntity, IDoParceiro
         VersaoCredencial++;
     }
 
-    /// <summary>
-    /// Leva a tela para outro parceiro. A playlist era do parceiro anterior e
-    /// sai; a TV pareada e o código pendente também, para nenhuma TV tocar ou
-    /// parear com o conteúdo de quem não é mais dono da tela.
-    /// </summary>
-    public void TransferirPara(long parceiroId)
-    {
-        if (parceiroId == ParceiroId)
-        {
-            return;
-        }
-
-        ParceiroId = parceiroId;
-        PlaylistId = null;
-        CodigoPareamento = null;
-        CodigoPareamentoExpiraEm = null;
-
-        if (Pareada)
-        {
-            Desvincular();
-        }
-    }
 
     public SituacaoTela Situacao(DateTimeOffset agora, TimeSpan toleranciaOffline) =>
         CalcularSituacao(Pareada, Estado?.UltimaSincronizacao, agora, toleranciaOffline);

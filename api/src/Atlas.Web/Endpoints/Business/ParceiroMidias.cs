@@ -2,6 +2,7 @@ using Atlas.Application.Business.Indoor.Midias.Commands.AtualizarMidia;
 using Atlas.Application.Business.Indoor.Midias.Commands.CriarMidia;
 using Atlas.Application.Business.Indoor.Midias.Commands.EnvioMidia;
 using Atlas.Application.Business.Indoor.Midias.Commands.EstadoMidia;
+using Atlas.Application.Business.Indoor.Midias.Commands.SubstituirArquivo;
 using Atlas.Application.Business.Indoor.Midias.Dtos;
 using Atlas.Application.Business.Indoor.Midias.Queries;
 using Atlas.Application.Common.Models.Pagination;
@@ -33,6 +34,7 @@ public class ParceiroMidias : IEndpointGroup
         groupBuilder.MapPost(PrepararEnvio, "envio").RequireAuthorization(BusinessPermissionKeys.Midias.Create);
         groupBuilder.MapPost(CriarMidia).RequireAuthorization(BusinessPermissionKeys.Midias.Create);
         groupBuilder.MapPut(AtualizarMidia, "{id:long}").RequireAuthorization(BusinessPermissionKeys.Midias.Update);
+        groupBuilder.MapPut(SubstituirArquivo, "{id:long}/arquivo").RequireAuthorization(BusinessPermissionKeys.Midias.Update);
         groupBuilder.MapPost(AtivarMidia, "{id:long}/ativar").RequireAuthorization(BusinessPermissionKeys.Midias.Update);
         groupBuilder.MapPost(InativarMidia, "{id:long}/inativar").RequireAuthorization(BusinessPermissionKeys.Midias.Update);
         groupBuilder.MapDelete(ExcluirMidia, "{id:long}").RequireAuthorization(BusinessPermissionKeys.Midias.Delete);
@@ -99,7 +101,18 @@ public class ParceiroMidias : IEndpointGroup
         return TypedResults.Ok(await sender.Send(command, cancellationToken));
     }
 
+    [EndpointSummary("Substituir o arquivo")]
+    [EndpointDescription("Troca o arquivo mantendo a mídia e o lugar dela nas playlists: as TVs baixam o novo na próxima sincronização. O envio é igual ao do cadastro (POST envio e PUT na URL assinada). Devolve a nova versão.")]
+    public static async Task<Ok<uint>> SubstituirArquivo(
+        ISender sender, long id, SubstituirArquivoMidiaCommand command, CancellationToken cancellationToken)
+    {
+        RotaIndoor.GarantirMesmoId(id, command.Id);
+
+        return TypedResults.Ok(await sender.Send(command, cancellationToken));
+    }
+
     [EndpointSummary("Ativar mídia")]
+    [EndpointDescription("Respeita o plano do parceiro: passar do limite de mídias ativas dá 400.")]
     public static async Task<Ok<uint>> AtivarMidia(
         ISender sender, long id, [FromQuery] uint version, CancellationToken cancellationToken)
     {

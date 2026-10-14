@@ -6,9 +6,10 @@ using Atlas.Domain.Platform.Attributes;
 namespace Atlas.Domain.Business.Indoor.Entities;
 
 /// <summary>
-/// Vídeo ou imagem do parceiro. O arquivo fica no storage externo (Supabase);
-/// aqui ficam a chave do objeto e o hash que a TV confere depois de baixar.
-/// O arquivo nunca muda: trocar o conteúdo é enviar outra mídia.
+/// Vídeo ou imagem do parceiro (o criativo do anunciante). O arquivo fica no
+/// storage externo (Supabase); aqui ficam a chave do objeto e o hash que a TV
+/// confere depois de baixar. Substituir o arquivo mantém a mídia (e as
+/// playlists onde ela está): o hash novo faz as TVs baixarem de novo.
 /// </summary>
 [MetadataConfiguration("Mídias")]
 public class Midia : BaseAuditableEntity, IDoParceiro
@@ -51,6 +52,19 @@ public class Midia : BaseAuditableEntity, IDoParceiro
 
     /// <summary>Inativa sai de todas as grades sem perder o vínculo com as playlists.</summary>
     public bool Ativo { get; set; } = true;
+
+    /// <summary>
+    /// Troca o arquivo, mantendo a mídia e as playlists onde ela está. A chave
+    /// antiga não é apagada aqui: quem chama apaga do storage depois de gravar.
+    /// </summary>
+    public void SubstituirArquivo(string chave, TipoMidia tipo, string tipoConteudo, long tamanhoBytes, string hash)
+    {
+        ChaveArmazenamento = chave;
+        Tipo = tipo;
+        TipoConteudo = tipoConteudo;
+        TamanhoBytes = tamanhoBytes;
+        Hash = hash;
+    }
 
     /// <summary>Se a mídia está ativa e dentro da validade no dia informado.</summary>
     public bool EstaVigente(DateOnly hoje) =>

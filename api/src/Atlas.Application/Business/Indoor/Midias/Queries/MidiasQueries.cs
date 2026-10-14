@@ -96,7 +96,7 @@ public class GetMidiaByIdQueryHandler(
     }
 }
 
-/// <summary>Espaço usado e cota do parceiro, para o painel avisar antes do envio.</summary>
+/// <summary>Espaço, cota e plano (mídias ativas) do parceiro, para o painel avisar antes do envio.</summary>
 [Authorize(Policy = BusinessPermissionKeys.Midias.View)]
 public record GetUsoArmazenamentoQuery : IRequest<UsoArmazenamentoDto>;
 
@@ -107,7 +107,8 @@ public class GetUsoArmazenamentoQueryHandler(IApplicationDbContext context, IPar
     {
         var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
         var (usado, cota) = await CotaArmazenamento.ObterAsync(context, parceiro.ParceiroId, cancellationToken);
+        var (ativas, limite) = await LimiteMidiasAtivas.ObterAsync(context, parceiro.ParceiroId, cancellationToken);
 
-        return new UsoArmazenamentoDto(usado, cota, Midia.TamanhoMaximoBytes);
+        return new UsoArmazenamentoDto(usado, cota, Midia.TamanhoMaximoBytes, ativas, limite);
     }
 }

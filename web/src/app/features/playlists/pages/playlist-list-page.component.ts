@@ -13,8 +13,8 @@ import { preencherCampos } from '../../../shared/utils/form.util';
 const ENTIDADE = 'playlist';
 
 /**
- * Playlists do parceiro. Aqui só nome e descrição; a sequência de mídias e
- * os dias de cada uma ficam na página da grade (`/indoor/playlist/:id/grade`).
+ * Playlists da rede (operadora). Aqui só nome e descrição; a sequência de mídias e
+ * os dias de cada uma ficam na página da grade (`/rede/playlist/:id/grade`).
  */
 @Component({
   selector: 'app-playlist-list-page',
@@ -111,7 +111,7 @@ export class PlaylistListPageComponent implements OnInit {
 
   /**
    * "Clonar" da grid: playlist nova com a mesma grade, para variar a partir
-   * dela. A grid entrega a cópia sem `id`; o nome é único por parceiro e
+   * dela. A grid entrega a cópia sem `id`; o nome é único na rede e
    * localiza a original entre as linhas carregadas.
    */
   onDuplicar(copia: LinhaPlaylist): void {
@@ -133,7 +133,7 @@ export class PlaylistListPageComponent implements OnInit {
   }
 
   onGrade(item: LinhaPlaylist): void {
-    this.router.navigate(['/indoor/playlist', item.id, 'grade']);
+    this.router.navigate(['/rede/playlist', item.id, 'grade']);
   }
 
   onAcaoLinha(ev: { acaoId: string; item: LinhaPlaylist }): void {

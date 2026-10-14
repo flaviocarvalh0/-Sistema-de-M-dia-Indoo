@@ -27,6 +27,9 @@ public record CriarParceiroCommand : IRequest<long>
     public string? Cidade { get; init; }
     public string FusoHorario { get; init; } = FusosHorarios.Padrao;
     public int CotaArmazenamentoMb { get; init; } = Parceiro.CotaPadraoMb;
+
+    /// <summary>Plano: mídias ativas ao mesmo tempo.</summary>
+    public int LimiteMidiasAtivas { get; init; } = Parceiro.LimiteMidiasAtivasPadrao;
     public string? ObservacaoInterna { get; init; }
 }
 
@@ -81,6 +84,7 @@ public class CriarParceiroCommandHandler(
                 Cidade = Limpar(request.Cidade),
                 FusoHorario = request.FusoHorario.Trim(),
                 CotaArmazenamentoMb = request.CotaArmazenamentoMb,
+                LimiteMidiasAtivas = request.LimiteMidiasAtivas,
                 ObservacaoInterna = Limpar(request.ObservacaoInterna),
             };
 

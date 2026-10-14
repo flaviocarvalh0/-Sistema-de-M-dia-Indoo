@@ -92,20 +92,23 @@ public class DispositivoTests : IDisposable
     }
 
     [Fact]
-    public async Task Autenticar_ParceiroBloqueadoOuTelaInativaDaAMesmaRespostaQueCodigoErrado()
+    public async Task Autenticar_TelaInativaDaAMesmaRespostaQueCodigoErrado()
     {
-        _parceiro.Bloquear("Inadimplência");
-        await _context.SaveChangesAsync();
-        var bloqueado = () => Autenticar("AB12CD34", "tv-1");
-        (await bloqueado.Should().ThrowAsync<ValidationException>())
-            .Which.Errors["CodigoPareamento"].Should().Equal(AutenticarDispositivoCommandHandler.MensagemCodigoInvalido);
-
-        _parceiro.Desbloquear();
         _tela.Ativo = false;
         await _context.SaveChangesAsync();
         var inativa = () => Autenticar("AB12CD34", "tv-1");
         (await inativa.Should().ThrowAsync<ValidationException>())
             .Which.Errors["CodigoPareamento"].Should().Equal(AutenticarDispositivoCommandHandler.MensagemCodigoInvalido);
+    }
+
+    [Fact]
+    public async Task Autenticar_HostBloqueadoNaoImpedeOPareamento()
+    {
+        // A TV é da operadora: o host bloqueado não tira a tela do ar.
+        _parceiro.Bloquear("Inadimplência");
+        await _context.SaveChangesAsync();
+
+        (await Autenticar("AB12CD34", "tv-1")).TelaId.Should().Be(_tela.Id);
     }
 
     [Fact]
@@ -144,23 +147,24 @@ public class DispositivoTests : IDisposable
 
         (await Atual(valida).ObterAsync(CancellationToken.None)).TelaId.Should().Be(_tela.Id);
 
-        // Token sem as claims, de outra TV, de credencial antiga ou de outro parceiro: 401 (parear de novo).
+        // Token sem as claims, de outra TV ou de credencial antiga: 401 (parear de novo).
         await Esperar401(new CredencialFake(null, null, null, null));
         await Esperar401(valida with { DispositivoId = "tv-2" });
         await Esperar401(valida with { VersaoCredencial = _tela.VersaoCredencial - 1 });
-        await Esperar401(valida with { ParceiroId = _parceiro.Id + 1 });
 
-        // Tela inativa ou parceiro bloqueado: 403 (continua no que baixou).
+        // A TV mudou de host (a operadora trocou o parceiro da tela): o token continua valendo.
+        (await Atual(valida with { ParceiroId = _parceiro.Id + 1 }).ObterAsync(CancellationToken.None)).TelaId.Should().Be(_tela.Id);
+
+        // Host bloqueado não suspende a TV (ela é da operadora).
+        _parceiro.Bloquear("Inadimplência");
+        await _context.SaveChangesAsync();
+        (await Atual(valida).ObterAsync(CancellationToken.None)).TelaId.Should().Be(_tela.Id);
+
+        // Tela inativa: 403 (continua no que baixou).
         _tela.Ativo = false;
         await _context.SaveChangesAsync();
         var inativa = () => Atual(valida).ObterAsync(CancellationToken.None);
         await inativa.Should().ThrowAsync<ForbiddenAccessException>();
-
-        _tela.Ativo = true;
-        _parceiro.Bloquear("Inadimplência");
-        await _context.SaveChangesAsync();
-        var bloqueado = () => Atual(valida).ObterAsync(CancellationToken.None);
-        await bloqueado.Should().ThrowAsync<ForbiddenAccessException>();
     }
 
     [Fact]
@@ -176,6 +180,25 @@ public class DispositivoTests : IDisposable
     }
 
     // ---------- Sincronização ----------
+
+    [Fact]
+    public async Task Sincronizar_MidiaDeAnuncianteBloqueadoSaiDaGrade()
+    {
+        var anunciante = new Parceiro { Nome = "Loja", Email = "loja@teste.local" };
+        _context.Parceiros.Add(anunciante);
+        await _context.SaveChangesAsync();
+        var daLoja = Midia("Promo da loja");
+        daLoja.ParceiroId = anunciante.Id;
+
+        var credencial = await ParearComGradeAsync((Midia("Da academia"), DiasSemana.Todos), (daLoja, DiasSemana.Todos));
+        (await Sincronizar(credencial, new GetSincronizacaoQuery())).Itens!.Should().HaveCount(2);
+
+        anunciante.Bloquear("Inadimplência");
+        await _context.SaveChangesAsync();
+
+        var grade = await Sincronizar(credencial, new GetSincronizacaoQuery());
+        grade.Itens!.Select(i => Titulo(i.MidiaId)).Should().Equal("Da academia");
+    }
 
     [Fact]
     public async Task Sincronizar_DeveEntregarAGradeComFiltrosEUrlsNumaChamadaSo()
@@ -371,7 +394,7 @@ public class DispositivoTests : IDisposable
 
         await _context.SaveChangesAsync();
 
-        var playlist = new Playlist { ParceiroId = _parceiro.Id, Nome = "Grade" };
+        var playlist = new Playlist { Nome = "Grade" };
         playlist.DefinirItens(itens.Select(i => new ItemPlaylistInformado(null, i.Midia.Id, i.Dias)).ToList());
         _context.Playlists.Add(playlist);
         await _context.SaveChangesAsync();

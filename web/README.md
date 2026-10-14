@@ -1,8 +1,8 @@
 # Mídia Indoor — painel
 
 Painel Angular do **Sistema de Mídia Indoor**: a operadora cadastra os
-parceiros; cada parceiro envia vídeos e imagens, monta playlists e pareia as
-TVs. Consome a biblioteca `@atlas/framework` e conversa com a API em
+parceiros e as TVs e monta as playlists com os anúncios da rede; cada
+parceiro (anunciante) envia e mantém os próprios vídeos e imagens. Consome a biblioteca `@atlas/framework` e conversa com a API em
 [`../api`](../api/README.md).
 
 ## Pré-requisitos
@@ -43,15 +43,15 @@ liberada no CORS da API.
 
 | Rota | Quem usa | O quê |
 |---|---|---|
-| `/rede/parceiro` | Operadora | Parceiros: cadastro (cria o login do responsável), espaço em MB, bloquear/desbloquear |
-| `/rede/tela` | Operadora | TVs da rede (o hardware é dela): parceiro, identificação do aparelho, código de pareamento, conexão, desvincular |
-| `/indoor/tela` | Parceiro | As TVs dele, somente leitura, com **Trocar playlist** |
-| `/indoor/midia` | Parceiro | Biblioteca: título, duração, período de exibição, ativar/inativar, pré-visualizar, espaço usado |
-| `/indoor/midia/enviar` | Parceiro | Envio de vídeo MP4 ou imagem JPG/PNG direto ao storage, com SHA-256 e progresso |
-| `/indoor/playlist` | Parceiro | Playlists (uma playlist toca em várias telas); "Clonar" duplica com a grade |
-| `/indoor/playlist/:id/grade` | Parceiro | Sequência do loop (arrastar para reordenar) e dias da semana de cada item |
+| `/rede/parceiro` | Operadora | Parceiros: cadastro (cria o login do responsável), espaço em MB, plano de mídias ativas, bloquear/desbloquear |
+| `/rede/tela` | Operadora | TVs da rede (o hardware é dela): estabelecimento (host), playlist, identificação do aparelho, código de pareamento, conexão, desvincular |
+| `/rede/playlist` | Operadora | Playlists da rede (uma playlist toca em várias telas); "Clonar" duplica com a grade |
+| `/rede/playlist/:id/grade` | Operadora | Mídias ativas de todos os parceiros (busca, filtro, "Já adicionado (N×)"), ordem do loop e dias da semana de cada item |
+| `/indoor/midia` | Parceiro | Biblioteca: título, duração, período, ativar/inativar dentro do plano ("Mídias ativas: x de y"), substituir arquivo, pré-visualizar, espaço usado |
+| `/indoor/midia/enviar` | Parceiro | Envio de vídeo MP4 ou imagem JPG/PNG direto ao storage, com SHA-256 e progresso; com `?substituir={id}`, troca o arquivo de uma mídia |
+| `/indoor/tela` | Parceiro | **Onde meus anúncios passam**: TVs com mídia ativa dele, somente leitura |
 
-O parceiro só vê os próprios registros: o isolamento é feito pela API.
+O parceiro só vê as próprias mídias: o isolamento é feito pela API.
 
 ## Estrutura
 

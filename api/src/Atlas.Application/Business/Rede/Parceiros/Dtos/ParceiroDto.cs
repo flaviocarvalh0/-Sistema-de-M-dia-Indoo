@@ -17,6 +17,12 @@ public sealed record ParceiroDto : IDtoAuditavel
     public string FusoHorario { get; init; } = null!;
     public int CotaArmazenamentoMb { get; init; }
 
+    /// <summary>Mídias que o plano permite ativas ao mesmo tempo.</summary>
+    public int LimiteMidiasAtivas { get; init; }
+
+    /// <summary>Mídias ativas agora (pode passar do limite: direito adquirido).</summary>
+    public int MidiasAtivas { get; init; }
+
     /// <summary>Soma do tamanho das mídias do parceiro (ativas ou não: ocupam o storage igual).</summary>
     public long ArmazenamentoUsadoBytes { get; init; }
 
@@ -47,7 +53,10 @@ public static class ParceiroProjecao
             Cidade = p.Cidade,
             FusoHorario = p.FusoHorario,
             CotaArmazenamentoMb = p.CotaArmazenamentoMb,
+            LimiteMidiasAtivas = p.LimiteMidiasAtivas,
+            MidiasAtivas = context.Midias.Count(m => m.ParceiroId == p.Id && m.Ativo),
             ArmazenamentoUsadoBytes = context.Midias.Where(m => m.ParceiroId == p.Id).Sum(m => (long?)m.TamanhoBytes) ?? 0,
+            // Telas que o parceiro hospeda (o estabelecimento onde a TV está).
             QuantidadeTelas = context.Telas.Count(t => t.ParceiroId == p.Id),
             Situacao = p.Situacao,
             MotivoBloqueio = p.MotivoBloqueio,

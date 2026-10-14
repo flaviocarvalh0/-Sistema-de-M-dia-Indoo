@@ -9,6 +9,7 @@ import {
 } from '@atlas/framework';
 import { TelaRedeService } from '../services/tela-rede.service';
 import { ParceiroService } from '../services/parceiro.service';
+import { PlaylistService } from '../../playlists/services/playlist.service';
 import { LinhaTela, TelaDto } from '../../telas/models/tela.model';
 import { TELA_REDE_COLUNAS, criarCamposTelaRede } from '../configs/tela-rede.config';
 import { preencherCampos } from '../../../shared/utils/form.util';
@@ -25,9 +26,10 @@ interface CodigoExibido {
 }
 
 /**
- * Telas da rede (operadora, dona do hardware): cadastro, parceiro de cada
- * TV, pareamento por código e a situação da conexão. O parceiro só escolhe a
- * playlist, em Mídia Indoor → Telas.
+ * Telas da rede (operadora, dona do hardware): cadastro, estabelecimento
+ * (host) e playlist de cada TV, pareamento por código e a situação da
+ * conexão. O parceiro só acompanha, em Mídia Indoor → Onde meus anúncios
+ * passam.
  */
 @Component({
   selector: 'app-tela-rede-list-page',
@@ -79,7 +81,7 @@ interface CodigoExibido {
       entityName="${ENTIDADE}"
       campoId="id"
       [autoInjetarId]="false"
-      mensagemVazio="Nenhuma tela. Cadastre a TV instalada, escolha o parceiro e gere o código para pareá-la."
+      mensagemVazio="Nenhuma tela. Cadastre a TV instalada, escolha o estabelecimento e a playlist e gere o código para pareá-la."
       [itens]="itens()"
       [totalElementos]="total()"
       [colunas]="colunas"
@@ -100,6 +102,7 @@ interface CodigoExibido {
 export class TelaRedeListPageComponent implements OnInit {
   private service = inject(TelaRedeService);
   private parceiroService = inject(ParceiroService);
+  private playlistService = inject(PlaylistService);
   private formModal = inject(FormModalService);
   private confirmModal = inject(ConfirmModalService);
   private toast = inject(ToastService);
@@ -119,6 +122,7 @@ export class TelaRedeListPageComponent implements OnInit {
   ativo = signal<boolean | null>(null);
   parceiroId = signal<number | null>(null);
   parceiros = signal<CampoOption<number>[]>([]);
+  playlists = signal<CampoOption<number>[]>([]);
   codigo = signal<CodigoExibido | null>(null);
   private agora = signal(Date.now());
 
@@ -154,6 +158,8 @@ export class TelaRedeListPageComponent implements OnInit {
   ngOnInit(): void {
     this.parceiroService.listar({ pageIndex: 0, pageSize: 1000 }, null).subscribe(page =>
       this.parceiros.set(page.content.map(p => ({ value: p.id, label: p.situacao === 'Bloqueado' ? `${p.nome} (bloqueado)` : p.nome }))));
+    this.playlistService.listarTodas().subscribe(lista =>
+      this.playlists.set(lista.map(p => ({ value: p.id, label: p.ativo ? p.nome : `${p.nome} (inativa)` }))));
     this.carregar();
     interval(1000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.agora.set(Date.now()));
     // A conexão (online/offline) muda sozinha: atualiza a lista a cada minuto.
@@ -231,7 +237,7 @@ export class TelaRedeListPageComponent implements OnInit {
   }
 
   private abrir(tela: TelaDto | null, modelo?: Partial<TelaDto>): void {
-    const base = criarCamposTelaRede(this.parceiros(), !!tela);
+    const base = criarCamposTelaRede(this.parceiros(), this.playlists());
     const dados = tela ?? modelo;
     const campos: FormItemConfig[] = tela
       ? [

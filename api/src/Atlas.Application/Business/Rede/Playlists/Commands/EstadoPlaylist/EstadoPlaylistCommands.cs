@@ -1,9 +1,9 @@
 using Atlas.Application.Business.Indoor.Common;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Rede.Playlists.Commands.SalvarPlaylist;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
 
-namespace Atlas.Application.Business.Indoor.Playlists.Commands.EstadoPlaylist;
+namespace Atlas.Application.Business.Rede.Playlists.Commands.EstadoPlaylist;
 
 [Authorize(Policy = BusinessPermissionKeys.Playlists.Update)]
 public record AtivarPlaylistCommand(long Id, uint Version) : IRequest<uint>;
@@ -16,13 +16,12 @@ public record InativarPlaylistCommand(long Id, uint Version) : IRequest<uint>;
 [Authorize(Policy = BusinessPermissionKeys.Playlists.Delete)]
 public record ExcluirPlaylistCommand(long Id) : IRequest;
 
-public class AtivarPlaylistCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class AtivarPlaylistCommandHandler(IApplicationDbContext context)
     : IRequestHandler<AtivarPlaylistCommand, uint>
 {
     public async Task<uint> Handle(AtivarPlaylistCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var playlist = await RegistrosDoParceiro.CarregarAsync(context.Playlists, parceiro.ParceiroId, request.Id, cancellationToken);
+        var playlist = await RegrasPlaylist.CarregarAsync(context.Playlists, request.Id, cancellationToken);
 
         context.ConferirVersao(playlist, request.Version);
         playlist.Ativo = true;
@@ -31,13 +30,12 @@ public class AtivarPlaylistCommandHandler(IApplicationDbContext context, IParcei
     }
 }
 
-public class InativarPlaylistCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class InativarPlaylistCommandHandler(IApplicationDbContext context)
     : IRequestHandler<InativarPlaylistCommand, uint>
 {
     public async Task<uint> Handle(InativarPlaylistCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var playlist = await RegistrosDoParceiro.CarregarAsync(context.Playlists, parceiro.ParceiroId, request.Id, cancellationToken);
+        var playlist = await RegrasPlaylist.CarregarAsync(context.Playlists, request.Id, cancellationToken);
 
         context.ConferirVersao(playlist, request.Version);
         playlist.Ativo = false;
@@ -46,14 +44,12 @@ public class InativarPlaylistCommandHandler(IApplicationDbContext context, IParc
     }
 }
 
-public class ExcluirPlaylistCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class ExcluirPlaylistCommandHandler(IApplicationDbContext context)
     : IRequestHandler<ExcluirPlaylistCommand>
 {
     public async Task Handle(ExcluirPlaylistCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var playlist = await RegistrosDoParceiro.CarregarAsync(
-            context.Playlists.Include(p => p.Itens), parceiro.ParceiroId, request.Id, cancellationToken);
+        var playlist = await RegrasPlaylist.CarregarAsync(context.Playlists.Include(p => p.Itens), request.Id, cancellationToken);
 
         var telas = await context.Telas.CountAsync(t => t.PlaylistId == playlist.Id, cancellationToken);
         if (telas > 0)

@@ -26,8 +26,8 @@ pessoa digita na TV; o app aceita minúsculas, espaços e hífen
 }
 ```
 
-- `400` — código inválido, expirado, já usado, de tela inativa ou de parceiro
-  bloqueado (sempre a mesma mensagem).
+- `400` — código inválido, expirado, já usado ou de tela inativa (sempre a
+  mesma mensagem). O bloqueio do estabelecimento (host) não impede parear.
 - `429` — mais de 10 tentativas por IP em 5 minutos.
 
 Guardar `token` e `dispositivoId` em armazenamento seguro
@@ -80,7 +80,7 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 | `200` com `alterada: false` | Nada a fazer (`itens` vem nulo). |
 | `novoToken` preenchido | Substitui o token guardado (vem quando falta menos de 1/4 da validade). |
 | `401` | Credencial revogada (TV desvinculada ou outra pareada no lugar): apagar o token e voltar à tela de pareamento. **Manter os arquivos e continuar tocando** até parear. |
-| `403` | Tela inativa ou parceiro bloqueado: manter tudo e continuar tocando o que já tem; tentar de novo no próximo ciclo. |
+| `403` | Tela inativa: manter tudo e continuar tocando o que já tem; tentar de novo no próximo ciclo. Host ou anunciante bloqueado não dá 403: as mídias de anunciante bloqueado só deixam de vir nos `itens`. |
 | `429`, `5xx`, sem rede | Manter tudo; tentar de novo no próximo ciclo. |
 
 ## 3. Regras do player
@@ -102,7 +102,7 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
      terça = 4, quarta = 8, quinta = 16, sexta = 32, sábado = 64), e
    - `inicioExibicao` vazio ou ≤ hoje, e `fimExibicao` vazio ou ≥ hoje.
 
-   "Hoje" é a data no `fusoHorario` do parceiro. `exibirHoje` já vem
+   "Hoje" é a data no `fusoHorario` do estabelecimento (host) da tela. `exibirHoje` já vem
    calculado pelo servidor para o dia de `hoje`, mas sem internet a TV
    precisa recalcular.
 6. **Loop:** ordem crescente de `ordem`. Vídeo avança no fim do vídeo

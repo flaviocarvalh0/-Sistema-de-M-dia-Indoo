@@ -28,6 +28,7 @@ export class ParceiroService extends CrudService<ParceiroDto, number> {
           content: page.content.map(p => ({
             ...p,
             usoArmazenamento: `${formatarBytes(p.armazenamentoUsadoBytes)} de ${p.cotaArmazenamentoMb} MB`,
+            usoMidiasAtivas: `${p.midiasAtivas} de ${p.limiteMidiasAtivas}`,
           })),
         })),
       );
@@ -43,6 +44,7 @@ export class ParceiroService extends CrudService<ParceiroDto, number> {
       cidade: valor.cidade || null,
       fusoHorario: valor.fusoHorario,
       cotaArmazenamentoMb: Number(valor.cotaArmazenamentoMb),
+      limiteMidiasAtivas: Number(valor.limiteMidiasAtivas),
       observacaoInterna: valor.observacaoInterna || null,
     };
 

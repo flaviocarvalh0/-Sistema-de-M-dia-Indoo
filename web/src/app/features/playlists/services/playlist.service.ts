@@ -6,19 +6,20 @@ import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util'
 import { formatarDuracao } from '../../../shared/models/indoor.util';
 
 /**
- * Playlists do parceiro (reutilizáveis: uma playlist toca em N telas).
+ * Playlists da rede, montadas pela operadora com as mídias dos parceiros
+ * (reutilizáveis: uma playlist toca em N telas).
  *
- *  - GET  /api/v1/business/parceiro/playlists?ativo=
- *  - GET  /api/v1/business/parceiro/playlists/{id}          (traz os itens)
- *  - POST /api/v1/business/parceiro/playlists               → id
- *  - PUT  /api/v1/business/parceiro/playlists/{id}          → nova versão
- *  - PUT  /api/v1/business/parceiro/playlists/{id}/itens    → nova versão (grade inteira, na ordem)
- *  - POST /api/v1/business/parceiro/playlists/{id}/ativar|inativar?version=
- *  - DELETE /api/v1/business/parceiro/playlists/{id}
+ *  - GET  /api/v1/business/rede/playlists?ativo=
+ *  - GET  /api/v1/business/rede/playlists/{id}          (traz os itens)
+ *  - POST /api/v1/business/rede/playlists               → id
+ *  - PUT  /api/v1/business/rede/playlists/{id}          → nova versão
+ *  - PUT  /api/v1/business/rede/playlists/{id}/itens    → nova versão (grade inteira, na ordem)
+ *  - POST /api/v1/business/rede/playlists/{id}/ativar|inativar?version=
+ *  - DELETE /api/v1/business/rede/playlists/{id}
  */
 @Injectable({ providedIn: 'root' })
 export class PlaylistService extends CrudService<PlaylistDto, number> {
-  protected readonly resource = 'api/v1/business/parceiro/playlists';
+  protected readonly resource = 'api/v1/business/rede/playlists';
 
   listar(query: QueryParams, ativo: boolean | null = null): Observable<Page<LinhaPlaylist>> {
     return this.http
@@ -44,14 +45,17 @@ export class PlaylistService extends CrudService<PlaylistDto, number> {
       : this.http.post(this.baseUrl, corpo, { context: comErroLocal() });
   }
 
-  /** Cria uma playlist nova com a grade de outra (mesmas mídias, ordem e dias). */
+  /**
+   * Cria uma playlist nova com a grade de outra (mesmas mídias, ordem e dias).
+   * Mídias inativas ficam de fora: item novo só entra com mídia ativa.
+   */
   duplicar(origemId: number, valor: Partial<PlaylistDto>): Observable<number> {
     return this.http
       .post<number>(this.baseUrl, { nome: valor.nome, descricao: valor.descricao || null }, { context: comErroLocal() })
       .pipe(
         switchMap(novaId => forkJoin([this.getById(origemId), this.getById(novaId)])),
         switchMap(([origem, nova]) => {
-          const itens = (origem.itens ?? []).map(i => ({ midiaId: i.midiaId, diasSemana: i.diasSemana }));
+          const itens = (origem.itens ?? []).filter(i => i.midiaAtiva).map(i => ({ midiaId: i.midiaId, diasSemana: i.diasSemana }));
           return itens.length
             ? this.http.put<number>(`${this.baseUrl}/${nova.id}/itens`, { id: nova.id, version: nova.version, itens }, { context: comErroLocal() })
               .pipe(map(() => nova.id))

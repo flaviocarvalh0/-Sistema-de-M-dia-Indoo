@@ -6,6 +6,11 @@ export type TipoMidia = 'Video' | 'Imagem';
 
 export interface MidiaDto {
   id: number;
+  /** Parceiro anunciante dono da mídia. */
+  parceiroId: number;
+  parceiroNome: string;
+  /** Anunciante bloqueado: a mídia sai das TVs até o desbloqueio. */
+  parceiroBloqueado: boolean;
   titulo: string;
   tipo: TipoMidia;
   tipoConteudo: string;
@@ -32,6 +37,9 @@ export interface UsoArmazenamento {
   usadoBytes: number;
   cotaBytes: number;
   tamanhoMaximoArquivoBytes: number;
+  /** Mídias ativas agora e quantas o plano do parceiro permite. */
+  midiasAtivas: number;
+  limiteMidiasAtivas: number;
 }
 
 export interface EnvioPreparado {
@@ -48,4 +56,14 @@ export interface NovaMidia {
   duracaoSegundos: number;
   inicioExibicao: string | null;
   fimExibicao: string | null;
+}
+
+/** `PUT {id}/arquivo`: troca o arquivo e mantém a mídia nas grades. */
+export interface SubstituicaoArquivo {
+  id: number;
+  chave: string;
+  tipoConteudo: string;
+  hash: string | null;
+  duracaoSegundos: number | null;
+  version: number;
 }

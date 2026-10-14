@@ -1,11 +1,11 @@
 /**
- * Contratos das telas (backend: Atlas.Application/Business/Indoor/Telas).
+ * Contratos das telas (backend: Atlas.Application/Business/Rede/Telas e Indoor/Telas).
  * Enums chegam como NOME (JsonStringEnumConverter).
  */
 export type SituacaoTela = 'AguardandoPareamento' | 'Online' | 'Offline';
 
 /**
- * A tela como a operadora (Rede → Telas) e o parceiro (Mídia Indoor → Telas)
+ * A tela como a operadora (Rede → Telas) e o parceiro (Onde meus anúncios passam)
  * a veem. Para o parceiro, `codigoPareamento` vem sempre vazio.
  */
 export interface TelaDto {

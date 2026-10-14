@@ -12,13 +12,14 @@
 --   5. RBAC: as permissões de cada grupo, por módulo e entidade.
 --
 -- Rotas resultantes no painel:
---   /rede/parceiro   /rede/tela   (operadora)
---   /indoor/tela     /indoor/midia   /indoor/playlist   (parceiro)
+--   /rede/parceiro   /rede/tela   /rede/playlist   (operadora)
+--   /indoor/midia    /indoor/tela                  (parceiro)
 --
--- Posse das telas: o hardware é da operadora. A entidade "tela" fica no
--- módulo Rede, com menu nos dois módulos: a operadora cadastra, escolhe o
--- parceiro e pareia (/rede/tela); o parceiro só vê as TVs dele e escolhe a
--- playlist (/indoor/tela, somente leitura).
+-- Papéis (ADR-014 e ADR-015): a operadora é dona das TVs e monta as grades
+-- (playlists) com as mídias dos parceiros. O parceiro é anunciante: cuida da
+-- biblioteca de mídias dele (dentro do plano) e vê "onde meus anúncios
+-- passam" (/indoor/tela, somente leitura). A entidade "tela" fica no módulo
+-- Rede, com menu também no módulo do parceiro.
 --
 -- Idempotente e convergente: pode rodar quantas vezes quiser; cria o que
 -- falta e corrige o que divergir (rótulo, ícone, módulo, ordem). Não apaga
@@ -125,7 +126,7 @@ BEGIN
             ('parceiro', 'Parceiros', 'parceiro', 'people',          v_rede_id),
             ('tela',     'Telas',     'tela',     'tv',              v_rede_id),
             ('midia',    'Mídias',    'midia',    'collection-play', v_indoor_id),
-            ('playlist', 'Playlists', 'playlist', 'list-ol',         v_indoor_id)
+            ('playlist', 'Playlists', 'playlist', 'list-ol',         v_rede_id)
            ) AS e(table_name, rotulo, route_key, icone, modulo_id)
      WHERE em.table_name = e.table_name;
 
@@ -139,11 +140,11 @@ BEGIN
            NULL, em.id, NULL,
            now(), NULL, now(), NULL
       FROM (VALUES
-            ('parceiro', 'Parceiros', 1, v_rede_id),
-            ('tela',     'Telas',     2, v_rede_id),
-            ('tela',     'Telas',     1, v_indoor_id),
-            ('midia',    'Mídias',    2, v_indoor_id),
-            ('playlist', 'Playlists', 3, v_indoor_id)
+            ('parceiro', 'Parceiros',                 1, v_rede_id),
+            ('tela',     'Telas',                     2, v_rede_id),
+            ('playlist', 'Playlists',                 3, v_rede_id),
+            ('midia',    'Mídias',                    1, v_indoor_id),
+            ('tela',     'Onde meus anúncios passam', 2, v_indoor_id)
            ) AS m(table_name, rotulo, ordem, modulo_id)
       JOIN platform.entity_metadata em ON em.table_name = m.table_name
      WHERE NOT EXISTS (
@@ -159,11 +160,11 @@ BEGIN
            icon_hex_color = NULL,
            last_modified  = now()
       FROM (VALUES
-            ('parceiro', 'Parceiros', 1, 'people',          v_rede_id),
-            ('tela',     'Telas',     2, 'tv',              v_rede_id),
-            ('tela',     'Telas',     1, 'tv',              v_indoor_id),
-            ('midia',    'Mídias',    2, 'collection-play', v_indoor_id),
-            ('playlist', 'Playlists', 3, 'list-ol',         v_indoor_id)
+            ('parceiro', 'Parceiros',                 1, 'people',          v_rede_id),
+            ('tela',     'Telas',                     2, 'tv',              v_rede_id),
+            ('playlist', 'Playlists',                 3, 'list-ol',         v_rede_id),
+            ('midia',    'Mídias',                    1, 'collection-play', v_indoor_id),
+            ('tela',     'Onde meus anúncios passam', 2, 'broadcast',       v_indoor_id)
            ) AS m(table_name, rotulo, ordem, icone, modulo_id)
       JOIN platform.entity_metadata em ON em.table_name = m.table_name
      WHERE mi.system_module_id = m.modulo_id
@@ -188,10 +189,12 @@ BEGIN
 
     -- 5. RBAC --------------------------------------------------------------
     -- Operadora: parceiros (sem Delete: o parceiro é bloqueado, nunca
-    -- apagado) e telas, que são o hardware dela.
-    -- Proprietário de Parceiro: só vê as próprias telas (escolher a playlist
-    -- exige Playlists.Update); tudo nas próprias mídias e playlists. O
-    -- isolamento por parceiro é feito pela API, não pela permissão.
+    -- apagado), telas (o hardware é dela) e playlists (as grades da rede;
+    -- Playlists.View também libera a leitura das mídias de todos os
+    -- parceiros, para montar as grades).
+    -- Proprietário de Parceiro (anunciante): tudo nas próprias mídias e
+    -- leitura de "onde meus anúncios passam" (Telas.View). O isolamento por
+    -- parceiro é feito pela API, não pela permissão.
     -- module_id/entity_name ligam a permissão ao módulo no launcher e ao
     -- RBAC do front (canView/canCreate/... por nome da tabela).
     UPDATE platform.role_claim rc
@@ -205,15 +208,15 @@ BEGIN
             (v_operadora_id,    'Telas.Create',     v_rede_id,   'tela'),
             (v_operadora_id,    'Telas.Update',     v_rede_id,   'tela'),
             (v_operadora_id,    'Telas.Delete',     v_rede_id,   'tela'),
+            (v_operadora_id,    'Playlists.View',   v_rede_id,   'playlist'),
+            (v_operadora_id,    'Playlists.Create', v_rede_id,   'playlist'),
+            (v_operadora_id,    'Playlists.Update', v_rede_id,   'playlist'),
+            (v_operadora_id,    'Playlists.Delete', v_rede_id,   'playlist'),
             (v_proprietario_id, 'Telas.View',       v_indoor_id, 'tela'),
             (v_proprietario_id, 'Midias.View',      v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Create',    v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Update',    v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Midias.Delete',    v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Playlists.View',   v_indoor_id, 'playlist'),
-            (v_proprietario_id, 'Playlists.Create', v_indoor_id, 'playlist'),
-            (v_proprietario_id, 'Playlists.Update', v_indoor_id, 'playlist'),
-            (v_proprietario_id, 'Playlists.Delete', v_indoor_id, 'playlist')
+            (v_proprietario_id, 'Midias.Delete',    v_indoor_id, 'midia')
            ) AS p(role_id, claim_value, module_id, entity_name)
      WHERE rc.role_id = p.role_id
        AND rc.claim_type = 'permission'
@@ -230,15 +233,15 @@ BEGIN
             (v_operadora_id,    'Telas.Create',     v_rede_id,   'tela'),
             (v_operadora_id,    'Telas.Update',     v_rede_id,   'tela'),
             (v_operadora_id,    'Telas.Delete',     v_rede_id,   'tela'),
+            (v_operadora_id,    'Playlists.View',   v_rede_id,   'playlist'),
+            (v_operadora_id,    'Playlists.Create', v_rede_id,   'playlist'),
+            (v_operadora_id,    'Playlists.Update', v_rede_id,   'playlist'),
+            (v_operadora_id,    'Playlists.Delete', v_rede_id,   'playlist'),
             (v_proprietario_id, 'Telas.View',       v_indoor_id, 'tela'),
             (v_proprietario_id, 'Midias.View',      v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Create',    v_indoor_id, 'midia'),
             (v_proprietario_id, 'Midias.Update',    v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Midias.Delete',    v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Playlists.View',   v_indoor_id, 'playlist'),
-            (v_proprietario_id, 'Playlists.Create', v_indoor_id, 'playlist'),
-            (v_proprietario_id, 'Playlists.Update', v_indoor_id, 'playlist'),
-            (v_proprietario_id, 'Playlists.Delete', v_indoor_id, 'playlist')
+            (v_proprietario_id, 'Midias.Delete',    v_indoor_id, 'midia')
            ) AS p(role_id, claim_value, module_id, entity_name)
      WHERE NOT EXISTS (
            SELECT 1 FROM platform.role_claim rc
@@ -246,11 +249,20 @@ BEGIN
               AND rc.claim_type = 'permission'
               AND rc.claim_value = p.claim_value);
 
-    -- O parceiro não altera mais telas (versões anteriores deste script davam).
+    -- O parceiro não altera telas nem playlists (versões anteriores deste
+    -- script davam).
     DELETE FROM platform.role_claim
      WHERE role_id = v_proprietario_id
        AND claim_type = 'permission'
-       AND claim_value IN ('Telas.Create', 'Telas.Update', 'Telas.Delete');
+       AND claim_value IN ('Telas.Create', 'Telas.Update', 'Telas.Delete',
+                           'Playlists.View', 'Playlists.Create', 'Playlists.Update', 'Playlists.Delete');
+
+    -- O menu de playlists saiu do módulo do parceiro.
+    DELETE FROM platform.system_menu_item mi
+     USING platform.entity_metadata em
+     WHERE mi.entity_metadata_id = em.id
+       AND em.table_name = 'playlist'
+       AND mi.system_module_id = v_indoor_id;
 
     RAISE NOTICE 'Módulos: Rede (%) e Mídia Indoor (%). Grupos: Operadora (%) e Proprietário de Parceiro (%).',
         v_rede_id, v_indoor_id, v_operadora_id, v_proprietario_id;

@@ -1,9 +1,13 @@
 using System.Reflection;
 using Atlas.Application.Business.Dispositivo.Autenticacao;
 using Atlas.Application.Business.Dispositivo.Sincronizacao;
-using Atlas.Application.Business.Indoor.Telas.Commands.DefinirPlaylist;
+using Atlas.Application.Business.Indoor.Midias.Commands.SubstituirArquivo;
 using Atlas.Application.Business.Indoor.Telas.Queries;
+using Atlas.Application.Business.Rede.Midias.Queries;
 using Atlas.Application.Business.Rede.Parceiros.Queries;
+using Atlas.Application.Business.Rede.Playlists.Commands.DefinirItensPlaylist;
+using Atlas.Application.Business.Rede.Playlists.Commands.SalvarPlaylist;
+using Atlas.Application.Business.Rede.Playlists.Queries;
 using Atlas.Application.Business.Rede.Telas.Commands.EstadoTela;
 using Atlas.Application.Business.Rede.Telas.Commands.Pareamento;
 using Atlas.Application.Business.Rede.Telas.Commands.SalvarTela;
@@ -93,7 +97,14 @@ public class CoberturaAutorizacaoTests
     [InlineData(typeof(ExcluirTelaCommand), new[] { BusinessPermissionKeys.Telas.Delete })]
     [InlineData(typeof(GetTelasQuery), new[] { BusinessPermissionKeys.Telas.View })]
     [InlineData(typeof(GetTelaByIdQuery), new[] { BusinessPermissionKeys.Telas.View })]
-    [InlineData(typeof(DefinirPlaylistDaTelaCommand), new[] { BusinessPermissionKeys.Telas.View, BusinessPermissionKeys.Playlists.Update })]
+    // Playlists e mídias da rede são da operadora: o parceiro não tem Playlists.*
+    // nem Parceiros.View.
+    [InlineData(typeof(GetPlaylistsQuery), new[] { BusinessPermissionKeys.Playlists.View })]
+    [InlineData(typeof(CriarPlaylistCommand), new[] { BusinessPermissionKeys.Playlists.Create })]
+    [InlineData(typeof(DefinirItensPlaylistCommand), new[] { BusinessPermissionKeys.Playlists.Update })]
+    [InlineData(typeof(GetMidiasRedeQuery), new[] { BusinessPermissionKeys.Playlists.View, BusinessPermissionKeys.Parceiros.View })]
+    [InlineData(typeof(GetMidiaRedeByIdQuery), new[] { BusinessPermissionKeys.Playlists.View, BusinessPermissionKeys.Parceiros.View })]
+    [InlineData(typeof(SubstituirArquivoMidiaCommand), new[] { BusinessPermissionKeys.Midias.Update })]
     public void Telas_PoliticasSeguemAPosseDoHardware(Type request, string[] politicas)
     {
         request.GetCustomAttributes<AuthorizeAttribute>().Select(a => a.Policy).Should().BeEquivalentTo(politicas);

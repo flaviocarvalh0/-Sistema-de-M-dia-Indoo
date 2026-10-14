@@ -14,6 +14,9 @@ public class Parceiro : BaseAuditableEntity
     /// <summary>Cota padrão de armazenamento de mídias, em megabytes.</summary>
     public const int CotaPadraoMb = 200;
 
+    /// <summary>Mídias ativas ao mesmo tempo no plano padrão.</summary>
+    public const int LimiteMidiasAtivasPadrao = 1;
+
     public string Nome { get; set; } = null!;
 
     public string? NomeResponsavel { get; set; }
@@ -36,6 +39,13 @@ public class Parceiro : BaseAuditableEntity
 
     /// <summary>Espaço máximo somado das mídias do parceiro no storage.</summary>
     public int CotaArmazenamentoMb { get; set; } = CotaPadraoMb;
+
+    /// <summary>
+    /// Quantas mídias o parceiro pode ter ativas ao mesmo tempo (o plano dele).
+    /// Vale ao ativar: quem já estava acima quando o limite mudou continua
+    /// como está até inativar alguma.
+    /// </summary>
+    public int LimiteMidiasAtivas { get; set; } = LimiteMidiasAtivasPadrao;
 
     public SituacaoParceiro Situacao { get; set; } = SituacaoParceiro.Ativo;
 

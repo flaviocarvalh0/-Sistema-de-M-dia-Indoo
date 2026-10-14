@@ -2,7 +2,9 @@
 
 ## Status
 
-Aceito
+Aceito. Em parte substituído pelo [ADR-015](ADR-015-Playlists-da-Operadora-e-Plano-do-Anunciante.md):
+as playlists passaram para a operadora, o parceiro não escolhe mais a
+playlist da TV e trocar o parceiro (host) da tela não desvincula a TV.
 
 ## Data da decisão
 

@@ -7,6 +7,7 @@ using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
 using Microsoft.Extensions.Logging;
+using Atlas.Domain.Business.Parceiros.Enums;
 
 namespace Atlas.Application.Business.Dispositivo.Sincronizacao;
 
@@ -119,6 +120,8 @@ public class GetSincronizacaoQueryHandler(
                 .AsNoTracking()
                 .Where(i => i.PlaylistId == playlistId
                     && i.Midia.Ativo
+                    // Anunciante bloqueado sai de todas as grades.
+                    && i.Midia.Parceiro.Situacao != SituacaoParceiro.Bloqueado
                     && (i.Midia.FimExibicao == null || i.Midia.FimExibicao >= hoje))
                 .OrderBy(i => i.Ordem)
                 .Select(i => new ItemGrade(

@@ -4,11 +4,7 @@ using Atlas.Application.Business.Indoor.Midias.Commands.CriarMidia;
 using Atlas.Application.Business.Indoor.Midias.Commands.EnvioMidia;
 using Atlas.Application.Business.Indoor.Midias.Commands.EstadoMidia;
 using Atlas.Application.Business.Indoor.Midias.Queries;
-using Atlas.Application.Business.Indoor.Playlists.Commands.DefinirItensPlaylist;
-using Atlas.Application.Business.Indoor.Playlists.Commands.EstadoPlaylist;
-using Atlas.Application.Business.Indoor.Playlists.Commands.SalvarPlaylist;
-using Atlas.Application.Business.Indoor.Playlists.Queries;
-using Atlas.Application.Business.Indoor.Telas.Commands.DefinirPlaylist;
+using Atlas.Application.Business.Indoor.Midias.Commands.SubstituirArquivo;
 using Atlas.Application.Business.Indoor.Telas.Queries;
 using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Indoor.Entities;
@@ -23,7 +19,7 @@ using NotFoundException = Ardalis.GuardClauses.NotFoundException;
 
 namespace Atlas.Infrastructure.UnitTests.Business.Indoor;
 
-/// <summary>Regras do painel do parceiro (mídias, playlists, telas) no banco em memória.</summary>
+/// <summary>Regras do painel do parceiro (mídias, plano, onde os anúncios passam) no banco em memória.</summary>
 public class PainelIndoorTests : IDisposable
 {
     private static readonly DateTimeOffset Agora = new(2026, 10, 13, 15, 0, 0, TimeSpan.Zero);
@@ -228,7 +224,7 @@ public class PainelIndoorTests : IDisposable
     {
         var emUso = await CriarMidiaNoBancoAsync(_parceiroA);
         var solta = await CriarMidiaNoBancoAsync(_parceiroA);
-        await CriarPlaylistNoBancoAsync(_parceiroA, "Grade", emUso.Id);
+        await CriarPlaylistNoBancoAsync("Grade", emUso.Id);
         var handler = new ExcluirMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, NullLogger<ExcluirMidiaCommandHandler>.Instance);
 
         var acao = () => handler.Handle(new ExcluirMidiaCommand(emUso.Id), CancellationToken.None);
@@ -239,169 +235,186 @@ public class PainelIndoorTests : IDisposable
         _armazenamento.Removidos.Should().Equal(solta.ChaveArmazenamento);
     }
 
-    // ---------- Playlists ----------
+    // ---------- Plano: limite de mídias ativas ----------
 
     [Fact]
-    public async Task CriarPlaylist_NomeRepetidoNoMesmoParceiroDeveSerRecusado_EmOutroParceiroPode()
+    public async Task CriarMidia_DentroDoPlanoNasceAtiva_AcimaNasceInativa()
     {
-        await CriarPlaylistNoBancoAsync(_parceiroB, "Grade principal");
-        var handler = new CriarPlaylistCommandHandler(_context, _parceiroAtual);
+        var primeira = await CriarMidia(NovaMidia(Arquivos.Png(), TiposArquivoMidia.Png));
+        var segunda = await CriarMidia(NovaMidia(Arquivos.Png(), TiposArquivoMidia.Png));
 
-        await handler.Handle(new CriarPlaylistCommand { Nome = "Grade principal" }, CancellationToken.None);
-        var repetida = () => handler.Handle(new CriarPlaylistCommand { Nome = " GRADE PRINCIPAL " }, CancellationToken.None);
-
-        (await repetida.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("Nome");
+        (await _context.Midias.SingleAsync(m => m.Id == primeira)).Ativo.Should().BeTrue();
+        (await _context.Midias.SingleAsync(m => m.Id == segunda)).Ativo.Should().BeFalse("o plano padrão permite 1 ativa");
     }
 
     [Fact]
-    public async Task DefinirItens_DeveGravarNaOrdemEContarDuracao()
+    public async Task AtivarMidia_AlemDoPlanoDeveDar400()
     {
-        var video = await CriarMidiaNoBancoAsync(_parceiroA, duracao: 30);
-        var imagem = await CriarMidiaNoBancoAsync(_parceiroA, duracao: 10);
-        var playlist = await CriarPlaylistNoBancoAsync(_parceiroA, "Grade");
+        await CriarMidiaNoBancoAsync(_parceiroA);
+        var outra = await CriarMidiaNoBancoAsync(_parceiroA, ativa: false);
 
-        await DefinirItens(playlist.Id,
-            Item(null, imagem.Id, DiasSemana.DiasUteis),
-            Item(null, video.Id, DiasSemana.Todos),
-            Item(null, imagem.Id, DiasSemana.FimDeSemana));
+        var ativar = () => new AtivarMidiaCommandHandler(_context, _parceiroAtual)
+            .Handle(new AtivarMidiaCommand(outra.Id, 0), CancellationToken.None);
 
-        var dto = await new GetPlaylistByIdQueryHandler(_context, _parceiroAtual, new IdentityNomesFake())
-            .Handle(new GetPlaylistByIdQuery(playlist.Id), CancellationToken.None);
-
-        dto.Itens!.Select(i => (i.Ordem, i.MidiaId, i.DiasSemana)).Should().Equal(
-            (0, imagem.Id, (int)DiasSemana.DiasUteis),
-            (1, video.Id, (int)DiasSemana.Todos),
-            (2, imagem.Id, (int)DiasSemana.FimDeSemana));
-        dto.QuantidadeItens.Should().Be(3);
-        dto.DuracaoTotalSegundos.Should().Be(50);
+        (await ativar.Should().ThrowAsync<ValidationException>()).Which.Errors["Ativo"]
+            .Should().ContainMatch("*1 mídia ativa*");
     }
 
     [Fact]
-    public async Task DefinirItens_ComMidiaDeOutroParceiroDeveSerRecusado()
+    public async Task AtivarMidia_ComPlanoMaiorOuDepoisDeInativarOutraPassa()
+    {
+        var a = await CriarMidiaNoBancoAsync(_parceiroA);
+        var b = await CriarMidiaNoBancoAsync(_parceiroA, ativa: false);
+
+        await new InativarMidiaCommandHandler(_context, _parceiroAtual).Handle(new InativarMidiaCommand(a.Id, 0), CancellationToken.None);
+        await new AtivarMidiaCommandHandler(_context, _parceiroAtual).Handle(new AtivarMidiaCommand(b.Id, 0), CancellationToken.None);
+
+        (await _context.Parceiros.SingleAsync(p => p.Id == _parceiroA)).LimiteMidiasAtivas = 2;
+        await _context.SaveChangesAsync();
+        await new AtivarMidiaCommandHandler(_context, _parceiroAtual).Handle(new AtivarMidiaCommand(a.Id, 0), CancellationToken.None);
+
+        (await _context.Midias.CountAsync(m => m.ParceiroId == _parceiroA && m.Ativo)).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Plano_DireitoAdquiridoNaoInativaNada_SoBarraANovaAtivacao()
+    {
+        // Três ativas de antes do limite existir.
+        await CriarMidiaNoBancoAsync(_parceiroA);
+        await CriarMidiaNoBancoAsync(_parceiroA);
+        var ativaDeAntes = await CriarMidiaNoBancoAsync(_parceiroA);
+        var nova = await CriarMidiaNoBancoAsync(_parceiroA, ativa: false);
+
+        // Reativar uma que já está ativa não conta como mais uma.
+        await new AtivarMidiaCommandHandler(_context, _parceiroAtual).Handle(new AtivarMidiaCommand(ativaDeAntes.Id, 0), CancellationToken.None);
+
+        var ativar = () => new AtivarMidiaCommandHandler(_context, _parceiroAtual).Handle(new AtivarMidiaCommand(nova.Id, 0), CancellationToken.None);
+        await ativar.Should().ThrowAsync<ValidationException>();
+        (await _context.Midias.CountAsync(m => m.ParceiroId == _parceiroA && m.Ativo)).Should().Be(3);
+
+        var uso = await new GetUsoArmazenamentoQueryHandler(_context, _parceiroAtual).Handle(new GetUsoArmazenamentoQuery(), CancellationToken.None);
+        uso.MidiasAtivas.Should().Be(3);
+        uso.LimiteMidiasAtivas.Should().Be(1);
+    }
+
+    // ---------- Substituir arquivo ----------
+
+    [Fact]
+    public async Task SubstituirArquivo_TrocaHashETamanho_MantemMidiaEPlaylists_ApagaOAntigo()
+    {
+        var antigo = Arquivos.Mp4();
+        var id = await CriarMidia(NovaMidia(antigo, TiposArquivoMidia.Mp4));
+        var playlist = await CriarPlaylistNoBancoAsync("Grade", id);
+        var chaveAntiga = (await _context.Midias.SingleAsync(m => m.Id == id)).ChaveArmazenamento;
+
+        var novo = Arquivos.Png();
+        var chaveNova = Enviar(novo, TiposArquivoMidia.Png);
+        await Substituir(new SubstituirArquivoMidiaCommand
+        {
+            Id = id, Chave = chaveNova, TipoConteudo = TiposArquivoMidia.Png, Hash = Sha256(novo), DuracaoSegundos = 12, Version = 0,
+        });
+
+        var midia = await _context.Midias.AsNoTracking().SingleAsync(m => m.Id == id);
+        midia.ChaveArmazenamento.Should().Be(chaveNova);
+        midia.Hash.Should().Be(Sha256(novo));
+        midia.TamanhoBytes.Should().Be(novo.Length);
+        midia.Tipo.Should().Be(TipoMidia.Imagem);
+        midia.DuracaoSegundos.Should().Be(12);
+        (await _context.ItensPlaylist.CountAsync(i => i.PlaylistId == playlist.Id && i.MidiaId == id)).Should().Be(1, "continua na grade");
+        _armazenamento.Removidos.Should().Equal(chaveAntiga);
+    }
+
+    [Fact]
+    public async Task SubstituirArquivo_ConteudoInvalidoERecusadoEApagaSoONovo()
+    {
+        var id = await CriarMidia(NovaMidia(Arquivos.Mp4(), TiposArquivoMidia.Mp4));
+        var chaveAntiga = (await _context.Midias.SingleAsync(m => m.Id == id)).ChaveArmazenamento;
+        var chaveNova = Enviar(Arquivos.Png(), TiposArquivoMidia.Mp4);
+
+        var acao = () => Substituir(new SubstituirArquivoMidiaCommand { Id = id, Chave = chaveNova, TipoConteudo = TiposArquivoMidia.Mp4, Version = 0 });
+
+        (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("TipoConteudo");
+        (await _context.Midias.SingleAsync(m => m.Id == id)).ChaveArmazenamento.Should().Be(chaveAntiga);
+        _armazenamento.Removidos.Should().Equal(chaveNova);
+    }
+
+    [Fact]
+    public async Task SubstituirArquivo_CotaDescontaOArquivoQueSai()
+    {
+        // Cota do parceiro A: 1 MB. Arquivo de 700 KB trocado por outro de 700 KB cabe.
+        var grande = Arquivos.Mp4(700 * 1024);
+        var id = await CriarMidia(NovaMidia(grande, TiposArquivoMidia.Mp4));
+        var outro = Arquivos.Mp4(700 * 1024);
+        var chave = Enviar(outro, TiposArquivoMidia.Mp4);
+
+        await Substituir(new SubstituirArquivoMidiaCommand { Id = id, Chave = chave, TipoConteudo = TiposArquivoMidia.Mp4, Version = 0 });
+
+        (await _context.Midias.SingleAsync(m => m.Id == id)).ChaveArmazenamento.Should().Be(chave);
+    }
+
+    [Fact]
+    public async Task SubstituirArquivo_MidiaDeOutroParceiroDeveDar404()
     {
         var midiaB = await CriarMidiaNoBancoAsync(_parceiroB);
-        var playlist = await CriarPlaylistNoBancoAsync(_parceiroA, "Grade");
+        var chave = Enviar(Arquivos.Png(), TiposArquivoMidia.Png);
 
-        var acao = () => DefinirItens(playlist.Id, Item(null, midiaB.Id, DiasSemana.Todos));
-
-        (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("Itens");
-        (await _context.ItensPlaylist.AnyAsync()).Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task DefinirItens_PlaylistDeOutroParceiroDeveDar404()
-    {
-        var playlistB = await CriarPlaylistNoBancoAsync(_parceiroB, "Grade B");
-
-        var acao = () => DefinirItens(playlistB.Id);
+        var acao = () => Substituir(new SubstituirArquivoMidiaCommand { Id = midiaB.Id, Chave = chave, TipoConteudo = TiposArquivoMidia.Png, Version = 0 });
 
         await acao.Should().ThrowAsync<NotFoundException>();
     }
 
-    [Fact]
-    public async Task ExcluirPlaylist_EmUsoPorTelaDeveSerRecusada()
-    {
-        var playlist = await CriarPlaylistNoBancoAsync(_parceiroA, "Grade");
-        _context.Telas.Add(new Tela { ParceiroId = _parceiroA, Nome = "Recepção", PlaylistId = playlist.Id });
-        await _context.SaveChangesAsync();
-
-        var acao = () => new ExcluirPlaylistCommandHandler(_context, _parceiroAtual)
-            .Handle(new ExcluirPlaylistCommand(playlist.Id), CancellationToken.None);
-
-        (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors["Id"].Should().ContainMatch("*1 tela*");
-    }
-
-    // ---------- Telas (visão do parceiro: só leitura e playlist) ----------
+    // ---------- Onde meus anúncios passam ----------
 
     [Fact]
-    public async Task DefinirPlaylist_DeveTrocarAGradeDaTela()
+    public async Task OndePassam_SoTelasAtivasComPlaylistAtivaQueTemMidiaAtivaDoParceiro()
     {
-        var playlist = await CriarPlaylistNoBancoAsync(_parceiroA, "Grade");
-        var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção" };
-        _context.Telas.Add(tela);
-        await _context.SaveChangesAsync();
+        var minha = await CriarMidiaNoBancoAsync(_parceiroA);
+        var minhaInativa = await CriarMidiaNoBancoAsync(_parceiroA, ativa: false);
+        var deOutro = await CriarMidiaNoBancoAsync(_parceiroB);
 
-        await new DefinirPlaylistDaTelaCommandHandler(_context, _parceiroAtual)
-            .Handle(new DefinirPlaylistDaTelaCommand(tela.Id, playlist.Id, 0), CancellationToken.None);
+        var comMinha = await CriarPlaylistNoBancoAsync("Com a minha", deOutro.Id, minha.Id);
+        var soDeOutro = await CriarPlaylistNoBancoAsync("Só de outro", deOutro.Id);
+        var comInativa = await CriarPlaylistNoBancoAsync("Com a inativa", minhaInativa.Id);
+        var inativa = await CriarPlaylistNoBancoAsync("Playlist inativa", minha.Id);
+        inativa.Ativo = false;
 
-        var dto = await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None);
-        dto.PlaylistId.Should().Be(playlist.Id);
-        dto.PlaylistNome.Should().Be("Grade");
-
-        await new DefinirPlaylistDaTelaCommandHandler(_context, _parceiroAtual)
-            .Handle(new DefinirPlaylistDaTelaCommand(tela.Id, null, 0), CancellationToken.None);
-        (await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None)).PlaylistId.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task DefinirPlaylist_DeOutroParceiroDeveSerRecusada()
-    {
-        var playlistB = await CriarPlaylistNoBancoAsync(_parceiroB, "Grade B");
-        var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção" };
-        _context.Telas.Add(tela);
-        await _context.SaveChangesAsync();
-
-        var acao = () => new DefinirPlaylistDaTelaCommandHandler(_context, _parceiroAtual)
-            .Handle(new DefinirPlaylistDaTelaCommand(tela.Id, playlistB.Id, 1), CancellationToken.None);
-
-        (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("PlaylistId");
-    }
-
-    [Fact]
-    public async Task DefinirPlaylist_EmTelaDeOutroParceiroDeveDar404()
-    {
-        var playlist = await CriarPlaylistNoBancoAsync(_parceiroA, "Grade");
-        var telaB = new Tela { ParceiroId = _parceiroB, Nome = "TV da tapiocaria" };
-        _context.Telas.Add(telaB);
-        await _context.SaveChangesAsync();
-
-        var acao = () => new DefinirPlaylistDaTelaCommandHandler(_context, _parceiroAtual)
-            .Handle(new DefinirPlaylistDaTelaCommand(telaB.Id, playlist.Id, 1), CancellationToken.None);
-
-        await acao.Should().ThrowAsync<NotFoundException>();
-    }
-
-    [Fact]
-    public async Task Situacao_DeveSeguirASincronizacao()
-    {
-        var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção" };
-        tela.Parear("tv-1", Agora.AddHours(-2));
-        tela.Estado = new EstadoTela();
-        tela.Estado.RegistrarSincronizacao(Agora.AddMinutes(-5), "1.0.0", "v", 3);
-        _context.Telas.Add(tela);
-        await _context.SaveChangesAsync();
-
-        (await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None)).Situacao.Should().Be(SituacaoTela.Online);
-
-        _relogio.Agora = Agora.AddMinutes(20);
-        (await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None)).Situacao.Should().Be(SituacaoTela.Offline);
-    }
-
-    [Fact]
-    public async Task Telas_ParceiroNaoVeOCodigoDePareamento()
-    {
-        var tela = new Tela { ParceiroId = _parceiroA, Nome = "Recepção" };
-        tela.GerarCodigoPareamento("ABCD2345", Agora);
-        _context.Telas.Add(tela);
-        await _context.SaveChangesAsync();
-
-        var dto = await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None);
-
-        dto.CodigoPareamento.Should().BeNull("parear é trabalho da operadora");
-        dto.CodigoPareamentoExpiraEm.Should().BeNull();
-        dto.ParceiroNome.Should().Be("Academia");
-    }
-
-    [Fact]
-    public async Task Telas_DeOutroParceiroNaoAparecem()
-    {
-        _context.Telas.Add(new Tela { ParceiroId = _parceiroB, Nome = "TV da tapiocaria" });
+        _context.Telas.AddRange(
+            new Tela { ParceiroId = _parceiroB, Nome = "Padaria", Playlist = comMinha },
+            new Tela { ParceiroId = _parceiroB, Nome = "Farmácia", Playlist = soDeOutro },
+            new Tela { ParceiroId = _parceiroB, Nome = "Banca", Playlist = comInativa },
+            new Tela { ParceiroId = _parceiroB, Nome = "Bar", Playlist = inativa },
+            new Tela { ParceiroId = _parceiroB, Nome = "Desligada", Playlist = comMinha, Ativo = false },
+            new Tela { ParceiroId = _parceiroA, Nome = "Minha loja" });
         await _context.SaveChangesAsync();
 
         var lista = await new GetTelasQueryHandler(_context, _parceiroAtual, new IdentityNomesFake(), _relogio)
             .Handle(new GetTelasQuery(), CancellationToken.None);
 
-        lista.Items.Should().BeEmpty();
+        lista.Items.Select(t => t.Nome).Should().Equal("Padaria");
+        lista.Items.Single().ParceiroNome.Should().Be("Tapiocaria", "o local é o host");
+        lista.Items.Single().CodigoPareamento.Should().BeNull();
+
+        var foraDaLista = _context.Telas.Single(t => t.Nome == "Farmácia").Id;
+        var obter = () => Telas().Handle(new GetTelaByIdQuery(foraDaLista), CancellationToken.None);
+        await obter.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task OndePassam_SituacaoSegueASincronizacao()
+    {
+        var minha = await CriarMidiaNoBancoAsync(_parceiroA);
+        var playlist = await CriarPlaylistNoBancoAsync("Grade", minha.Id);
+        var tela = new Tela { ParceiroId = _parceiroB, Nome = "Padaria", Playlist = playlist };
+        tela.Parear("tv-1", Agora.AddHours(-2));
+        tela.Estado = new EstadoTela();
+        tela.Estado.RegistrarSincronizacao(Agora.AddMinutes(-2), "1.0.0", "v", 3);
+        _context.Telas.Add(tela);
+        await _context.SaveChangesAsync();
+
+        (await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None)).Situacao.Should().Be(SituacaoTela.Online);
+
+        _relogio.Agora = Agora.AddMinutes(10);
+        (await Telas().Handle(new GetTelaByIdQuery(tela.Id), CancellationToken.None)).Situacao.Should().Be(SituacaoTela.Offline);
     }
 
     // ---------- Apoio ----------
@@ -412,11 +425,17 @@ public class PainelIndoorTests : IDisposable
         new CriarMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, NullLogger<CriarMidiaCommandHandler>.Instance)
             .Handle(comando, CancellationToken.None);
 
-    private Task<uint> DefinirItens(long playlistId, params DefinirItensPlaylistCommand.ItemInformado[] itens) =>
-        new DefinirItensPlaylistCommandHandler(_context, _parceiroAtual)
-            .Handle(new DefinirItensPlaylistCommand { Id = playlistId, Itens = itens, Version = 0 }, CancellationToken.None);
+    private Task<uint> Substituir(SubstituirArquivoMidiaCommand comando) =>
+        new SubstituirArquivoMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, NullLogger<SubstituirArquivoMidiaCommandHandler>.Instance)
+            .Handle(comando, CancellationToken.None);
 
-    private static DefinirItensPlaylistCommand.ItemInformado Item(long? id, long midiaId, DiasSemana dias) => new(id, midiaId, dias);
+    private CriarMidiaCommand NovaMidia(byte[] arquivo, string tipo) => new()
+    {
+        Titulo = "Mídia",
+        Chave = Enviar(arquivo, tipo),
+        TipoConteudo = tipo,
+        DuracaoSegundos = 15,
+    };
 
     private string Enviar(byte[] arquivo, string tipo)
     {
@@ -425,10 +444,11 @@ public class PainelIndoorTests : IDisposable
         return chave;
     }
 
-    private async Task<Midia> CriarMidiaNoBancoAsync(long parceiroId, long tamanho = 1000, int duracao = 15)
+    private async Task<Midia> CriarMidiaNoBancoAsync(long parceiroId, long tamanho = 1000, int duracao = 15, bool ativa = true)
     {
         var midia = new Midia
         {
+            Ativo = ativa,
             ParceiroId = parceiroId,
             Titulo = "Mídia",
             Tipo = TipoMidia.Video,
@@ -443,9 +463,9 @@ public class PainelIndoorTests : IDisposable
         return midia;
     }
 
-    private async Task<Playlist> CriarPlaylistNoBancoAsync(long parceiroId, string nome, params long[] midias)
+    private async Task<Playlist> CriarPlaylistNoBancoAsync(string nome, params long[] midias)
     {
-        var playlist = new Playlist { ParceiroId = parceiroId, Nome = nome };
+        var playlist = new Playlist { Nome = nome };
         playlist.DefinirItens(midias.Select(m => new ItemPlaylistInformado(null, m, DiasSemana.Todos)).ToList());
         _context.Playlists.Add(playlist);
         await _context.SaveChangesAsync();

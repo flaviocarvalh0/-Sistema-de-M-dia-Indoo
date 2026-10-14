@@ -1,22 +1,18 @@
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros;
-using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Platform.Attributes;
 
 namespace Atlas.Domain.Business.Indoor.Entities;
 
 /// <summary>
-/// Grade de exibição do parceiro, reaproveitável: uma playlist roda em várias
-/// telas (as 5 TVs da academia tocam a mesma grade). A tela aponta para a
-/// playlist; a playlist não conhece as telas.
+/// Grade de exibição da rede, montada pela operadora: mídias de vários
+/// parceiros (anunciantes) na ordem do loop. Reaproveitável: uma playlist
+/// roda em várias telas. A tela aponta para a playlist; a playlist não
+/// conhece as telas.
 /// </summary>
 [MetadataConfiguration("Playlists")]
-public class Playlist : BaseAuditableEntity, IDoParceiro
+public class Playlist : BaseAuditableEntity
 {
-    public long ParceiroId { get; set; }
-    public Parceiro Parceiro { get; set; } = null!;
-
-    /// <summary>Único por parceiro.</summary>
+    /// <summary>Único na rede.</summary>
     public string Nome { get; set; } = null!;
 
     public string? Descricao { get; set; }

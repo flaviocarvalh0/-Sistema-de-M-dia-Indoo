@@ -1,6 +1,6 @@
 import { TipoMidia } from '../../midias/models/midia.model';
 
-/** Contratos das playlists (backend: Atlas.Application/Business/Indoor/Playlists). */
+/** Contratos das playlists (backend: Atlas.Application/Business/Rede/Playlists). */
 export interface PlaylistDto {
   id: number;
   nome: string;
@@ -22,6 +22,9 @@ export interface ItemPlaylistDto {
   id: number;
   ordem: number;
   midiaId: number;
+  /** Parceiro anunciante dono da mídia. */
+  parceiroId: number;
+  parceiroNome: string;
   titulo: string;
   tipo: TipoMidia;
   duracaoSegundos: number;

@@ -71,8 +71,9 @@ no login.
 **Pelo roteiro (recomendado):** abra `api/src/Atlas.Web/Indoor.http`,
 coloque um `video.mp4` e uma `imagem.png` na mesma pasta e execute as
 requisições de cima para baixo. O roteiro cadastra um parceiro, entra como o
-dono, envia vídeo e imagem ao Supabase, monta a playlist, cria a tela e gera
-o código de pareamento. Os passos 12 a 15 fazem o papel da TV: pareiam com o
+dono, envia vídeo e imagem ao Supabase e, de volta como operadora, monta a
+playlist com as mídias dele, cria a tela com a playlist e gera o código de
+pareamento. Os passos 12 a 15 fazem o papel da TV: pareiam com o
 código, sincronizam (as `url` da resposta abrem o arquivo) e mostram a tela
 Online no painel. O contrato completo está em [CONTRATO_DISPOSITIVO.md](CONTRATO_DISPOSITIVO.md).
 
@@ -88,10 +89,18 @@ usam o cookie.
 - Enviar além da cota do parceiro é recusado antes do upload.
 - Excluir uma mídia que está numa playlist, ou uma playlist que está numa
   tela, é recusado.
+- Com o plano padrão (1 mídia ativa), a segunda mídia nasce inativa e
+  ativá-la dá 400 com a mensagem do plano. Reduzir o plano não inativa nada.
+- Uma mídia inativa não entra numa grade (400); a mesma mídia ativa pode
+  entrar duas vezes.
+- `PUT /midias/{id}/arquivo` troca o arquivo: a TV recebe o hash novo na
+  próxima sincronização e o arquivo antigo some do bucket.
+- O parceiro recebe 403 em `rede/playlists` e `rede/midias`.
 - Salvar com uma `version` antiga devolve 409.
 - O `admin` não enxerga o painel de parceiro (403): ele não pertence a um parceiro.
-- Desvincular a TV no painel faz a sincronização dela responder 401; bloquear
-  o parceiro, 403.
+- Desvincular a TV no painel faz a sincronização dela responder 401; inativar
+  a tela, 403. Bloquear o anunciante tira as mídias dele da grade; bloquear o
+  host não afeta a TV.
 
 ### Testes automatizados
 
@@ -139,25 +148,32 @@ da API).
    responsável recebe a senha temporária por e-mail (sem SMTP configurado,
    consulte `select html_body from platform.email_message order by id desc limit 1;`).
 2. Saia e entre com o e-mail do responsável; troque a senha.
-3. **Mídias → Enviar mídia**: escolha um MP4 (a duração vem do vídeo) e uma
-   imagem PNG/JPG. A barra mostra o envio direto ao Supabase; ao terminar a
-   mídia aparece na lista e a barra de espaço usado cresce. Use o botão de
-   play da linha para pré-visualizar.
-4. **Playlists → Novo**, depois clique na playlist para abrir a grade:
-   adicione as mídias, arraste para mudar a ordem, desmarque dias (ex.: só
-   Seg a sex) e **Salvar grade**.
-5. Saia e entre como `admin` (ou um usuário do grupo **Operadora**). Em
-   **Rede → Telas → Novo**, escolha o parceiro, o nome e, se quiser, a
-   identificação do aparelho (MAC/série). Use o botão de QR Code da linha
-   (**Gerar código**): o código aparece em destaque, com o tempo restante.
-   As TVs são da operadora: o parceiro não cadastra, não pareia nem exclui.
-6. Faça o papel da TV com os passos 12 a 15 do `Indoor.http` usando esse
-   código: a tela passa a **Online** (a lista se atualiza a cada minuto).
-7. Entre de novo como o dono: em **Telas** a TV aparece somente leitura, com
-   **Trocar playlist** — escolha a playlist do passo 4.
-8. Como operadora, **Desvincular TV** na linha: a próxima sincronização da TV
-   recebe 401 e a tela volta a *Aguardando pareamento*. Editar a tela e trocar
-   o parceiro também tira a playlist e desvincula a TV.
+3. **Mídias → Enviar mídia**: escolha um MP4 (a duração vem do vídeo). A
+   barra mostra o envio direto ao Supabase; ao terminar a mídia aparece na
+   lista, a barra de espaço cresce e o plano mostra **Mídias ativas: 1 de 1**.
+   Envie uma imagem: com o plano completo, a página avisa e ela nasce
+   inativa. Use o play da linha para pré-visualizar.
+4. Na linha do vídeo, **Substituir arquivo**: escolha outro MP4. A mídia
+   continua ativa e nas mesmas grades; as TVs baixam o arquivo novo.
+5. Saia e entre como `admin` (ou um usuário do grupo **Operadora**).
+   **Rede → Playlists → Novo**, depois clique na playlist para abrir a grade:
+   busque as mídias ativas da rede (por título ou parceiro), adicione — a
+   mesma mídia pode entrar mais de uma vez e aparece "Já adicionado (N×)" —,
+   arraste para mudar a ordem, desmarque dias e **Salvar grade**.
+6. **Rede → Telas → Novo**: escolha o estabelecimento (host, que define o
+   fuso), a playlist do passo 5, o nome e, se quiser, a identificação do
+   aparelho. Use o botão de QR Code da linha (**Gerar código**): o código
+   aparece em destaque, com o tempo restante.
+7. Faça o papel da TV com os passos do `Indoor.http` usando esse código: a
+   tela passa a **Online** (a lista se atualiza a cada minuto).
+8. Entre de novo como o dono: em **Onde meus anúncios passam** a TV aparece
+   somente leitura, com o estabelecimento e a conexão.
+9. Como operadora, em **Rede → Parceiros**, a coluna **Mídias ativas** mostra
+   o uso do plano; edite o parceiro e aumente **Mídias ativas (plano)** para
+   o dono conseguir ativar a imagem.
+10. **Desvincular TV** na linha da tela: a próxima sincronização da TV recebe
+    401 e a tela volta a *Aguardando pareamento*. Trocar o estabelecimento ou
+    a playlist da tela não desvincula a TV.
 
 ## 8. App das TVs (`player/`)
 

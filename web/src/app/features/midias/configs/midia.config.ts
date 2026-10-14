@@ -11,7 +11,7 @@ export const MIDIA_COLUNAS: ColunaDef[] = [
   { campo: 'duracao', titulo: 'Duração', tipo: 'texto' },
   { campo: 'tamanho', titulo: 'Tamanho', tipo: 'texto' },
   { campo: 'periodo', titulo: 'Período', tipo: 'texto' },
-  { campo: 'quantidadePlaylists', titulo: 'Playlists', tipo: 'numero' },
+  { campo: 'quantidadePlaylists', titulo: 'Em grades', tipo: 'numero' },
   { campo: 'ativo', titulo: 'Situação', tipo: 'status' },
 ];
 

@@ -8,9 +8,9 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 
 | Perfil | Onde | O quê |
 |---|---|---|
-| **Operadora** (grupo "Operadora") | Painel → Rede | Cadastra os parceiros e as TVs (o hardware é dela): instala, pareia e libera cada TV para um parceiro |
-| **Parceiro** (grupo "Proprietário de Parceiro") | Painel → Mídia Indoor | Envia mídias, monta playlists e escolhe o que cada TV dele toca |
-| **TV** | App `player/` | Toca a grade do parceiro, mesmo sem internet |
+| **Operadora** (grupo "Operadora") | Painel → Rede | Cadastra os parceiros e as TVs (o hardware é dela), monta as playlists com os anúncios da rede e escolhe o que cada TV toca |
+| **Parceiro** (grupo "Proprietário de Parceiro") | Painel → Mídia Indoor | Anunciante: envia e mantém as próprias mídias, dentro do plano, e vê onde elas passam |
+| **TV** | App `player/` | Toca a grade da tela, mesmo sem internet |
 | **Administrador** (`admin`) | Atlas Studio | Usuários, grupos, menus, SMTP e parâmetros |
 
 ## Rede (operadora)
@@ -20,9 +20,10 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Cadastro de parceiro | Nome, responsável, e-mail de acesso, telefone, CPF/CNPJ, cidade, fuso horário e espaço (MB) |
 | Acesso do responsável | O cadastro cria o usuário do responsável e envia a senha temporária por e-mail; a troca é obrigatória no primeiro login |
 | Espaço por parceiro | Cota de armazenamento em MB (padrão 200), conferida antes de cada envio |
-| Fuso horário | Define o "hoje" e o dia da semana da grade das TVs do parceiro |
-| Bloquear / desbloquear | Com motivo. Bloqueado, o parceiro perde o painel e as TVs param de receber grade nova, mas continuam tocando o que já têm |
-| Lista | Situação, telas, espaço usado/cota; filtro por situação; histórico de alterações |
+| Plano (mídias ativas) | Quantas mídias o parceiro pode ter ativas ao mesmo tempo (padrão 1). Reduzir não inativa nada: só impede ativar novas |
+| Fuso horário | Define o "hoje" e o dia da semana da grade das TVs instaladas no parceiro (host) |
+| Bloquear / desbloquear | Com motivo. Bloqueado, o parceiro perde o painel e as mídias dele saem das grades na próxima sincronização. As TVs instaladas nele continuam tocando normalmente |
+| Lista | Situação, telas no local, mídias ativas (x de y), espaço usado/cota; filtro por situação; histórico de alterações |
 
 ## Mídias (parceiro)
 
@@ -32,45 +33,49 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Conferência do arquivo | SHA-256 calculado no navegador e conferido pela API; tipo real verificado (um PNG disfarçado de MP4 é recusado) |
 | Duração | Vídeo: lida do próprio arquivo. Imagem: 15 s por padrão. Editável |
 | Período de exibição | "Exibir a partir de" e "Exibir até" (opcionais) |
-| Ativar / inativar | Inativa sai do loop das TVs, mas continua nas playlists |
+| Ativar / inativar | Inativa sai do loop das TVs, mas continua nas grades. Mídia nova nasce ativa se o plano tiver vaga e inativa se estiver completo; ativar além do plano é recusado com a explicação |
+| Plano | "Mídias ativas: x de y" na lista, com aviso de plano completo também na página de envio |
+| Substituir arquivo | Troca o vídeo/imagem de uma mídia sem tirá-la das grades nem mudar a situação; as TVs baixam o novo pelo hash. O arquivo antigo sai do storage |
 | Pré-visualizar | Link temporário de 1 h |
-| Excluir | Só mídia fora de playlists; o arquivo sai do storage |
+| Excluir | Só mídia fora das grades; o arquivo sai do storage |
 | Espaço usado | Barra com uso e cota do parceiro |
 
-## Playlists (parceiro)
+## Playlists (operadora, Rede → Playlists)
 
 | Funcionalidade | Detalhe |
 |---|---|
-| Playlist reutilizável | A mesma playlist toca em várias telas |
-| Grade | Adicionar mídias, reordenar arrastando, remover |
+| Playlist reutilizável | A mesma playlist toca em várias telas; nome único na rede |
+| Grade | Adicionar mídias ativas de qualquer parceiro (busca por título ou parceiro, filtro por parceiro), reordenar arrastando, remover |
+| Repetição | A mesma mídia pode entrar mais de uma vez; o seletor mostra "Já adicionado (N×)" |
+| Anunciante | Cada item mostra o parceiro dono da mídia |
 | Dias da semana por item | Botões Seg…Dom e atalhos (todos os dias, seg a sex, fim de semana) |
 | Ciclo | Duração total do loop e quantas telas usam a playlist |
-| Duplicar | "Clonar" cria outra playlist com a mesma grade |
+| Duplicar | "Clonar" cria outra playlist com a mesma grade (mídias inativas ficam de fora) |
 | Ativar / inativar | Inativa: as telas dela ficam sem grade |
 | Concorrência | Salvar com a versão: edição simultânea não sobrescreve a do outro (409) |
 
 ## Telas — operadora (Rede → Telas)
 
-O hardware é da operadora: ela cadastra cada TV e a libera para um parceiro.
+O hardware é da operadora: ela instala cada TV num estabelecimento (host) e
+escolhe a playlist.
 
 | Funcionalidade | Detalhe |
 |---|---|
-| Cadastro | Parceiro, nome, local e identificação do aparelho (MAC/série, só informativa) |
-| Lista da rede | Todas as TVs, com parceiro, playlist e conexão; filtro por parceiro e situação; busca por nome, parceiro, local ou aparelho |
+| Cadastro | Estabelecimento (host, define o fuso), playlist, nome, local e identificação do aparelho (MAC/série, só informativa) |
+| Lista da rede | Todas as TVs, com estabelecimento, playlist e conexão; filtro por estabelecimento e situação; busca por nome, parceiro, local ou aparelho |
 | Código de pareamento | 8 caracteres, válido por 24 h, uso único; exibido em destaque com contagem regressiva |
 | Conexão | Aguardando pareamento, Online ou Offline (sem sincronizar há 5 min); a lista atualiza a cada minuto |
 | Parear outra TV | Gera um código novo; a TV atual continua até a nova parear |
 | Desvincular TV | A TV perde o acesso na próxima sincronização e a tela volta a aguardar pareamento |
-| Trocar de parceiro | A playlist sai (era do parceiro anterior), a TV é desvinculada e o código pendente descartado |
+| Trocar estabelecimento ou playlist | Vale na próxima sincronização; a TV continua pareada |
 | Ativar / inativar | Inativa: a TV continua no que já baixou, sem receber grade nova |
-| Copiar | "Clonar" cria outra tela no mesmo parceiro e local |
+| Copiar | "Clonar" cria outra tela no mesmo estabelecimento e local |
 
-## Telas — parceiro (Mídia Indoor → Telas)
+## Onde meus anúncios passam (parceiro)
 
 | Funcionalidade | Detalhe |
 |---|---|
-| Minhas TVs | Somente leitura: nome, local, playlist, conexão e última sincronização |
-| Trocar playlist | Escolhe a playlist de cada TV (vale na próxima sincronização) |
+| Lista | Somente leitura: as TVs ativas cuja playlist tem uma mídia ativa do parceiro, com nome, local, estabelecimento, conexão e última sincronização |
 
 ## App das TVs
 
@@ -80,7 +85,7 @@ O hardware é da operadora: ela cadastra cada TV e a libera para um parceiro.
 | Offline-first | Só toca arquivos baixados; sem internet, continua tocando |
 | Download seguro | Conferência do SHA-256, 3 tentativas, arquivos reaproveitados entre grades |
 | Troca sem tela preta | A grade nova só entra quando tudo baixou |
-| Agenda | Dias da semana e período calculados na TV, no fuso do parceiro, a cada item |
+| Agenda | Dias da semana e período calculados na TV, no fuso do estabelecimento, a cada item |
 | Loop | Vídeo até o fim, imagem pela duração; arquivo com problema é pulado |
 | Tela de espera | Sem nada para hoje, mostra o nome da tela |
 | Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, servidor e versão |
@@ -89,8 +94,9 @@ O hardware é da operadora: ela cadastra cada TV e a libera para um parceiro.
 
 ## Segurança e isolamento
 
-- Cada parceiro só vê e altera os próprios registros. Registro de outro
-  parceiro responde 404.
+- Cada parceiro só vê e altera as próprias mídias. Mídia de outro parceiro,
+  ou tela onde ele não passa, responde 404.
+- Playlists e mídias da rede só para a operadora (ADR-015).
 - As TVs usam um token próprio, que não abre o painel (ADR-011).
 - O bucket das mídias é privado, acessado por links temporários (ADR-012).
 - O pareamento tem limite de 10 tentativas por IP a cada 5 minutos. A

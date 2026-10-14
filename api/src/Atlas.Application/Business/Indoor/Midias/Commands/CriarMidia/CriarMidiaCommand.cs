@@ -48,52 +48,13 @@ public class CriarMidiaCommandHandler(
     {
         var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
 
-        // A chave precisa ser uma gerada para este parceiro: sem isto, um
-        // parceiro poderia registrar como sua a mídia de outro.
-        if (!ChavesArmazenamento.Valida(request.Chave, parceiro.ParceiroId, request.TipoConteudo))
-        {
-            throw new ValidationException(nameof(request.Chave), ["Envio inválido. Envie o arquivo de novo."]);
-        }
+        var arquivo = await RecebimentoArquivo.ConferirAsync(
+            context, armazenamento, logger, parceiro.ParceiroId, request.Chave, request.TipoConteudo, request.Hash,
+            bytesQueSaem: 0, cancellationToken);
 
-        if (await context.Midias.AnyAsync(m => m.ChaveArmazenamento == request.Chave, cancellationToken))
-        {
-            throw new ValidationException(nameof(request.Chave), ["Este arquivo já foi cadastrado."]);
-        }
-
-        ArquivoVerificado arquivo;
-        await using (var conteudo = await armazenamento.AbrirLeituraAsync(request.Chave, cancellationToken))
-        {
-            if (conteudo is null)
-            {
-                throw new ValidationException(nameof(request.Chave), ["O arquivo não chegou ao storage. Envie de novo."]);
-            }
-
-            arquivo = await VerificadorArquivoMidia.VerificarAsync(conteudo, cancellationToken);
-        }
-
-        if (arquivo.ExcedeLimite)
-        {
-            await RecusarAsync(request.Chave, nameof(request.Chave),
-                $"O arquivo passa de {Midia.TamanhoMaximoBytes / (1024 * 1024)} MB.", cancellationToken);
-        }
-
-        if (arquivo.TipoDetectado != request.TipoConteudo)
-        {
-            await RecusarAsync(request.Chave, nameof(request.TipoConteudo),
-                "O conteúdo do arquivo não é um vídeo MP4 nem uma imagem JPEG ou PNG válida.", cancellationToken);
-        }
-
-        if (request.Hash is not null && !string.Equals(request.Hash, arquivo.Hash, StringComparison.OrdinalIgnoreCase))
-        {
-            await RecusarAsync(request.Chave, nameof(request.Hash),
-                "O arquivo chegou diferente do enviado (corrompido no caminho). Envie de novo.", cancellationToken);
-        }
-
-        var (usado, cota) = await CotaArmazenamento.ObterAsync(context, parceiro.ParceiroId, cancellationToken);
-        if (usado + arquivo.TamanhoBytes > cota)
-        {
-            await RecusarAsync(request.Chave, nameof(request.Chave), CotaArmazenamento.Mensagem(usado, cota), cancellationToken);
-        }
+        // Dentro do plano, nasce ativa; com o limite atingido, nasce inativa
+        // (o parceiro troca qual delas está no ar).
+        var ativa = await LimiteMidiasAtivas.TemVagaAsync(context, parceiro.ParceiroId, cancellationToken);
 
         var midia = new Midia
         {
@@ -107,27 +68,13 @@ public class CriarMidiaCommandHandler(
             DuracaoSegundos = request.DuracaoSegundos,
             InicioExibicao = request.InicioExibicao,
             FimExibicao = request.FimExibicao,
+            Ativo = ativa,
         };
 
         context.Midias.Add(midia);
         await context.SaveChangesAsync(cancellationToken);
 
         return midia.Id;
-    }
-
-    private async Task RecusarAsync(string chave, string campo, string mensagem, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await armazenamento.RemoverAsync(chave, cancellationToken);
-        }
-        catch (ArmazenamentoIndisponivelException ex)
-        {
-            // O arquivo recusado fica órfão no storage; não muda a resposta.
-            logger.LogWarning(ex, "Não foi possível apagar do storage o arquivo recusado {Chave}.", chave);
-        }
-
-        throw new ValidationException(campo, [mensagem]);
     }
 }
 
