@@ -195,6 +195,17 @@ void main() {
     );
   });
 
+  test('sem conexão: a mensagem diz o servidor e o motivo', () async {
+    final porta = Uri.parse(servidor.url).port;
+    await servidor.parar();
+    final api = ApiDispositivo('http://127.0.0.1:$porta');
+    await expectLater(
+      api.autenticar(codigo: 'AB12CD34', dispositivoId: 'd', versaoApp: '1'),
+      throwsA(isA<Indisponivel>().having((e) => e.mensagem, 'mensagem',
+          allOf(contains('http://127.0.0.1:$porta'), contains('conexão recusada')))),
+    );
+  });
+
   test('id do aparelho é gerado uma vez', () async {
     final c = Credenciais(CofreMemoria());
     final id = await c.dispositivoId();

@@ -113,9 +113,26 @@ class ApiDispositivo {
         401 => const CredencialRevogada(),
         403 => const AcessoSuspenso(),
         429 => const MuitasTentativas(),
-        null => const Indisponivel(),
+        null => Indisponivel('Sem conexão com ${_servidor()} (${_motivo(e)}).'),
         _ => Indisponivel('O servidor respondeu $status.'),
       };
     }
+  }
+
+  /// `https://192.168.0.10:7216`, sem o caminho da API.
+  String _servidor() => _dio.options.baseUrl.replaceFirst('/api/v1/dispositivo', '');
+
+  /// O motivo em palavras, para quem está na frente da TV saber o que checar.
+  static String _motivo(DioException e) {
+    final erro = e.error;
+    return switch (e.type) {
+      DioExceptionType.connectionTimeout => 'tempo esgotado: confira o IP, o firewall e se a TV está na mesma rede',
+      DioExceptionType.receiveTimeout || DioExceptionType.sendTimeout => 'o servidor demorou demais para responder',
+      DioExceptionType.badCertificate => 'certificado recusado',
+      _ when erro is HandshakeException => 'falha no https: ${erro.message}',
+      _ when erro is SocketException =>
+        'conexão recusada: confira se a API está rodando com --urls "https://*:7216" (${erro.osError?.message ?? erro.message})',
+      _ => e.message ?? e.type.name,
+    };
   }
 }
