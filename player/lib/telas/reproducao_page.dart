@@ -1,14 +1,14 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:video_player/video_player.dart';
 
 import '../app.dart';
 import '../config/configuracao.dart';
 import '../dados/modelos.dart';
+import '../reproducao/controlador_reproducao.dart';
 import '../reproducao/filtro_do_dia.dart';
+import '../reproducao/video_reproducao.dart';
 import '../sincronizacao/sincronizador.dart';
 import 'pareamento_page.dart';
 
@@ -27,32 +27,30 @@ class ReproducaoPage extends StatefulWidget {
 }
 
 class _ReproducaoPageState extends State<ReproducaoPage> {
-  /// Margem além de `duracaoSegundos` antes de considerar o vídeo travado.
-  static const _folgaVideo = Duration(seconds: 5);
-
-  /// Sem nada para tocar, confere de novo neste intervalo (o dia pode virar).
-  static const _reavaliarEspera = Duration(seconds: 30);
-
   /// Depois de download incompleto, tenta logo (URL nova, rede de volta).
   static const _tentarDeNovo = Duration(minutes: 1);
 
   Sincronizador get _sync => widget.servicos.sincronizador;
 
-  ItemGrade? _atual;
-  VideoPlayerController? _video;
-  Timer? _timerItem;
+  late final ControladorReproducao _loop = ControladorReproducao(
+    itensDeHoje: _itensDeHoje,
+    arquivoDe: widget.servicos.baixador.arquivoDe,
+    criarVideo: VideoDoAparelho.new,
+  );
+
   Timer? _timerSync;
   Timer? _timerInfo;
-  int _falhasSeguidas = 0;
   bool _mostrarInfo = false;
   bool _saindo = false;
 
   @override
   void initState() {
     super.initState();
+    _loop.addListener(_redesenhar);
     _sync.situacao.addListener(_aoMudarSituacao);
     _sync.carregar().then((_) {
-      _tocarProximo();
+      if (_saindo) return;
+      _loop.iniciar();
       _sincronizar();
     });
   }
@@ -61,18 +59,22 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   void dispose() {
     _saindo = true;
     _sync.situacao.removeListener(_aoMudarSituacao);
-    _timerItem?.cancel();
+    _loop.removeListener(_redesenhar);
+    _loop.dispose();
     _timerSync?.cancel();
     _timerInfo?.cancel();
-    _video?.dispose();
     super.dispose();
   }
 
+  void _redesenhar() {
+    if (mounted) setState(() {});
+  }
+
+  /// O sincronizador publicou outra situação (grade nova, resultado do ciclo).
   void _aoMudarSituacao() {
     if (!mounted) return;
     setState(() {});
-    // Estava na espera e chegou grade: começa sem esperar o próximo ciclo.
-    if (_atual == null) _tocarProximo();
+    _loop.gradeAtualizada();
   }
 
   Future<void> _sincronizar() async {
@@ -83,91 +85,11 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
     _timerSync = Timer(espera, _sincronizar);
   }
 
-  // ── Loop ────────────────────────────────────────────────────────────────
-
   List<ItemGrade> _itensDeHoje() {
     final s = _sync.situacao.value;
     if (s == null) return const [];
     final hoje = FiltroDoDia.hoje(s.fusoHorario, DateTime.now());
     return FiltroDoDia.itensDoDia(s.grade, hoje).where(widget.servicos.baixador.pronto).toList();
-  }
-
-  Future<void> _tocarProximo() async {
-    if (_saindo) return;
-    _timerItem?.cancel();
-
-    final doDia = _itensDeHoje();
-    final proximo = FiltroDoDia.proximo(doDia, _atual?.ordem);
-
-    // Nada para hoje, ou todos os arquivos falharam numa volta inteira.
-    if (proximo == null || _falhasSeguidas >= doDia.length) {
-      _falhasSeguidas = 0;
-      await _trocarVideo(null);
-      setState(() => _atual = null);
-      _timerItem = Timer(_reavaliarEspera, _tocarProximo);
-      return;
-    }
-
-    final arquivo = widget.servicos.baixador.arquivoDe(proximo);
-    if (proximo.tipo == TipoMidia.video) {
-      await _tocarVideo(proximo, arquivo);
-    } else {
-      await _trocarVideo(null);
-      setState(() => _atual = proximo);
-      _timerItem = Timer(Duration(seconds: proximo.duracaoSegundos), _aoTerminarItem);
-    }
-  }
-
-  Future<void> _tocarVideo(ItemGrade item, File arquivo) async {
-    final controlador = VideoPlayerController.file(arquivo);
-    try {
-      await controlador.initialize();
-    } catch (_) {
-      await controlador.dispose();
-      _aoFalhar(item);
-      return;
-    }
-    if (_saindo) {
-      await controlador.dispose();
-      return;
-    }
-
-    await _trocarVideo(controlador);
-    setState(() => _atual = item);
-    controlador.addListener(() {
-      final v = controlador.value;
-      if (v.hasError) {
-        _aoFalhar(item);
-      } else if (v.isInitialized && !v.isPlaying && v.position >= v.duration && v.duration > Duration.zero) {
-        _aoTerminarItem();
-      }
-    });
-    await controlador.play();
-    _timerItem = Timer(Duration(seconds: item.duracaoSegundos) + _folgaVideo, _aoTerminarItem);
-  }
-
-  Future<void> _trocarVideo(VideoPlayerController? novo) async {
-    final antigo = _video;
-    _video = novo;
-    await antigo?.dispose();
-  }
-
-  void _aoTerminarItem() {
-    if (_saindo) return;
-    _falhasSeguidas = 0;
-    _timerItem?.cancel();
-    _timerItem = null;
-    // Adia para fora do listener do vídeo.
-    scheduleMicrotask(_tocarProximo);
-  }
-
-  /// Arquivo que não abre é pulado (regra 6).
-  void _aoFalhar(ItemGrade item) {
-    if (_saindo) return;
-    _falhasSeguidas++;
-    _atual = item;
-    _timerItem?.cancel();
-    _timerItem = Timer(const Duration(milliseconds: 500), _tocarProximo);
   }
 
   // ── Controle remoto ─────────────────────────────────────────────────────
@@ -224,7 +146,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
             children: [
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 400),
-                child: KeyedSubtree(key: ValueKey(_atual?.ordem ?? -1), child: _conteudo(situacao)),
+                child: KeyedSubtree(key: ValueKey(_loop.geracao), child: _conteudo(situacao)),
               ),
               if (situacao?.desvinculada ?? false) const _AvisoDesvinculada(),
               if (_mostrarInfo)
@@ -243,18 +165,16 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   }
 
   Widget _conteudo(SituacaoPlayer? situacao) {
-    final item = _atual;
+    final item = _loop.atual;
     if (item == null) return _Espera(nomeTela: situacao?.nomeTela);
-    final video = _video;
-    if (item.tipo == TipoMidia.video && video != null && video.value.isInitialized) {
-      return Center(child: AspectRatio(aspectRatio: video.value.aspectRatio, child: VideoPlayer(video)));
-    }
+    final video = _loop.video;
+    if (item.tipo == TipoMidia.video && video != null) return video.visual();
     if (item.tipo == TipoMidia.imagem) {
       return Image.file(
         widget.servicos.baixador.arquivoDe(item),
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _aoFalhar(item));
+          WidgetsBinding.instance.addPostFrameCallback((_) => _loop.imagemFalhou(item));
           return const SizedBox.shrink();
         },
       );

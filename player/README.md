@@ -90,6 +90,8 @@ lib/
     baixador_midia.dart           .part → SHA-256 em blocos → renomeia; 3 tentativas
     sincronizador.dart            um ciclo: pergunta, baixa, troca a grade de uma vez, limpa
   reproducao/filtro_do_dia.dart   "hoje" no fuso do parceiro, dias da semana e período
+  reproducao/controlador_reproducao.dart   o loop sem tela: próximo item, fim, falha, espera
+  reproducao/video_reproducao.dart         vídeo (video_player) atrás de uma interface testável
   telas/
     pareamento_page.dart          digitação do código
     reproducao_page.dart          loop de vídeo/imagem, espera, painel de informações
@@ -109,6 +111,12 @@ lib/
   continua tocando e tenta no próximo ciclo.
 - **Loop:** vídeo avança no fim (com `duracaoSegundos` + 5 s de limite de
   segurança), imagem fica `duracaoSegundos`; arquivo que não abre é pulado.
+  Cada item ganha uma *geração*: eventos atrasados ou repetidos de um item
+  que já acabou (o fim de vídeo avisado duas vezes, o timer de segurança) são
+  ignorados, então o loop nunca avança duas vezes nem abre o mesmo vídeo de
+  novo.
+- **Grade nova sem cortar:** o que está na tela vai até o fim e o próximo
+  item já sai da grade nova. A TV pergunta ao servidor a cada 60 s.
 
 ## Testes
 

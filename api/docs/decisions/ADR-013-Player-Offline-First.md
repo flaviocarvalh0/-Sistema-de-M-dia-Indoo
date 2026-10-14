@@ -81,7 +81,7 @@ Alternativas rejeitadas:
 
 - O aparelho precisa de espaço para a grade inteira (até a cota do parceiro).
 - Uma mudança só aparece na TV depois de baixar tudo e na próxima
-  sincronização (padrão 5 minutos).
+  sincronização (padrão 60 segundos).
 - A regra do filtro do dia existe em dois lugares (API e app) e precisa ficar
   igual: o contrato em `docs/CONTRATO_DISPOSITIVO.md` é a referência.
 

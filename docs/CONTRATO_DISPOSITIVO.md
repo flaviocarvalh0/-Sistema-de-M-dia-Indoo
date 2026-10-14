@@ -22,7 +22,7 @@ pessoa digita na TV; o app aceita minúsculas, espaços e hífen
   "telaId": 12,
   "nomeTela": "Recepção",
   "nomeParceiro": "Academia Centro",
-  "intervaloSincronizacaoSegundos": 300
+  "intervaloSincronizacaoSegundos": 60
 }
 ```
 
@@ -52,7 +52,7 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
   "geradoEm": "2026-10-13T21:21:47Z",
   "hoje": "2026-10-13",
   "fusoHorario": "America/Manaus",
-  "intervaloSincronizacaoSegundos": 300,
+  "intervaloSincronizacaoSegundos": 60,
   "nomeTela": "Recepção",
   "novoToken": null,
   "itens": [
@@ -111,5 +111,9 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 7. **Grade vazia ou sem nada para hoje:** mostrar a tela de espera com o nome
    da tela.
 8. **Intervalo:** sincronizar a cada `intervaloSincronizacaoSegundos` (padrão
-   5 min) e ao ligar. Sem sincronizar por 15 min, o painel mostra a TV como
+   60 s) e ao ligar. Sem sincronizar por 5 min, o painel mostra a TV como
    Offline.
+9. **Grade nova não interrompe:** o item que está na tela vai até o fim; o
+   próximo já sai da grade nova. Eventos repetidos do player (fim de vídeo
+   avisado duas vezes, timer de segurança de um item que já acabou) não podem
+   avançar o loop mais de uma vez.

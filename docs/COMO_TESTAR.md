@@ -176,7 +176,7 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
 2. Na TV, digite o código e **Parear**. A TV baixa a grade e começa a tocar;
    no painel a tela vira **Online**.
 3. Mude a grade no painel (tire um dia, troque a ordem): a TV pega na próxima
-   sincronização (até 5 min; para ver na hora, feche e abra o app).
+   sincronização (até 1 min, mais o tempo de baixar; o vídeo que está passando vai até o fim antes de trocar).
 4. Desligue a rede do emulador: a TV continua tocando. **Desvincular TV** no
    painel: a TV continua tocando e mostra "TV não pareada · pressione OK".
 5. Botão **OK** do controle (Enter no teclado do emulador) mostra o painel de

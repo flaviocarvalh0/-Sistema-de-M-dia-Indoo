@@ -46,7 +46,7 @@ class BancoLocal {
       versaoGrade: mapa['versaoGrade'],
       fusoHorario: mapa['fusoHorario'] ?? 'America/Sao_Paulo',
       nomeTela: mapa['nomeTela'],
-      intervaloSincronizacaoSegundos: int.tryParse(mapa['intervalo'] ?? '') ?? 300,
+      intervaloSincronizacaoSegundos: int.tryParse(mapa['intervalo'] ?? '') ?? 60,
     );
   }
 

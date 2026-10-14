@@ -11,7 +11,7 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfig
         ?? throw new InvalidOperationException("Configuração 'Indoor:UrlPainel' ausente no appsettings.");
 
     public TimeSpan IntervaloSincronizacao =>
-        TimeSpan.FromSeconds(Inteiro("Indoor:Dispositivo:IntervaloSincronizacaoSegundos", padrao: 300, minimo: 30));
+        TimeSpan.FromSeconds(Inteiro("Indoor:Dispositivo:IntervaloSincronizacaoSegundos", padrao: 60, minimo: 30));
 
     public TimeSpan ValidadeTokenDispositivo =>
         TimeSpan.FromDays(Inteiro("Indoor:Dispositivo:ValidadeTokenDias", padrao: 30, minimo: 1));

@@ -77,8 +77,8 @@ class Sincronizador {
   ResultadoCiclo? _ultimo;
   DateTime? _ultimaSincronizacao;
 
-  /// Intervalo pedido pelo servidor (padrão 5 min).
-  Duration intervalo = const Duration(minutes: 5);
+  /// Intervalo pedido pelo servidor (padrão 60 s).
+  Duration intervalo = const Duration(seconds: 60);
 
   /// Lê o banco e publica a situação (ao abrir o app, antes de ir à rede).
   Future<void> carregar() async {

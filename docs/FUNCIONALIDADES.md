@@ -58,7 +58,7 @@ O hardware é da operadora: ela cadastra cada TV e a libera para um parceiro.
 | Cadastro | Parceiro, nome, local e identificação do aparelho (MAC/série, só informativa) |
 | Lista da rede | Todas as TVs, com parceiro, playlist e conexão; filtro por parceiro e situação; busca por nome, parceiro, local ou aparelho |
 | Código de pareamento | 8 caracteres, válido por 24 h, uso único; exibido em destaque com contagem regressiva |
-| Conexão | Aguardando pareamento, Online ou Offline (sem sincronizar há 15 min); a lista atualiza a cada minuto |
+| Conexão | Aguardando pareamento, Online ou Offline (sem sincronizar há 5 min); a lista atualiza a cada minuto |
 | Parear outra TV | Gera um código novo; a TV atual continua até a nova parear |
 | Desvincular TV | A TV perde o acesso na próxima sincronização e a tela volta a aguardar pareamento |
 | Trocar de parceiro | A playlist sai (era do parceiro anterior), a TV é desvinculada e o código pendente descartado |

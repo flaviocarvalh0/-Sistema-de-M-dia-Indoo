@@ -25,9 +25,9 @@ public class Tela : BaseAuditableEntity, IDoParceiro
 
     /// <summary>
     /// Sem sincronizar há mais que isto, a tela aparece Offline no painel
-    /// (três vezes o intervalo padrão de sincronização do player, 5 min).
+    /// (cinco vezes o intervalo padrão de sincronização do player, 60 s).
     /// </summary>
-    public static readonly TimeSpan ToleranciaOffline = TimeSpan.FromMinutes(15);
+    public static readonly TimeSpan ToleranciaOffline = TimeSpan.FromMinutes(5);
 
     public long ParceiroId { get; set; }
     public Parceiro Parceiro { get; set; } = null!;

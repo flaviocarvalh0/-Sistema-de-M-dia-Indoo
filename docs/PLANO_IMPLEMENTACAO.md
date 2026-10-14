@@ -197,10 +197,21 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   HTTP de ponta a ponta (operadora, dois parceiros, TV e transferência) e
   roteiro no navegador.
 
-### Entrega 2 — Player: troca de grade sem travar
+### Entrega 2 — Player: troca de grade sem travar ✅
 
-- [ ] Geração de item no loop (eventos atrasados ignorados), troca da fila no
-  fim do item, intervalo de 60 s, "Atualizar TV agora" no painel.
+- [x] `ControladorReproducao` (loop sem tela, testável): cada item ganha uma
+  geração; fim repetido, timer de segurança atrasado e falha de imagem já
+  trocada são ignorados. Antes, dois "fins" do mesmo vídeo abriam o próximo
+  vídeo mais de uma vez e podiam pular itens.
+- [x] Grade nova entra no fim do item atual, sem interromper; na espera,
+  começa na hora.
+- [x] Ouvinte do vídeo removido antes do `dispose`.
+- [x] Sincronização a cada 60 s (API e app); Offline depois de 5 min sem
+  sincronizar.
+- [x] "Atualizar TV agora" ficou fora: sem push, o aviso só chegaria na
+  próxima sincronização, que agora já é em até 60 s.
+- [x] Testes do loop com relógio simulado (13), conferidos removendo a
+  proteção: o teste de vídeo depois de vídeo falha sem ela.
 
 ### Entrega 3 — Seletor da grade
 

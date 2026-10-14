@@ -72,7 +72,7 @@ Linux, use o `Environment=` do serviço systemd.
 | `Indoor__Armazenamento__Supabase__Url` | sim | `https://<projeto>.supabase.co` |
 | `Indoor__Armazenamento__Supabase__ChaveServico` | sim | Chave `service_role`. **Segredo crítico**: nunca no painel nem nas TVs |
 | `Indoor__ProxiesConfiaveis__0` | atrás de proxy | IP do proxy reverso (ex.: `127.0.0.1` com nginx na mesma máquina). Sem ele, o limite de tentativas de pareamento vê só o IP do proxy. No IIS *in-process* não é necessário |
-| `Indoor__Dispositivo__IntervaloSincronizacaoSegundos` | não | Padrão `300` |
+| `Indoor__Dispositivo__IntervaloSincronizacaoSegundos` | não | Padrão `60` (mínimo 30). A TV aparece Offline depois de 5 min sem sincronizar |
 | `Indoor__Dispositivo__ValidadeTokenDias` | não | Padrão `30` |
 | `Indoor__Dispositivo__ValidadeUrlDownloadHoras` | não | Padrão `24` |
 
