@@ -83,7 +83,8 @@ Sem a configuração do Supabase a API sobe, mas as rotas de mídia respondem
 503.
 
 **Saída para a internet:** a API lê os feeds de notícias (ex.:
-`agenciabrasil.ebc.com.br`), baixa as imagens deles e consulta o Open-Meteo
+`agenciabrasil.ebc.com.br`), abre as páginas das notícias para achar a foto
+de destaque, baixa as imagens e consulta o Open-Meteo
 (`api.open-meteo.com` e `geocoding-api.open-meteo.com`). Libere HTTPS de
 saída para esses endereços no firewall/proxy do servidor. Sem isso, a API
 funciona, as fontes aparecem "Com erro" no painel e as TVs ficam sem

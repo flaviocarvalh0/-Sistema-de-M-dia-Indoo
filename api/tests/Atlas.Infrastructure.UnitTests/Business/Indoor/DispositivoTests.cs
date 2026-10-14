@@ -409,6 +409,34 @@ public class DispositivoTests : IDisposable
     }
 
     [Fact]
+    public async Task Sincronizar_MesmaMancheteEmDuasFontesVaiUmaVezSoComAFoto()
+    {
+        var credencial = await ParearComGradeAsync((Midia("Anúncio"), DiasSemana.Todos));
+        var geral = new FonteNoticia { Nome = "Últimas", UrlFeed = "https://a.test/ultimas", Credito = "Fonte: Agência" };
+        var editoria = new FonteNoticia { Nome = "Economia", UrlFeed = "https://a.test/economia", Credito = "Fonte: Agência" };
+        _context.FontesNoticia.AddRange(geral, editoria);
+        await _context.SaveChangesAsync();
+        _context.Noticias.AddRange(
+            new Noticia { FonteNoticiaId = geral.Id, Identificador = "1", Titulo = "Juros caem", PublicadaEm = Agora.AddHours(-1), ColetadaEm = Agora },
+            new Noticia
+            {
+                FonteNoticiaId = editoria.Id, Identificador = "1", Titulo = " juros caem ", PublicadaEm = Agora.AddHours(-1), ColetadaEm = Agora,
+                ChaveImagem = "noticias/2/f.jpg", HashImagem = new string('f', 64), TamanhoImagemBytes = 5, TipoConteudoImagem = "image/jpeg",
+            },
+            new Noticia { FonteNoticiaId = geral.Id, Identificador = "2", Titulo = "Outra", PublicadaEm = Agora.AddHours(-2), ColetadaEm = Agora });
+        _armazenamento.Arquivos["noticias/2/f.jpg"] = [1];
+        (await _context.Playlists.SingleAsync()).NoticiaACadaAnuncios = 1;
+        await _context.SaveChangesAsync();
+
+        var noticias = (await Sincronizar(credencial, new GetSincronizacaoQuery())).Noticias!;
+
+        noticias.Should().HaveCount(2);
+        noticias[0].Titulo.Should().Be(" juros caem ", "fica a versão com foto");
+        noticias[0].Hash.Should().Be(new string('f', 64));
+        noticias[1].Titulo.Should().Be("Outra");
+    }
+
+    [Fact]
     public async Task Sincronizar_ClimaDoHostRecenteEDesligavelNaPlaylist()
     {
         var credencial = await ParearComGradeAsync((Midia("Anúncio"), DiasSemana.Todos));

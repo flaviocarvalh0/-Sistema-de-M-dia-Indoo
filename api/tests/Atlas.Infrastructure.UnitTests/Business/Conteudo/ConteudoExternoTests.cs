@@ -23,6 +23,9 @@ public class ConteudoExternoTests : IDisposable
 
     private static readonly byte[] Jpeg = [0xFF, 0xD8, 0xFF, 0xE0, 1, 2, 3, 4, 5, 6, 7, 8];
     private static readonly byte[] Gif = Encoding.ASCII.GetBytes("GIF89a-imagem");
+    private static readonly byte[] Webp = [.. "RIFF"u8, 0x10, 0, 0, 0, .. "WEBPVP8 "u8, 9, 9, 9];
+
+    private static byte[] Pagina(string head) => Encoding.UTF8.GetBytes($"<!doctype html><html><head>{head}</head><body>texto</body></html>");
 
     private readonly ApplicationDbContext _context = new(
         new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -78,7 +81,7 @@ public class ConteudoExternoTests : IDisposable
         itens.Should().HaveCount(4, "item sem título fica de fora");
 
         itens[0].Should().Be(new ItemFeed("id-1", "Governo anuncia & detalha plano",
-            new DateTimeOffset(2026, 10, 14, 11, 30, 0, TimeSpan.FromHours(-3)), new Uri("https://a.test/img/1.jpg")));
+            new DateTimeOffset(2026, 10, 14, 11, 30, 0, TimeSpan.FromHours(-3)), new Uri("https://a.test/img/1.jpg"), new Uri("https://a.test/noticia/1")));
         itens[1].Identificador.Should().Be("https://a.test/noticia/2", "sem guid, o link identifica");
         itens[1].PublicadaEm.Should().Be(new DateTimeOffset(2026, 10, 14, 13, 0, 0, TimeSpan.Zero));
         itens[1].Imagem.Should().Be(new Uri("https://a.test/img/2.png"));
@@ -106,7 +109,7 @@ public class ConteudoExternoTests : IDisposable
         var item = LeitorFeed.Ler(Encoding.UTF8.GetBytes(atom), new Uri("https://a.test/atom")).Single();
 
         item.Should().Be(new ItemFeed("tag:a.test,2026:1", "Entrada um",
-            new DateTimeOffset(2026, 10, 14, 12, 0, 0, TimeSpan.FromHours(-3)), new Uri("https://a.test/1.jpg")));
+            new DateTimeOffset(2026, 10, 14, 12, 0, 0, TimeSpan.FromHours(-3)), new Uri("https://a.test/1.jpg"), new Uri("https://a.test/1")));
     }
 
     [Theory]
@@ -238,6 +241,66 @@ public class ConteudoExternoTests : IDisposable
         (await _context.FontesNoticia.AnyAsync()).Should().BeFalse();
         (await _context.Noticias.AnyAsync()).Should().BeFalse();
         _armazenamento.Removidos.Should().Equal(chave);
+    }
+
+    [Fact]
+    public async Task Coletar_SemFotoNoFeedUsaAFotoDeDestaqueDaPagina()
+    {
+        var fonte = await CriarFonteAsync();
+        _cliente.Respostas["https://a.test/rss"] = Encoding.UTF8.GetBytes(Rss);
+        // Item 2: a foto do feed não é JPEG/PNG/WebP; a página tem og:image (relativa, WebP).
+        _cliente.Respostas["https://a.test/img/2.png"] = Gif;
+        _cliente.Respostas["https://a.test/noticia/2"] = Pagina(
+            "<meta name=\"description\" content=\"x\"><meta content=\"/fotos/destaque.webp\" property=\"og:image\">");
+        _cliente.Respostas["https://a.test/fotos/destaque.webp"] = Webp;
+
+        await Coletor().ColetarAsync(fonte.Id, CancellationToken.None);
+
+        var noticia = await _context.Noticias.SingleAsync(n => n.Identificador == "https://a.test/noticia/2");
+        noticia.TipoConteudoImagem.Should().Be("image/webp");
+        noticia.ChaveImagem.Should().EndWith(".webp");
+        _armazenamento.Tipos[noticia.ChaveImagem!].Should().Be("image/webp");
+        _cliente.Truncados.Should().Contain("https://a.test/noticia/2", "a página é lida só no começo");
+    }
+
+    [Fact]
+    public async Task Coletar_TentaDeNovoAFotoDaNoticiaRecenteQueFicouSem()
+    {
+        var fonte = await CriarFonteAsync();
+        _cliente.Respostas["https://a.test/rss"] = Encoding.UTF8.GetBytes(Rss);
+        await Coletor().ColetarAsync(fonte.Id, CancellationToken.None);
+        (await _context.Noticias.SingleAsync(n => n.Identificador == "id-1")).ChaveImagem.Should().BeNull("a foto não respondeu");
+
+        _cliente.Respostas["https://a.test/img/1.jpg"] = Jpeg;
+        var segunda = await Coletor().ColetarAsync(fonte.Id, CancellationToken.None);
+
+        segunda.Novas.Should().Be(0);
+        (await _context.Noticias.SingleAsync(n => n.Identificador == "id-1")).ChaveImagem.Should().EndWith(".jpg");
+
+        // Passadas 24 h, desiste.
+        _relogio.Agora = Agora.AddHours(25);
+        _cliente.Respostas["https://a.test/noticia/2"] = Pagina("<meta property=\"og:image\" content=\"https://a.test/x.jpg\">");
+        _cliente.Respostas["https://a.test/x.jpg"] = Jpeg;
+        _cliente.Pedidos.Clear();
+        await Coletor().ColetarAsync(fonte.Id, CancellationToken.None);
+        _cliente.Pedidos.Should().NotContain("https://a.test/noticia/2");
+    }
+
+    [Theory]
+    [InlineData("<meta property=\"og:image\" content=\"https://a.test/a.jpg\">", "https://a.test/a.jpg")]
+    [InlineData("<META CONTENT='/b.png' PROPERTY='og:image' />", "https://a.test/b.png")]
+    [InlineData("<meta name=\"twitter:image\" content=\"https://cdn.test/c.jpg?w=1&amp;h=2\">", "https://cdn.test/c.jpg?w=1&h=2")]
+    [InlineData("<meta property=\"og:image\" content=\"https://a.test/1.jpg\"><meta property=\"og:image:secure_url\" content=\"https://a.test/2.jpg\">", "https://a.test/2.jpg")]
+    [InlineData("<meta property=\"og:title\" content=\"Título\">", null)]
+    [InlineData("<meta property=\"og:image\" content=\"javascript:alert(1)\">", null)]
+    public void PaginaNoticia_AchaAFotoDeDestaque(string head, string? esperada)
+    {
+        PaginaNoticia.ImagemDestaque(Pagina(head), new Uri("https://a.test/noticia/1"))
+            ?.AbsoluteUri.Should().Be(esperada);
+        if (esperada is null)
+        {
+            PaginaNoticia.ImagemDestaque(Pagina(head), new Uri("https://a.test/noticia/1")).Should().BeNull();
+        }
     }
 
     // ---------- Cadastro das fontes ----------
@@ -401,10 +464,15 @@ public class ConteudoExternoTests : IDisposable
     {
         public Dictionary<string, byte[]> Respostas { get; } = [];
         public List<string> Pedidos { get; } = [];
+        public List<string> Truncados { get; } = [];
 
-        public Task<ConteudoBaixado> BaixarAsync(Uri url, long limiteBytes, CancellationToken cancellationToken)
+        public Task<ConteudoBaixado> BaixarAsync(Uri url, long limiteBytes, CancellationToken cancellationToken, bool truncar = false)
         {
             Pedidos.Add(url.AbsoluteUri);
+            if (truncar)
+            {
+                Truncados.Add(url.AbsoluteUri);
+            }
 
             if (!Respostas.TryGetValue(url.AbsoluteUri, out var bytes))
             {

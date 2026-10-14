@@ -44,14 +44,22 @@ Restrições:
   - A API lê os feeds a cada hora (`ColetorConteudoExterno`, com
     `pg_try_advisory_lock` para uma instância só) com um leitor próprio de
     RSS 2.0 e Atom (sem DTD, sem entidades externas).
-  - A imagem é baixada pela API, conferida (JPEG/PNG, até 2 MB) e guardada no
-    bucket em `noticias/{fonteId}/{hash}.ext`, com SHA-256, como as mídias.
-    Sem imagem, a notícia vale só com o título.
+  - A imagem é baixada pela API, conferida (JPEG, PNG ou WebP, até 5 MB) e
+    guardada no bucket em `noticias/{fonteId}/{hash}.ext`, com SHA-256, como
+    as mídias. Sem foto no feed (ou se ela não serve), vale a foto de
+    destaque da página da notícia (`og:image`/`twitter:image`, lendo só o
+    primeiro 1 MB da página). Notícia que ficou sem foto ganha nova
+    tentativa a cada coleta durante 24 h. Sem imagem, a notícia vale só com
+    o título.
+  - O bucket passa a aceitar `image/webp` (só para as fotos das notícias; o
+    envio de mídias continua MP4/JPEG/PNG). Bucket criado antes ganha o tipo
+    sozinho na subida da API.
   - Ficam as 30 mais recentes por fonte; as outras saem, com os arquivos.
     Notícia com mais de 48 h não vai para as TVs, e a TV a descarta sozinha.
   - A sincronização manda as 20 mais recentes das fontes ativas, com
     **versão própria** (`versaoNoticias`): a coleta de hora em hora não
-    reenvia a grade de anúncios.
+    reenvia a grade de anúncios. A mesma manchete em duas fontes (o feed
+    geral e o de uma editoria) vai uma vez só, de preferência com foto.
 - **Clima:** Open-Meteo (gratuito, sem chave, CC BY com crédito na tela).
   - A API geocodifica a cidade do parceiro que hospeda a tela (aceita
     "Cidade - UF" para desempatar) e atualiza a cada 30 min

@@ -77,7 +77,7 @@ public static partial class LeitorFeed
             ?? PrimeiraImagem(item.Element(Conteudo + "encoded")?.Value)
             ?? PrimeiraImagem(Filho(item, "description"));
 
-        return new ItemFeed(Cortar(identificador, 500), Cortar(titulo, 300), data, Absoluta(imagem, baseUrl));
+        return new ItemFeed(Cortar(identificador, 500), Cortar(titulo, 300), data, Absoluta(imagem, baseUrl), Absoluta(link, endereco));
     }
 
     private static ItemFeed? LerEntradaAtom(XElement entrada, Uri endereco)
@@ -103,7 +103,7 @@ public static partial class LeitorFeed
             ?? PrimeiraImagem(entrada.Element(Atom + "content")?.Value)
             ?? PrimeiraImagem(entrada.Element(Atom + "summary")?.Value);
 
-        return new ItemFeed(Cortar(identificador, 500), Cortar(titulo, 300), data, Absoluta(imagem, baseUrl));
+        return new ItemFeed(Cortar(identificador, 500), Cortar(titulo, 300), data, Absoluta(imagem, baseUrl), Absoluta(link, endereco));
     }
 
     private static string? ImagemMedia(XElement item) =>
@@ -229,6 +229,7 @@ public static partial class LeitorFeed
 
 /// <summary>
 /// Item do feed: <c>Identificador</c> é o <c>guid</c>/<c>id</c> (ou o link);
-/// <c>PublicadaEm</c> é nulo sem data legível; <c>Imagem</c> é absoluta, http(s).
+/// <c>PublicadaEm</c> é nulo sem data legível; <c>Imagem</c> e <c>Link</c>
+/// (a página da notícia) são absolutos, http(s).
 /// </summary>
-public sealed record ItemFeed(string Identificador, string Titulo, DateTimeOffset? PublicadaEm, Uri? Imagem);
+public sealed record ItemFeed(string Identificador, string Titulo, DateTimeOffset? PublicadaEm, Uri? Imagem, Uri? Link = null);

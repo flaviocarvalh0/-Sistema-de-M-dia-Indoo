@@ -43,8 +43,13 @@ abstract interface class ArquivoRemoto {
   String get nomeArquivo;
 }
 
-String _extensao(String tipoConteudo) =>
-    tipoConteudo == 'video/mp4' ? '.mp4' : tipoConteudo == 'image/png' ? '.png' : '.jpg';
+String _extensao(String tipoConteudo) => switch (tipoConteudo) {
+      'video/mp4' => '.mp4',
+      'image/png' => '.png',
+      // Só fotos de notícias (o Android exibe WebP nativamente).
+      'image/webp' => '.webp',
+      _ => '.jpg',
+    };
 
 /// Um item da grade, como vem da API e como fica gravado no aparelho.
 class ItemGrade implements ArquivoRemoto {

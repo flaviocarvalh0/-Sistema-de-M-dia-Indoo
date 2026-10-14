@@ -267,7 +267,46 @@ public class ArmazenamentoSupabaseTests
         corpo.GetProperty("public").GetBoolean().Should().BeFalse();
         corpo.GetProperty("file_size_limit").GetInt64().Should().Be(Midia.TamanhoMaximoBytes);
         corpo.GetProperty("allowed_mime_types").EnumerateArray().Select(t => t.GetString())
-            .Should().BeEquivalentTo("video/mp4", "image/jpeg", "image/png");
+            .Should().BeEquivalentTo("video/mp4", "image/jpeg", "image/png", "image/webp");
+    }
+
+    [Fact]
+    public async Task GarantirBucket_ExistenteSemWebpGanhaOTipo()
+    {
+        _supabase.Responder(HttpStatusCode.OK, """{"id":"midias","public":false,"allowed_mime_types":["video/mp4","image/jpeg","image/png"]}""");
+        _supabase.Responder(HttpStatusCode.OK, """{"message":"Successfully updated"}""");
+
+        await Armazenamento().GarantirBucketAsync(CancellationToken.None);
+
+        var atualizacao = _supabase.Requisicoes[1];
+        atualizacao.Metodo.Should().Be(HttpMethod.Put);
+        atualizacao.Url.Should().Be("https://projeto.supabase.test/storage/v1/bucket/midias");
+        var corpo = JsonDocument.Parse(atualizacao.Corpo!).RootElement;
+        corpo.GetProperty("public").GetBoolean().Should().BeFalse();
+        corpo.GetProperty("allowed_mime_types").EnumerateArray().Select(t => t.GetString())
+            .Should().BeEquivalentTo("video/mp4", "image/jpeg", "image/png", "image/webp");
+    }
+
+    [Fact]
+    public async Task GarantirBucket_ComTodosOsTiposNaoAtualiza()
+    {
+        _supabase.Responder(HttpStatusCode.OK, """{"id":"midias","allowed_mime_types":["video/mp4","image/jpeg","image/png","image/webp"]}""");
+
+        await Armazenamento().GarantirBucketAsync(CancellationToken.None);
+
+        _supabase.Requisicoes.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Gravar_EnviaOConteudoComUpsert()
+    {
+        _supabase.Responder(HttpStatusCode.OK, """{"Key":"midias/noticias/1/abc.webp"}""");
+
+        await Armazenamento().GravarAsync("noticias/1/abc.webp", [1, 2, 3], "image/webp", CancellationToken.None);
+
+        var envio = _supabase.Requisicoes.Single();
+        envio.Metodo.Should().Be(HttpMethod.Post);
+        envio.Url.Should().Be("https://projeto.supabase.test/storage/v1/object/midias/noticias/1/abc.webp");
     }
 
     [Fact]

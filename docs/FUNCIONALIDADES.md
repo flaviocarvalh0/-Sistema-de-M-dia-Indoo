@@ -63,6 +63,8 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 |---|---|
 | Cadastro | Nome, endereço do feed (RSS ou Atom) e crédito exibido na TV. A Agência Brasil (CC BY) já vem cadastrada |
 | Coleta | A API lê as fontes ativas a cada hora e guarda as 30 notícias mais recentes de cada uma, com a imagem no storage |
+| Fotos | Do feed ou, sem ela, a foto de destaque da página da notícia (JPEG, PNG ou WebP, até 5 MB). Sem foto, tenta de novo por 24 h |
+| Sem repetição | A mesma manchete em duas fontes (ex.: feed geral e de editoria) vai uma vez só para as TVs |
 | Coletar agora | Lê o feed na hora (para conferir uma fonte nova) |
 | Situação da leitura | Ok, com erro (com a mensagem) ou aguardando; quando foi a última leitura |
 | Ver notícias | Título, data e miniatura de cada notícia; as com mais de 48 h aparecem como fora das TVs |

@@ -8,9 +8,11 @@ public interface IClienteConteudoExterno
 {
     /// <summary>
     /// GET no endereço. Lança <see cref="ConteudoExternoIndisponivelException"/>
-    /// se não responder, responder com erro ou passar de <paramref name="limiteBytes"/>.
+    /// se não responder, responder com erro ou passar de <paramref name="limiteBytes"/>
+    /// — com <paramref name="truncar"/>, devolve só o começo em vez de falhar
+    /// (basta para ler o &lt;head&gt; de uma página).
     /// </summary>
-    Task<ConteudoBaixado> BaixarAsync(Uri url, long limiteBytes, CancellationToken cancellationToken);
+    Task<ConteudoBaixado> BaixarAsync(Uri url, long limiteBytes, CancellationToken cancellationToken, bool truncar = false);
 }
 
 public sealed record ConteudoBaixado(byte[] Bytes, string? TipoConteudo);

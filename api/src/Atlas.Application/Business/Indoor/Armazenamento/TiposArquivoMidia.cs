@@ -13,6 +13,9 @@ public static class TiposArquivoMidia
     public const string Jpeg = "image/jpeg";
     public const string Png = "image/png";
 
+    /// <summary>Só para as fotos das notícias (muitos portais usam WebP); mídias não aceitam.</summary>
+    public const string Webp = "image/webp";
+
     private static readonly Dictionary<string, (TipoMidia Tipo, string Extensao)> Aceitos = new()
     {
         [Mp4] = (TipoMidia.Video, ".mp4"),
@@ -24,6 +27,25 @@ public static class TiposArquivoMidia
     public const int BytesAssinatura = 12;
 
     public static IReadOnlyCollection<string> Todos => Aceitos.Keys;
+
+    /// <summary>O que o bucket aceita: os tipos das mídias e o WebP das fotos de notícias.</summary>
+    public static IReadOnlyCollection<string> NoBucket => [.. Aceitos.Keys, Webp];
+
+    /// <summary>JPEG, PNG ou WebP pela assinatura (fotos das notícias); nulo para o resto.</summary>
+    public static string? DetectarImagem(ReadOnlySpan<byte> inicio)
+    {
+        if (Detectar(inicio) is Jpeg or Png)
+        {
+            return Detectar(inicio);
+        }
+
+        // RIFF <tamanho> WEBP
+        return inicio.Length >= 12 && inicio[..4].SequenceEqual("RIFF"u8) && inicio[8..12].SequenceEqual("WEBP"u8)
+            ? Webp
+            : null;
+    }
+
+    public static string ExtensaoImagem(string tipoConteudo) => tipoConteudo == Webp ? ".webp" : Extensao(tipoConteudo);
 
     public static bool Aceito(string? tipoConteudo) => tipoConteudo is not null && Aceitos.ContainsKey(tipoConteudo);
 

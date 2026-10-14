@@ -9,7 +9,7 @@ namespace Atlas.Infrastructure.Business.Conteudo;
 /// </summary>
 internal sealed class ClienteConteudoExterno(HttpClient http) : IClienteConteudoExterno
 {
-    public async Task<ConteudoBaixado> BaixarAsync(Uri url, long limiteBytes, CancellationToken cancellationToken)
+    public async Task<ConteudoBaixado> BaixarAsync(Uri url, long limiteBytes, CancellationToken cancellationToken, bool truncar = false)
     {
         if (url.Scheme is not ("http" or "https"))
         {
@@ -26,7 +26,7 @@ internal sealed class ClienteConteudoExterno(HttpClient http) : IClienteConteudo
                 throw new ConteudoExternoIndisponivelException($"{url.Host} respondeu {(int)resposta.StatusCode} ({resposta.ReasonPhrase}).");
             }
 
-            if (resposta.Content.Headers.ContentLength > limiteBytes)
+            if (!truncar && resposta.Content.Headers.ContentLength > limiteBytes)
             {
                 throw new ConteudoExternoIndisponivelException($"Conteúdo de {url.Host} maior que o limite ({limiteBytes / 1024} KB).");
             }
@@ -39,6 +39,12 @@ internal sealed class ClienteConteudoExterno(HttpClient http) : IClienteConteudo
             {
                 if (destino.Length + lidos > limiteBytes)
                 {
+                    if (truncar)
+                    {
+                        destino.Write(buffer, 0, (int)(limiteBytes - destino.Length));
+                        break;
+                    }
+
                     throw new ConteudoExternoIndisponivelException($"Conteúdo de {url.Host} maior que o limite ({limiteBytes / 1024} KB).");
                 }
 

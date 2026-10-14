@@ -72,4 +72,12 @@ void main() {
     expect(fila(f), 'A0 A1 A2 A3');
     expect(ComposicaoFila().montar(anuncios: const [], noticias: const [], composicao: const Composicao()), isEmpty);
   });
+
+  test('foto de notícia em WebP vira arquivo .webp pelo hash', () {
+    final n = Noticia.fromJson({
+      'id': 1, 'titulo': 'T', 'credito': 'C', 'publicadaEm': '2026-10-14T12:00:00+00:00',
+      'url': 'https://s.test/x', 'hash': 'ABC', 'tamanhoBytes': 10, 'tipoConteudo': 'image/webp',
+    });
+    expect(n.nomeArquivo, 'abc.webp');
+  });
 }

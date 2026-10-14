@@ -24,7 +24,7 @@ namespace Atlas.Infrastructure.Business.Armazenamento;
 /// <item><c>GET object/authenticated/{bucket}/{chave}</c> (conteúdo)</item>
 /// <item><c>POST object/{bucket}/{chave}</c> com <c>x-upsert: true</c> (gravação pela própria API)</item>
 /// <item><c>DELETE object/{bucket}/{chave}</c></item>
-/// <item><c>GET bucket/{bucket}</c> e <c>POST bucket</c> (criação do bucket)</item>
+/// <item><c>GET bucket/{bucket}</c>, <c>POST bucket</c> e <c>PUT bucket/{bucket}</c> (criação e tipos aceitos)</item>
 /// </list>
 /// </remarks>
 internal sealed class ArmazenamentoSupabase(
@@ -123,13 +123,35 @@ internal sealed class ArmazenamentoSupabase(
         }
     }
 
-    /// <summary>Cria o bucket privado com os limites do produto, se ele ainda não existe.</summary>
+    /// <summary>
+    /// Cria o bucket privado com os limites do produto, se ele ainda não
+    /// existe. Existindo, acrescenta os tipos que faltarem (o WebP das fotos
+    /// de notícias entrou depois da criação dos primeiros buckets).
+    /// </summary>
     public async Task GarantirBucketAsync(CancellationToken cancellationToken)
     {
         using (var existente = await EnviarAsync(HttpMethod.Get, $"bucket/{Uri.EscapeDataString(opcoes.Bucket)}", corpo: null, cancellationToken))
         {
             if (existente.IsSuccessStatusCode)
             {
+                var bucket = await existente.Content.ReadFromJsonAsync<RespostaBucket>(cancellationToken);
+                var tipos = bucket?.AllowedMimeTypes;
+
+                // Sem lista, o bucket aceita qualquer tipo: nada a fazer.
+                if (tipos is null || TiposArquivoMidia.NoBucket.All(tipos.Contains))
+                {
+                    return;
+                }
+
+                using var atualizado = await EnviarAsync(HttpMethod.Put, $"bucket/{Uri.EscapeDataString(opcoes.Bucket)}", Json(new
+                {
+                    @public = false,
+                    file_size_limit = Midia.TamanhoMaximoBytes,
+                    allowed_mime_types = TiposArquivoMidia.NoBucket,
+                }), cancellationToken);
+                GarantirSucesso(atualizado, "atualizar os tipos do bucket");
+
+                logger.LogInformation("Bucket {Bucket}: tipos aceitos atualizados ({Tipos}).", opcoes.Bucket, string.Join(", ", TiposArquivoMidia.NoBucket));
                 return;
             }
 
@@ -145,7 +167,7 @@ internal sealed class ArmazenamentoSupabase(
             name = opcoes.Bucket,
             @public = false,
             file_size_limit = Midia.TamanhoMaximoBytes,
-            allowed_mime_types = TiposArquivoMidia.Todos,
+            allowed_mime_types = TiposArquivoMidia.NoBucket,
         });
 
         using var criado = await EnviarAsync(HttpMethod.Post, "bucket", corpo, cancellationToken);
@@ -224,6 +246,12 @@ internal sealed class ArmazenamentoSupabase(
     /// <summary>Bucket e chave com cada segmento codificado (a chave é gerada pela API, mas não custa).</summary>
     private string Caminho(string chave) =>
         $"{Uri.EscapeDataString(opcoes.Bucket)}/{string.Join('/', chave.Split('/').Select(Uri.EscapeDataString))}";
+
+    private sealed class RespostaBucket
+    {
+        [JsonPropertyName("allowed_mime_types")]
+        public List<string>? AllowedMimeTypes { get; init; }
+    }
 
     /// <summary>Item da assinatura em lote; <c>signedURL</c> vem nulo (com <c>error</c>) para chave inexistente.</summary>
     private sealed class RespostaUrlEmLote

@@ -16,7 +16,9 @@ namespace Atlas.Application.Business.Conteudo.Noticias;
 /// <remarks>
 /// Uma fonte fora do ar não atrapalha as outras: o erro fica registrado na
 /// fonte (aparece no painel) e as notícias que ela já tinha continuam valendo.
-/// Notícia cuja imagem não baixa entra sem imagem.
+/// A foto vem do feed ou, sem ela, da foto de destaque da página da notícia
+/// (<see cref="PaginaNoticia"/>). Notícia sem foto entra só com o título, e a
+/// foto é tentada de novo nas coletas das 24 h seguintes.
 /// </remarks>
 public sealed class ColetorNoticias(
     IApplicationDbContext context,
@@ -57,11 +59,10 @@ public sealed class ColetorNoticias(
             return new ResultadoColetaNoticias(0, 0, ex.Message);
         }
 
-        var existentes = (await context.Noticias
-                .Where(n => n.FonteNoticiaId == fonte.Id)
-                .Select(n => n.Identificador)
-                .ToListAsync(cancellationToken))
-            .ToHashSet(StringComparer.Ordinal);
+        var guardadas = await context.Noticias
+            .Where(n => n.FonteNoticiaId == fonte.Id)
+            .ToListAsync(cancellationToken);
+        var existentes = guardadas.Select(n => n.Identificador).ToHashSet(StringComparer.Ordinal);
 
         var limite = agora - Noticia.Validade;
         var novas = itens
@@ -83,12 +84,19 @@ public sealed class ColetorNoticias(
                 ColetadaEm = agora,
             };
 
-            if (item.Imagem is { } urlImagem)
-            {
-                await GuardarImagemAsync(noticia, urlImagem, cancellationToken);
-            }
-
+            await GuardarImagemAsync(noticia, item, cancellationToken);
             context.Noticias.Add(noticia);
+        }
+
+        // Notícias recentes que ficaram sem foto (página fora do ar, foto
+        // grande demais): tenta de novo enquanto o feed ainda as traz.
+        var noFeed = itens.DistinctBy(i => i.Identificador).ToDictionary(i => i.Identificador, StringComparer.Ordinal);
+        foreach (var semFoto in guardadas.Where(n => n.ChaveImagem is null && n.ColetadaEm >= agora - RetentarFotoPor))
+        {
+            if (noFeed.TryGetValue(semFoto.Identificador, out var item))
+            {
+                await GuardarImagemAsync(semFoto, item, cancellationToken);
+            }
         }
 
         fonte.RegistrarColeta(agora, erro: null);
@@ -128,26 +136,57 @@ public sealed class ColetorNoticias(
         }
     }
 
+    /// <summary>Por quanto tempo uma notícia sem foto ganha nova tentativa a cada coleta.</summary>
+    public static readonly TimeSpan RetentarFotoPor = TimeSpan.FromHours(24);
+
     /// <summary>Data futura (relógio errado no feed) ou ausente vira a hora da coleta.</summary>
     private static DateTimeOffset Normalizar(DateTimeOffset? data, DateTimeOffset agora) =>
         data is { } d && d <= agora + TimeSpan.FromMinutes(10) ? d.ToUniversalTime() : agora;
 
-    private async Task GuardarImagemAsync(Noticia noticia, Uri url, CancellationToken cancellationToken)
+    /// <summary>A foto do feed; sem ela (ou se não serve), a de destaque da página da notícia.</summary>
+    private async Task GuardarImagemAsync(Noticia noticia, ItemFeed item, CancellationToken cancellationToken)
+    {
+        if (item.Imagem is { } doFeed && await TentarImagemAsync(noticia, doFeed, cancellationToken))
+        {
+            return;
+        }
+
+        if (item.Link is not { } pagina)
+        {
+            return;
+        }
+
+        try
+        {
+            var html = await cliente.BaixarAsync(pagina, PaginaNoticia.TamanhoMaximoBytes, cancellationToken, truncar: true);
+            if (PaginaNoticia.ImagemDestaque(html.Bytes, pagina) is { } destaque && destaque != item.Imagem)
+            {
+                await TentarImagemAsync(noticia, destaque, cancellationToken);
+            }
+        }
+        catch (ConteudoExternoIndisponivelException ex)
+        {
+            logger.LogDebug("Página da notícia {Titulo} não abriu: {Erro}", noticia.Titulo, ex.Message);
+        }
+    }
+
+    /// <returns>Se a imagem foi guardada.</returns>
+    private async Task<bool> TentarImagemAsync(Noticia noticia, Uri url, CancellationToken cancellationToken)
     {
         try
         {
             var imagem = await cliente.BaixarAsync(url, Noticia.TamanhoMaximoImagemBytes, cancellationToken);
-            var tipo = TiposArquivoMidia.Detectar(imagem.Bytes.AsSpan(0, Math.Min(imagem.Bytes.Length, TiposArquivoMidia.BytesAssinatura)));
+            var tipo = TiposArquivoMidia.DetectarImagem(imagem.Bytes.AsSpan(0, Math.Min(imagem.Bytes.Length, TiposArquivoMidia.BytesAssinatura)));
 
-            // A TV só exibe JPEG e PNG (os mesmos tipos das mídias).
-            if (tipo is not (TiposArquivoMidia.Jpeg or TiposArquivoMidia.Png))
+            // A TV exibe JPEG, PNG e WebP.
+            if (tipo is null)
             {
                 logger.LogDebug("Imagem da notícia {Titulo} ignorada: formato não aceito ({Url}).", noticia.Titulo, url);
-                return;
+                return false;
             }
 
             var hash = Convert.ToHexStringLower(SHA256.HashData(imagem.Bytes));
-            var chave = $"noticias/{noticia.FonteNoticiaId}/{hash}{TiposArquivoMidia.Extensao(tipo)}";
+            var chave = $"noticias/{noticia.FonteNoticiaId}/{hash}{TiposArquivoMidia.ExtensaoImagem(tipo)}";
 
             await armazenamento.GravarAsync(chave, imagem.Bytes, tipo, cancellationToken);
 
@@ -155,11 +194,13 @@ public sealed class ColetorNoticias(
             noticia.TipoConteudoImagem = tipo;
             noticia.TamanhoImagemBytes = imagem.Bytes.Length;
             noticia.HashImagem = hash;
+            return true;
         }
         catch (Exception ex) when (ex is ConteudoExternoIndisponivelException or ArmazenamentoIndisponivelException)
         {
             // Sem a imagem a notícia ainda vale: a TV mostra só o título.
             logger.LogDebug("Imagem da notícia {Titulo} não guardada: {Erro}", noticia.Titulo, ex.Message);
+            return false;
         }
     }
 

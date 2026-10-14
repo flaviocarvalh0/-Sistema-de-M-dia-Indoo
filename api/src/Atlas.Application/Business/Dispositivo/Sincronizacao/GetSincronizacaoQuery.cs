@@ -265,20 +265,32 @@ public class GetSincronizacaoQueryHandler(
         };
     }
 
-    /// <summary>As mais recentes das fontes ativas, ainda dentro da validade.</summary>
-    private Task<List<NoticiaGrade>> ListarNoticiasAsync(DateTimeOffset agora, CancellationToken cancellationToken)
+    /// <summary>
+    /// As mais recentes das fontes ativas, ainda dentro da validade. A mesma
+    /// manchete em duas fontes (o feed geral e o de uma editoria) vai uma vez
+    /// só, de preferência a que tem foto.
+    /// </summary>
+    private async Task<List<NoticiaGrade>> ListarNoticiasAsync(DateTimeOffset agora, CancellationToken cancellationToken)
     {
         var limite = agora - Noticia.Validade;
 
-        return context.Noticias
+        var candidatas = await context.Noticias
             .AsNoTracking()
             .Where(n => n.Fonte.Ativo && n.PublicadaEm >= limite)
             .OrderByDescending(n => n.PublicadaEm)
             .ThenByDescending(n => n.Id)
-            .Take(MaximoNoticias)
+            .Take(MaximoNoticias * 3)
             .Select(n => new NoticiaGrade(
                 n.Id, n.Titulo, n.Fonte.Credito, n.PublicadaEm, n.ChaveImagem, n.HashImagem, n.TamanhoImagemBytes, n.TipoConteudoImagem))
             .ToListAsync(cancellationToken);
+
+        return candidatas
+            .GroupBy(n => n.Titulo.Trim().ToLowerInvariant())
+            .Select(g => g.OrderByDescending(n => n.Chave is not null).ThenByDescending(n => n.PublicadaEm).First())
+            .OrderByDescending(n => n.PublicadaEm)
+            .ThenByDescending(n => n.Id)
+            .Take(MaximoNoticias)
+            .ToList();
     }
 
     private async Task<IReadOnlyList<NoticiaSincronizacaoDto>> MontarNoticiasAsync(
