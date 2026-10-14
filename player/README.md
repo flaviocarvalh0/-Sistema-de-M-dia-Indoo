@@ -24,11 +24,25 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216
   https.
 - Em debug/profile o app aceita o certificado de desenvolvimento do .NET (que
   não vale na TV); o APK de **release** exige um certificado válido.
-- Numa TV de verdade use o IP do PC na rede (ex.: `https://192.168.0.10:7216`)
-  e suba a API ouvindo na rede (libere a porta 7216 no firewall do Windows):
-  `dotnet run --project src/Atlas.Web --launch-profile https --urls "https://*:7216;http://*:5366"`.
-  Use `*`, não `0.0.0.0`: `0.0.0.0` ouve só IPv4, e no Windows o
-  `localhost` do painel tenta IPv6 primeiro e espera ~2 s em cada requisição.
+- Numa TV ou celular de verdade use o IP do PC na rede (`ipconfig` →
+  "Endereço IPv4" do Wi-Fi/Ethernet, ex.: `https://192.168.1.11:7216`) e suba
+  a API ouvindo na rede, pela variável de ambiente e sem o perfil de
+  inicialização (o perfil fixa `localhost` e passa por cima do `--urls`):
+
+  ```powershell
+  $env:ASPNETCORE_ENVIRONMENT = "Development"
+  $env:ASPNETCORE_URLS = "https://*:7216;http://*:5366"
+  dotnet run --project src/Atlas.Web --no-launch-profile
+  ```
+
+  O log deve mostrar `Now listening on: https://[::]:7216`. Use `*`, não
+  `0.0.0.0` (só IPv4: no Windows o `localhost` do painel tenta IPv6 primeiro e
+  cada requisição espera ~2 s). Libere a porta no firewall (PowerShell como
+  administrador):
+  `New-NetFirewallRule -DisplayName "Midia Indoor API" -Direction Inbound -Protocol TCP -LocalPort 7216,5366 -Action Allow -Profile Any`.
+  Teste no navegador do aparelho: `https://<IP do PC>:7216/scalar`
+  ("conexão recusada" = API presa ao localhost; "tempo esgotado" = firewall
+  ou rede diferente).
 - O endereço também pode ser trocado na própria TV, na tela de pareamento
   ("Servidor: … · alterar"); fica gravado.
 
