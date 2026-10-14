@@ -33,7 +33,7 @@ export class PlaylistService extends CrudService<PlaylistDto, number> {
           content: page.content.map(p => ({
             ...p,
             duracao: formatarDuracao(p.duracaoTotalSegundos),
-            noticias: p.noticiaACadaAnuncios > 0 ? `1 a cada ${p.noticiaACadaAnuncios}` : '—',
+            noticias: p.noticiaACadaAnuncios > 0 ? `1 a cada ${p.noticiaACadaAnuncios}${cartoes(p)}` : '—',
           })),
         })),
       );
@@ -98,5 +98,13 @@ function corpoPlaylist(valor: Partial<PlaylistDto>) {
     embaralharAnuncios: !!valor.embaralharAnuncios,
     exibirRelogio: valor.exibirRelogio ?? true,
     exibirClima: valor.exibirClima ?? true,
+    cartaoTempo: !!valor.cartaoTempo,
+    cartaoCotacoes: !!valor.cartaoCotacoes,
   };
+}
+
+/** " (+ tempo, cotações)" quando a playlist usa os cartões. */
+function cartoes(p: PlaylistDto): string {
+  const nomes = [p.cartaoTempo ? 'tempo' : null, p.cartaoCotacoes ? 'cotações' : null].filter(Boolean);
+  return nomes.length ? ` (+ ${nomes.join(', ')})` : '';
 }

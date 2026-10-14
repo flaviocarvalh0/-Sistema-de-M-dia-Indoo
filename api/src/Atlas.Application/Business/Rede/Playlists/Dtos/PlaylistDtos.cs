@@ -24,6 +24,8 @@ public sealed record PlaylistDto : IDtoAuditavel
     public bool EmbaralharAnuncios { get; init; }
     public bool ExibirRelogio { get; init; }
     public bool ExibirClima { get; init; }
+    public bool CartaoTempo { get; init; }
+    public bool CartaoCotacoes { get; init; }
 
     /// <summary>Itens na ordem do loop. Só no detalhe (<c>GET /{id}</c>).</summary>
     public IReadOnlyList<ItemPlaylistDto>? Itens { get; init; }
@@ -80,6 +82,8 @@ public static class PlaylistProjecao
             EmbaralharAnuncios = p.EmbaralharAnuncios,
             ExibirRelogio = p.ExibirRelogio,
             ExibirClima = p.ExibirClima,
+            CartaoTempo = p.CartaoTempo,
+            CartaoCotacoes = p.CartaoCotacoes,
             Created = p.Created,
             CreatedBy = p.CreatedBy,
             LastModified = p.LastModified,

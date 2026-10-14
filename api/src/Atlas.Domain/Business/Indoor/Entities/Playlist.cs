@@ -25,8 +25,9 @@ public class Playlist : BaseAuditableEntity
     public const int DuracaoNoticiaPadraoSegundos = 10;
 
     /// <summary>
-    /// Composição da fila na TV: uma notícia depois de cada N anúncios
-    /// (0 = sem notícias). A TV monta a fila a cada volta do loop.
+    /// Composição da fila na TV: um informativo (notícia, tempo ou cotações)
+    /// depois de cada N anúncios (0 = sem informativos). A TV monta a fila a
+    /// cada volta do loop.
     /// </summary>
     public int NoticiaACadaAnuncios { get; set; }
 
@@ -44,6 +45,15 @@ public class Playlist : BaseAuditableEntity
 
     /// <summary>Temperatura da cidade do estabelecimento, sobreposta (Open-Meteo).</summary>
     public bool ExibirClima { get; set; } = true;
+
+    /// <summary>
+    /// Cartão "Previsão do tempo" em tela cheia, no rodízio dos informativos
+    /// (entra no lugar de uma notícia a cada N anúncios).
+    /// </summary>
+    public bool CartaoTempo { get; set; }
+
+    /// <summary>Cartão "Cotações" (dólar e euro, PTAX do Banco Central), no rodízio dos informativos.</summary>
+    public bool CartaoCotacoes { get; set; }
 
     /// <summary>Itens na ordem do loop (<see cref="ItemPlaylist.Ordem"/>).</summary>
     public List<ItemPlaylist> Itens { get; private set; } = [];

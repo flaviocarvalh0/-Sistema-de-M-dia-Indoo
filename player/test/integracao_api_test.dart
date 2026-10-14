@@ -60,7 +60,10 @@ void main() {
     // ignore: avoid_print
     print('Composição: 1 notícia a cada ${s.composicao.noticiaACadaAnuncios}, embaralhar ${s.composicao.embaralharAnuncios}; '
         'notícias: ${s.noticias.length} (${s.noticias.where((n) => n.temImagem).length} com foto); '
-        'clima: ${s.clima == null ? '—' : '${s.clima!.temperaturaC}° ${s.clima!.descricao}'}');
+        'clima: ${s.clima == null ? '—' : '${s.clima!.temperaturaC}° ${s.clima!.descricao}, ${s.clima!.dias.length} dia(s)'}; '
+        'cartões: tempo ${s.composicao.cartaoTempo}, cotações ${s.composicao.cartaoCotacoes} '
+        '(${s.cotacoes.map((c) => '${c.nome} ${c.venda}').join(', ')})');
+    if (s.composicao.cartaoCotacoes) expect(s.cotacoes, isNotEmpty);
     if (s.composicao.noticiaACadaAnuncios > 0) {
       expect(s.noticias, isNotEmpty);
       expect(s.noticias.where((n) => n.temImagem).every(sync.baixadorNoticias.pronto), isTrue);

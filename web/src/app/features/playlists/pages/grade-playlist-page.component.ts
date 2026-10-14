@@ -287,9 +287,10 @@ export class GradePlaylistPageComponent implements OnInit {
   /** "Ordem sorteada a cada volta · 1 notícia a cada 3 anúncios (10 s) · relógio · clima". */
   resumoComposicao(p: PlaylistDto): string {
     const partes = [p.embaralharAnuncios ? 'Ordem sorteada a cada volta (📌 ficam no lugar)' : 'Ordem fixa'];
+    const informativos = ['notícias', p.cartaoTempo ? 'tempo' : '', p.cartaoCotacoes ? 'cotações' : ''].filter(Boolean).join(', ');
     partes.push(p.noticiaACadaAnuncios > 0
-      ? `1 notícia a cada ${p.noticiaACadaAnuncios} anúncio(s) (${p.duracaoNoticiaSegundos} s)`
-      : 'sem notícias');
+      ? `1 informativo (${informativos}) a cada ${p.noticiaACadaAnuncios} anúncio(s) (${p.duracaoNoticiaSegundos} s)`
+      : 'sem informativos');
     if (p.exibirRelogio) partes.push('relógio');
     if (p.exibirClima) partes.push('clima');
     return partes.join(' · ');

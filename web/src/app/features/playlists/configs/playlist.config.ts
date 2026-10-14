@@ -5,7 +5,7 @@ export const PLAYLIST_COLUNAS: ColunaDef[] = [
   { campo: 'quantidadeItens', titulo: 'Itens', tipo: 'numero' },
   { campo: 'duracao', titulo: 'Ciclo', tipo: 'texto' },
   { campo: 'quantidadeTelas', titulo: 'Telas', tipo: 'numero' },
-  { campo: 'noticias', titulo: 'Notícias', tipo: 'texto' },
+  { campo: 'noticias', titulo: 'Informativos', tipo: 'texto' },
   { campo: 'ativo', titulo: 'Situação', tipo: 'status' },
 ];
 
@@ -15,12 +15,20 @@ export function criarCamposPlaylist(): FormItemConfig[] {
     { type: 'texto', name: 'nome', label: 'Nome', required: true, col: 'col-12', placeholder: 'Ex.: Recepção — dia a dia' },
     { type: 'textarea', name: 'descricao', label: 'Descrição', col: 'col-12', hint: 'Opcional. Só aparece no painel.' },
     {
-      type: 'numero', name: 'noticiaACadaAnuncios', label: 'Uma notícia a cada', col: 'col-md-6', value: 0, min: 0, max: 20,
-      hint: 'Quantos anúncios entre uma notícia e outra. 0 = sem notícias.',
+      type: 'numero', name: 'noticiaACadaAnuncios', label: 'Um informativo a cada', col: 'col-md-6', value: 0, min: 0, max: 20,
+      hint: 'Anúncios entre um informativo e outro (notícia, tempo ou cotações). 0 = sem informativos.',
     },
     {
-      type: 'numero', name: 'duracaoNoticiaSegundos', label: 'Tempo da notícia (s)', col: 'col-md-6', value: 10, min: 5, max: 60,
+      type: 'numero', name: 'duracaoNoticiaSegundos', label: 'Tempo do informativo (s)', col: 'col-md-6', value: 10, min: 5, max: 60,
       hint: 'De 5 a 60 segundos na tela.',
+    },
+    {
+      type: 'checkbox', name: 'cartaoTempo', label: 'Cartão do tempo', col: 'col-md-6', value: false,
+      placeholder: 'Previsão do tempo (hoje e próximos dias) no rodízio',
+    },
+    {
+      type: 'checkbox', name: 'cartaoCotacoes', label: 'Cartão de cotações', col: 'col-md-6', value: false,
+      placeholder: 'Dólar e euro (Banco Central) no rodízio',
     },
     {
       type: 'checkbox', name: 'embaralharAnuncios', label: 'Embaralhar', col: 'col-12', value: false,

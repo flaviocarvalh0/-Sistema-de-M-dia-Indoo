@@ -115,6 +115,8 @@ internal sealed class ConfiguracaoIndoorFake : IConfiguracaoIndoor
     public bool ColetaAutomatica => false;
     public TimeSpan IntervaloColetaNoticias => TimeSpan.FromHours(1);
     public TimeSpan IntervaloColetaClima => TimeSpan.FromMinutes(30);
+    public TimeSpan IntervaloColetaCotacoes => TimeSpan.FromMinutes(30);
+    public Uri UrlPtax => new("https://bcb.test/odata");
     public Uri UrlPrevisaoClima => new("https://clima.test/v1/forecast");
     public Uri UrlGeocodificacao => new("https://geo.test/v1/search");
 }

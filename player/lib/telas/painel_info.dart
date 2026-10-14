@@ -53,9 +53,10 @@ class PainelInfo extends StatelessWidget {
       ('Conexão', _conexao(s?.ultimoResultado)),
       ('Última sincronização', _hora(s?.ultimaSincronizacao)),
       ('Itens na grade', '${s?.grade.length ?? 0} ($itensHoje para hoje)'),
-      ('Notícias', s == null || s.composicao.noticiaACadaAnuncios == 0
-          ? 'desligadas na playlist'
-          : '$noticias · 1 a cada ${s.composicao.noticiaACadaAnuncios} anúncio(s)'),
+      ('Informativos', s == null || s.composicao.noticiaACadaAnuncios == 0
+          ? 'desligados na playlist'
+          : '1 a cada ${s.composicao.noticiaACadaAnuncios} anúncio(s): $noticias notícia(s)'
+              '${s.composicao.cartaoTempo ? ' + tempo' : ''}${s.composicao.cartaoCotacoes ? ' + cotações (${s.cotacoes.length})' : ''}'),
       ('Clima', _clima(s)),
       ('Servidor', servidor),
       ('Versão do app', Configuracao.versaoApp),

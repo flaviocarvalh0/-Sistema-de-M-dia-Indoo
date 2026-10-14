@@ -28,6 +28,12 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfig
     public TimeSpan IntervaloColetaClima =>
         TimeSpan.FromMinutes(Inteiro("Indoor:Coleta:ClimaMinutos", padrao: 30, minimo: 15));
 
+    public TimeSpan IntervaloColetaCotacoes =>
+        TimeSpan.FromMinutes(Inteiro("Indoor:Coleta:CotacoesMinutos", padrao: 30, minimo: 15));
+
+    public Uri UrlPtax =>
+        new(configuration["Indoor:Cotacoes:UrlPtax"] ?? "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata");
+
     public Uri UrlPrevisaoClima =>
         new(configuration["Indoor:Clima:UrlPrevisao"] ?? "https://api.open-meteo.com/v1/forecast");
 

@@ -30,5 +30,11 @@ public class PrevisaoClima : BaseEntity
 
     public DateTimeOffset? AtualizadaEm { get; set; }
 
+    /// <summary>
+    /// Previsão de hoje e dos próximos dias (cartão "Previsão do tempo"), em
+    /// JSON: <c>[{"data":"2026-10-14","minimaC":24.1,"maximaC":33.9,"codigo":80}]</c>.
+    /// </summary>
+    public string? PrevisaoDias { get; set; }
+
     public string? UltimoErro { get; set; }
 }

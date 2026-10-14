@@ -97,6 +97,8 @@ lib/
     reproducao_page.dart          loop de vídeo/imagem/notícia, espera, painel de informações
     noticia_view.dart             notícia em tela cheia: foto, título animado e crédito
     sobreposicao_relogio_clima.dart   relógio (fuso do estabelecimento) e clima no canto
+    cartoes_view.dart             cartões "Previsão do tempo" e "Cotações" (dólar e euro)
+    painel_info.dart              painel de informações (botão OK do controle)
 ```
 
 - **Arquivos pelo hash:** cada mídia vira `midias/<sha256>.<ext>`. A mesma
@@ -125,6 +127,9 @@ lib/
 - **Notícias:** as imagens ficam em `noticias/<sha256>.<ext>`, separadas das
   mídias; a lista nova só entra com as imagens prontas. Notícia com mais de
   48 h sai da tela, mesmo sem internet. O crédito da fonte aparece sempre.
+- **Cartões:** "Previsão do tempo" e "Cotações" entram no rodízio dos
+  informativos (notícia, tempo, notícia, cotações), com o último dado
+  recebido; sem dado válido, saem do rodízio.
 - **Relógio e clima:** no canto, por cima de tudo. A hora é a do fuso do
   estabelecimento; o clima guardado vale até 6 h (com o crédito do
   Open-Meteo).

@@ -65,6 +65,7 @@ public class PrevisaoClimaConfiguration : IEntityTypeConfiguration<PrevisaoClima
         builder.Property(p => p.MinimaC).HasPrecision(4, 1);
         builder.Property(p => p.MaximaC).HasPrecision(4, 1);
         builder.Property(p => p.UltimoErro).HasMaxLength(500);
+        builder.Property(p => p.PrevisaoDias).HasMaxLength(2000);
 
         builder.HasIndex(p => p.ParceiroId).IsUnique();
 
@@ -72,5 +73,23 @@ public class PrevisaoClimaConfiguration : IEntityTypeConfiguration<PrevisaoClima
             .WithMany()
             .HasForeignKey(p => p.ParceiroId)
             .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class CotacaoConfiguration : IEntityTypeConfiguration<Cotacao>
+{
+    public void Configure(EntityTypeBuilder<Cotacao> builder)
+    {
+        builder.ToTable("cotacao", "indoor");
+
+        builder.Property(c => c.Moeda).HasMaxLength(3).IsRequired();
+        builder.Property(c => c.Compra).HasPrecision(12, 4);
+        builder.Property(c => c.Venda).HasPrecision(12, 4);
+        builder.Property(c => c.FechamentoAnterior).HasPrecision(12, 4);
+        builder.Property(c => c.Boletim).HasMaxLength(50);
+        builder.Property(c => c.UltimoErro).HasMaxLength(500);
+        builder.Ignore(c => c.VariacaoPercentual);
+
+        builder.HasIndex(c => c.Moeda).IsUnique();
     }
 }

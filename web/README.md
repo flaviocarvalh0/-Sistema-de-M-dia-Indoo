@@ -46,7 +46,7 @@ liberada no CORS da API.
 |---|---|---|
 | `/rede/parceiro` | Operadora | Parceiros: cadastro (cria o login do responsável), espaço em MB, plano de mídias ativas, bloquear/desbloquear |
 | `/rede/tela` | Operadora | TVs da rede (o hardware é dela): estabelecimento (host), playlist, identificação do aparelho, código de pareamento, conexão, desvincular |
-| `/rede/playlist` | Operadora | Playlists da rede (uma playlist toca em várias telas), com a composição da fila (notícia a cada N, embaralhar, relógio, clima); "Clonar" duplica com a grade |
+| `/rede/playlist` | Operadora | Playlists da rede (uma playlist toca em várias telas), com a composição da fila (informativo a cada N, cartões de tempo e cotações, embaralhar, relógio, clima); "Clonar" duplica com a grade |
 | `/rede/playlist/:id/grade` | Operadora | Mídias ativas de todos os parceiros (busca, filtro, "Já adicionado (N×)"), ordem do loop, 📌 posição fixa e dias da semana de cada item |
 | `/rede/fonte-noticia` | Operadora | Feeds de notícias (RSS/Atom): cadastro, "Coletar agora", situação da última leitura e as notícias guardadas |
 | `/indoor/midia` | Parceiro | Biblioteca: título, duração, período, ativar/inativar dentro do plano ("Mídias ativas: x de y"), substituir arquivo, pré-visualizar, espaço usado |

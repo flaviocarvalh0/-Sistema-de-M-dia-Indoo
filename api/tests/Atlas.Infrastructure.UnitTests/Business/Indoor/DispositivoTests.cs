@@ -437,6 +437,47 @@ public class DispositivoTests : IDisposable
     }
 
     [Fact]
+    public async Task Sincronizar_CartoesDeTempoECotacoes()
+    {
+        var credencial = await ParearComGradeAsync((Midia("Anúncio"), DiasSemana.Todos));
+        _context.PrevisoesClima.Add(new PrevisaoClima
+        {
+            ParceiroId = _parceiro.Id, CidadeConsultada = "Manaus", Local = "Manaus, Amazonas", Latitude = -3, Longitude = -60,
+            TemperaturaC = 30m, MinimaC = 24m, MaximaC = 33m, CodigoTempo = 0, AtualizadaEm = Agora.AddMinutes(-10),
+            PrevisaoDias = "[{\"Data\":\"2026-10-11\",\"MinimaC\":23,\"MaximaC\":31,\"Codigo\":3},"
+                + "{\"Data\":\"2026-10-12\",\"MinimaC\":24,\"MaximaC\":33,\"Codigo\":0},"
+                + "{\"Data\":\"2026-10-13\",\"MinimaC\":25,\"MaximaC\":34,\"Codigo\":95}]",
+        });
+        _context.Cotacoes.AddRange(
+            new Cotacao { Moeda = "EUR", Compra = 6.1m, Venda = 6.12m, CotadaEm = Agora.AddHours(-1), FechamentoAnterior = 6.2m, AtualizadaEm = Agora },
+            new Cotacao { Moeda = "USD", Compra = 5.5m, Venda = 5.51m, CotadaEm = Agora.AddHours(-1), FechamentoAnterior = 5.46m, AtualizadaEm = Agora });
+        var playlist = await _context.Playlists.SingleAsync();
+        playlist.ExibirClima = false;
+        await _context.SaveChangesAsync();
+
+        var sem = await Sincronizar(credencial, new GetSincronizacaoQuery());
+        sem.Clima.Should().BeNull();
+        sem.Cotacoes.Should().BeNull();
+
+        playlist.CartaoTempo = true;
+        playlist.CartaoCotacoes = true;
+        await _context.SaveChangesAsync();
+
+        var com = await Sincronizar(credencial, new GetSincronizacaoQuery());
+        com.Composicao.CartaoTempo.Should().BeTrue();
+        com.Clima!.Dias.Select(d => (d.Data, d.Icone)).Should().Equal(
+            (new DateOnly(2026, 10, 12), "sol"), (new DateOnly(2026, 10, 13), "tempestade"));
+        com.Cotacoes!.Select(c => (c.Moeda, c.Nome, c.Venda, c.VariacaoPercentual)).Should().Equal(
+            ("USD", "Dólar", 5.51m, 0.92m), ("EUR", "Euro", 6.12m, -1.29m));
+        com.Cotacoes![0].Credito.Should().Be("Fonte: Banco Central (PTAX)");
+
+        // Cotação de mais de 4 dias não vai.
+        foreach (var c in _context.Cotacoes) c.CotadaEm = Agora.AddDays(-5);
+        await _context.SaveChangesAsync();
+        (await Sincronizar(credencial, new GetSincronizacaoQuery())).Cotacoes.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Sincronizar_ClimaDoHostRecenteEDesligavelNaPlaylist()
     {
         var credencial = await ParearComGradeAsync((Midia("Anúncio"), DiasSemana.Todos));

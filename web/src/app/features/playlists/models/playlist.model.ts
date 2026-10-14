@@ -15,6 +15,9 @@ export interface PlaylistDto {
   embaralharAnuncios: boolean;
   exibirRelogio: boolean;
   exibirClima: boolean;
+  /** Cartões no rodízio dos informativos, junto com as notícias. */
+  cartaoTempo: boolean;
+  cartaoCotacoes: boolean;
   /** Só no detalhe (`GET /{id}`), na ordem do loop. */
   itens?: ItemPlaylistDto[] | null;
   created: string;

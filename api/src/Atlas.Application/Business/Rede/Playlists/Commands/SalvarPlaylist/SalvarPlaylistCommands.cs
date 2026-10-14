@@ -18,6 +18,8 @@ public record CriarPlaylistCommand : IRequest<long>, IDadosPlaylist
     public bool EmbaralharAnuncios { get; init; }
     public bool ExibirRelogio { get; init; } = true;
     public bool ExibirClima { get; init; } = true;
+    public bool CartaoTempo { get; init; }
+    public bool CartaoCotacoes { get; init; }
 }
 
 [Authorize(Policy = BusinessPermissionKeys.Playlists.Update)]
@@ -31,12 +33,15 @@ public record AtualizarPlaylistCommand : IRequest<uint>, IDadosPlaylist
     public bool EmbaralharAnuncios { get; init; }
     public bool ExibirRelogio { get; init; } = true;
     public bool ExibirClima { get; init; } = true;
+    public bool CartaoTempo { get; init; }
+    public bool CartaoCotacoes { get; init; }
     public uint Version { get; init; }
 }
 
 /// <summary>
 /// Nome, descrição e a composição da fila que a TV monta a cada volta:
-/// notícias intercaladas, ordem sorteada, relógio e clima.
+/// informativos intercalados (notícias e os cartões de tempo e cotações),
+/// ordem sorteada, relógio e clima.
 /// </summary>
 public interface IDadosPlaylist
 {
@@ -47,6 +52,8 @@ public interface IDadosPlaylist
     bool EmbaralharAnuncios { get; }
     bool ExibirRelogio { get; }
     bool ExibirClima { get; }
+    bool CartaoTempo { get; }
+    bool CartaoCotacoes { get; }
 }
 
 public class CriarPlaylistCommandHandler(IApplicationDbContext context)
@@ -100,6 +107,8 @@ internal static class RegrasPlaylist
         playlist.EmbaralharAnuncios = dados.EmbaralharAnuncios;
         playlist.ExibirRelogio = dados.ExibirRelogio;
         playlist.ExibirClima = dados.ExibirClima;
+        playlist.CartaoTempo = dados.CartaoTempo;
+        playlist.CartaoCotacoes = dados.CartaoCotacoes;
     }
 
     /// <summary>A playlist, rastreada; inexistente dá 404.</summary>

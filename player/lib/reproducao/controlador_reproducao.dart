@@ -66,6 +66,9 @@ class ControladorReproducao extends ChangeNotifier {
   /// Notícia na tela.
   Noticia? get noticia => _entrada?.noticia;
 
+  /// Cartão informativo na tela (tempo ou cotações).
+  TipoCartao? get cartao => _entrada?.cartao;
+
   /// Vídeo do item atual (só para vídeo, já inicializado).
   VideoReproducao? get video => _video;
 

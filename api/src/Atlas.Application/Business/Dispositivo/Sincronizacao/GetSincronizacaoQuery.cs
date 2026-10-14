@@ -76,8 +76,43 @@ public sealed record SincronizacaoDto
     /// </summary>
     public IReadOnlyList<NoticiaSincronizacaoDto>? Noticias { get; init; }
 
-    /// <summary>Tempo agora na cidade do estabelecimento; nulo se a playlist não exibe ou não há leitura recente.</summary>
+    /// <summary>
+    /// Tempo agora na cidade do estabelecimento, com a previsão dos próximos
+    /// dias; nulo se a playlist não usa clima nem o cartão do tempo, ou se não
+    /// há leitura recente.
+    /// </summary>
     public ClimaSincronizacaoDto? Clima { get; init; }
+
+    /// <summary>Dólar e euro (PTAX) para o cartão "Cotações"; nulo se a playlist não usa o cartão.</summary>
+    public IReadOnlyList<CotacaoSincronizacaoDto>? Cotacoes { get; init; }
+}
+
+public sealed record CotacaoSincronizacaoDto
+{
+    /// <summary><c>USD</c> ou <c>EUR</c>.</summary>
+    public string Moeda { get; init; } = null!;
+    public string Nome { get; init; } = null!;
+    public decimal Compra { get; init; }
+    public decimal Venda { get; init; }
+
+    /// <summary>Venda contra o fechamento do dia útil anterior, em %; nulo sem referência.</summary>
+    public decimal? VariacaoPercentual { get; init; }
+
+    public DateTimeOffset CotadaEm { get; init; }
+    public string? Boletim { get; init; }
+
+    /// <summary>A TV mostra junto (dados abertos do Banco Central).</summary>
+    public string Credito { get; init; } = "Fonte: Banco Central (PTAX)";
+}
+
+public sealed record DiaPrevisaoDto
+{
+    public DateOnly Data { get; init; }
+    public decimal MinimaC { get; init; }
+    public decimal MaximaC { get; init; }
+    public int Codigo { get; init; }
+    public string Descricao { get; init; } = null!;
+    public string Icone { get; init; } = null!;
 }
 
 public sealed record ComposicaoFilaDto
@@ -91,6 +126,10 @@ public sealed record ComposicaoFilaDto
 
     public bool ExibirRelogio { get; init; }
     public bool ExibirClima { get; init; }
+
+    /// <summary>Cartões que entram no rodízio dos informativos, junto com as notícias.</summary>
+    public bool CartaoTempo { get; init; }
+    public bool CartaoCotacoes { get; init; }
 }
 
 public sealed record NoticiaSincronizacaoDto
@@ -126,6 +165,9 @@ public sealed record ClimaSincronizacaoDto
 
     public string? Local { get; init; }
     public DateTimeOffset AtualizadaEm { get; init; }
+
+    /// <summary>Hoje e os próximos dias (cartão "Previsão do tempo").</summary>
+    public IReadOnlyList<DiaPrevisaoDto> Dias { get; init; } = [];
 
     /// <summary>Crédito exigido pela licença do Open-Meteo (CC BY).</summary>
     public string Credito { get; init; } = "Clima: Open-Meteo";
@@ -201,6 +243,8 @@ public class GetSincronizacaoQueryHandler(
                         EmbaralharAnuncios = t.Playlist.EmbaralharAnuncios,
                         ExibirRelogio = t.Playlist.ExibirRelogio,
                         ExibirClima = t.Playlist.ExibirClima,
+                        CartaoTempo = t.Playlist.CartaoTempo,
+                        CartaoCotacoes = t.Playlist.CartaoCotacoes,
                     },
             })
             .FirstAsync(cancellationToken);
@@ -261,7 +305,10 @@ public class GetSincronizacaoQueryHandler(
             Composicao = composicao,
             VersaoNoticias = versaoNoticias,
             Noticias = noticiasAlteradas ? await MontarNoticiasAsync(noticias, cancellationToken) : null,
-            Clima = composicao.ExibirClima ? await ObterClimaAsync(tela.ParceiroId, agora, cancellationToken) : null,
+            Clima = composicao.ExibirClima || composicao.CartaoTempo
+                ? await ObterClimaAsync(tela.ParceiroId, agora, hoje, cancellationToken)
+                : null,
+            Cotacoes = composicao.CartaoCotacoes ? await ListarCotacoesAsync(agora, cancellationToken) : null,
         };
     }
 
@@ -321,7 +368,28 @@ public class GetSincronizacaoQueryHandler(
         }).ToList();
     }
 
-    private async Task<ClimaSincronizacaoDto?> ObterClimaAsync(long parceiroId, DateTimeOffset agora, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<CotacaoSincronizacaoDto>> ListarCotacoesAsync(DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        var limite = agora - Cotacao.Validade;
+        var cotacoes = await context.Cotacoes.AsNoTracking().Where(c => c.CotadaEm >= limite).ToListAsync(cancellationToken);
+
+        return Cotacao.Moedas
+            .Select(m => (Moeda: m, Cotacao: cotacoes.FirstOrDefault(c => c.Moeda == m.Codigo)))
+            .Where(x => x.Cotacao is not null)
+            .Select(x => new CotacaoSincronizacaoDto
+            {
+                Moeda = x.Moeda.Codigo,
+                Nome = x.Moeda.Nome,
+                Compra = x.Cotacao!.Compra,
+                Venda = x.Cotacao.Venda,
+                VariacaoPercentual = x.Cotacao.VariacaoPercentual,
+                CotadaEm = x.Cotacao.CotadaEm,
+                Boletim = x.Cotacao.Boletim,
+            })
+            .ToList();
+    }
+
+    private async Task<ClimaSincronizacaoDto?> ObterClimaAsync(long parceiroId, DateTimeOffset agora, DateOnly hoje, CancellationToken cancellationToken)
     {
         var limite = agora - PrevisaoClima.Validade;
         var previsao = await context.PrevisoesClima
@@ -345,6 +413,18 @@ public class GetSincronizacaoQueryHandler(
             Icone = icone,
             Local = previsao.Local,
             AtualizadaEm = atualizadaEm,
+            Dias = ColetorClima.DiasDe(previsao.PrevisaoDias)
+                .Where(d => d.Data >= hoje)
+                .Select(d =>
+                {
+                    var (descricaoDia, iconeDia) = TempoWmo.Descrever(d.Codigo);
+                    return new DiaPrevisaoDto
+                    {
+                        Data = d.Data, MinimaC = d.MinimaC, MaximaC = d.MaximaC, Codigo = d.Codigo,
+                        Descricao = descricaoDia, Icone = iconeDia,
+                    };
+                })
+                .ToList(),
         };
     }
 

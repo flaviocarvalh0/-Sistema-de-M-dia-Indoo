@@ -1,5 +1,6 @@
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Conteudo.Clima;
+using Atlas.Application.Business.Conteudo.Cotacoes;
 using Atlas.Application.Business.Conteudo.Noticias;
 using Atlas.Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,8 +10,8 @@ using Microsoft.Extensions.Logging;
 namespace Atlas.Infrastructure.Business.Conteudo;
 
 /// <summary>
-/// Coleta em segundo plano: notícias (padrão a cada hora) e clima (a cada
-/// 30 min). Com mais de uma instância da API, uma trava do PostgreSQL
+/// Coleta em segundo plano: notícias (padrão a cada hora), clima e cotações
+/// (a cada 30 min). Com mais de uma instância da API, uma trava do PostgreSQL
 /// (<c>pg_try_advisory_lock</c>) deixa só uma coletar de cada vez.
 /// </summary>
 /// <remarks>
@@ -27,6 +28,7 @@ internal sealed class ColetorConteudoExterno(
     /// <summary>Chaves das travas (números fixos do produto).</summary>
     private const long TravaNoticias = 7_310_001;
     private const long TravaClima = 7_310_002;
+    private const long TravaCotacoes = 7_310_003;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -38,6 +40,7 @@ internal sealed class ColetorConteudoExterno(
 
         DateTimeOffset? ultimaNoticias = null;
         DateTimeOffset? ultimaClima = null;
+        DateTimeOffset? ultimaCotacoes = null;
 
         try
         {
@@ -59,6 +62,13 @@ internal sealed class ColetorConteudoExterno(
                     ultimaClima = agora;
                     await ExecutarComTravaAsync(TravaClima, "clima",
                         sp => sp.GetRequiredService<ColetorClima>().AtualizarTodosAsync(stoppingToken), stoppingToken);
+                }
+
+                if (ultimaCotacoes is null || agora - ultimaCotacoes >= configuracao.IntervaloColetaCotacoes)
+                {
+                    ultimaCotacoes = agora;
+                    await ExecutarComTravaAsync(TravaCotacoes, "cotações",
+                        sp => sp.GetRequiredService<ColetorCotacoes>().AtualizarTodasAsync(stoppingToken), stoppingToken);
                 }
 
                 await Task.Delay(TimeSpan.FromMinutes(1), timeProvider, stoppingToken);

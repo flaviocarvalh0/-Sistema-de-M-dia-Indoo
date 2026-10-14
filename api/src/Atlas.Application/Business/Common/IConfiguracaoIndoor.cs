@@ -24,6 +24,12 @@ public interface IConfiguracaoIndoor
     /// <summary>De quanto em quanto tempo o clima é atualizado (<c>Indoor:Coleta:ClimaMinutos</c>, padrão 30).</summary>
     TimeSpan IntervaloColetaClima { get; }
 
+    /// <summary>De quanto em quanto tempo as cotações são atualizadas (<c>Indoor:Coleta:CotacoesMinutos</c>, padrão 30).</summary>
+    TimeSpan IntervaloColetaCotacoes { get; }
+
+    /// <summary>Serviço PTAX (OData) do Banco Central (<c>Indoor:Cotacoes:UrlPtax</c>).</summary>
+    Uri UrlPtax { get; }
+
     /// <summary>API de previsão do Open-Meteo (<c>Indoor:Clima:UrlPrevisao</c>).</summary>
     Uri UrlPrevisaoClima { get; }
 

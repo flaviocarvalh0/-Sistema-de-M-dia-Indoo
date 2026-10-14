@@ -5,6 +5,19 @@ import 'package:flutter/material.dart';
 import '../dados/modelos.dart';
 import '../reproducao/filtro_do_dia.dart';
 
+/// Ícone de cada tempo que a API manda em `icone`.
+IconData iconeDoTempo(String nome) => switch (nome) {
+      'sol' => Icons.wb_sunny,
+      'sol-nuvem' => Icons.wb_cloudy,
+      'nuvem' => Icons.cloud,
+      'neblina' => Icons.foggy,
+      'garoa' => Icons.grain,
+      'chuva' => Icons.umbrella,
+      'neve' => Icons.ac_unit,
+      'tempestade' => Icons.thunderstorm,
+      _ => Icons.cloud,
+    };
+
 /// Relógio (na hora do estabelecimento) e clima, no canto da tela, por cima
 /// de anúncios e notícias. Cada um aparece se a playlist pedir; o clima só
 /// com leitura recente (até 6 h), e com o crédito do Open-Meteo.
@@ -58,18 +71,6 @@ class _SobreposicaoRelogioClimaState extends State<SobreposicaoRelogioClima> {
   static const _dias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
   static const _meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
-  static IconData icone(String nome) => switch (nome) {
-        'sol' => Icons.wb_sunny,
-        'sol-nuvem' => Icons.wb_cloudy,
-        'nuvem' => Icons.cloud,
-        'neblina' => Icons.foggy,
-        'garoa' => Icons.grain,
-        'chuva' => Icons.umbrella,
-        'neve' => Icons.ac_unit,
-        'tempestade' => Icons.thunderstorm,
-        _ => Icons.cloud,
-      };
-
   @override
   Widget build(BuildContext context) {
     final agora = widget.agora();
@@ -94,7 +95,7 @@ class _SobreposicaoRelogioClimaState extends State<SobreposicaoRelogioClima> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (mostrarClima) ...[
-                Icon(icone(clima.icone), color: Colors.white, size: base * 1.4),
+                Icon(iconeDoTempo(clima.icone), color: Colors.white, size: base * 1.4),
                 SizedBox(width: base * 0.4),
                 Column(
                   mainAxisSize: MainAxisSize.min,

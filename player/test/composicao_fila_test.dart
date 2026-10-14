@@ -80,4 +80,41 @@ void main() {
     });
     expect(n.nomeArquivo, 'abc.webp');
   });
+
+  test('rodízio dos informativos: notícia, tempo, notícia, cotações', () {
+    final f = ComposicaoFila().montar(
+      anuncios: anuncios,
+      noticias: [noticia(1), noticia(2)],
+      composicao: const Composicao(noticiaACadaAnuncios: 1, duracaoNoticiaSegundos: 9),
+      cartoes: const [TipoCartao.tempo, TipoCartao.cotacoes],
+    );
+    expect(fila(f), 'A0 N1 A1 T A2 N2 A3 C');
+    expect(f[3].duracaoSegundos, 9);
+  });
+
+  test('só com o cartão do tempo e sem notícias: só o cartão nos intervalos', () {
+    final f = ComposicaoFila().montar(
+      anuncios: anuncios,
+      noticias: const [],
+      composicao: const Composicao(noticiaACadaAnuncios: 2),
+      cartoes: const [TipoCartao.tempo],
+    );
+    expect(fila(f), 'A0 A1 T A2 A3 T');
+  });
+
+  test('cartões sem "um a cada N" (0) não entram', () {
+    final f = ComposicaoFila().montar(
+        anuncios: anuncios, noticias: [noticia(1)], composicao: const Composicao(), cartoes: const [TipoCartao.cotacoes]);
+    expect(fila(f), 'A0 A1 A2 A3');
+  });
+
+  test('sem anúncios: a volta é dos informativos', () {
+    final f = ComposicaoFila().montar(
+      anuncios: const [],
+      noticias: [noticia(1)],
+      composicao: const Composicao(noticiaACadaAnuncios: 3),
+      cartoes: const [TipoCartao.cotacoes],
+    );
+    expect(fila(f), 'N1 C');
+  });
 }

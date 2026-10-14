@@ -10,6 +10,7 @@ import '../reproducao/controlador_reproducao.dart';
 import '../reproducao/filtro_do_dia.dart';
 import '../reproducao/video_reproducao.dart';
 import '../sincronizacao/sincronizador.dart';
+import 'cartoes_view.dart';
 import 'noticia_view.dart';
 import 'painel_info.dart';
 import 'pareamento_page.dart';
@@ -96,7 +97,25 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   List<EntradaFila> _compor(List<ItemGrade> anuncios) {
     final s = _sync.situacao.value;
     if (s == null) return [for (final a in anuncios) EntradaFila.anuncio(a)];
-    return _composicao.montar(anuncios: anuncios, noticias: _noticiasValidas(s), composicao: s.composicao);
+    return _composicao.montar(
+      anuncios: anuncios,
+      noticias: _noticiasValidas(s),
+      composicao: s.composicao,
+      cartoes: [
+        if (s.composicao.cartaoTempo && _climaValido(s) != null) TipoCartao.tempo,
+        if (s.composicao.cartaoCotacoes && _cotacoesValidas(s).isNotEmpty) TipoCartao.cotacoes,
+      ],
+    );
+  }
+
+  Clima? _climaValido(SituacaoPlayer s) {
+    final c = s.clima;
+    return c != null && c.valido(DateTime.now()) ? c : null;
+  }
+
+  List<Cotacao> _cotacoesValidas(SituacaoPlayer s) {
+    final agora = DateTime.now();
+    return s.cotacoes.where((c) => c.valida(agora)).toList();
   }
 
   List<Noticia> _noticiasValidas(SituacaoPlayer s) {
@@ -198,6 +217,17 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
         imagem: noticia.temImagem ? _sync.baixadorNoticias.arquivoDe(noticia) : null,
         aoFalharImagem: () => _loop.noticiaFalhou(noticia),
       );
+    }
+    final cartao = _loop.cartao;
+    if (cartao != null && situacao != null) {
+      final clima = _climaValido(situacao);
+      final cotacoes = _cotacoesValidas(situacao);
+      // O dado pode ter vencido entre montar a fila e chegar a vez do cartão.
+      if (cartao == TipoCartao.tempo && clima != null) {
+        return CartaoTempoView(clima: clima, hoje: FiltroDoDia.hoje(situacao.fusoHorario, DateTime.now()));
+      }
+      if (cartao == TipoCartao.cotacoes && cotacoes.isNotEmpty) return CartaoCotacoesView(cotacoes: cotacoes);
+      return _Espera(nomeTela: situacao.nomeTela);
     }
     final item = _loop.atual;
     if (item == null) return _Espera(nomeTela: situacao?.nomeTela);

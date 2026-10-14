@@ -186,8 +186,9 @@ da API).
     **Coletar agora** (ícone de setas) e clique na linha para ver as notícias
     com as fotos. Sem internet na máquina da API, a fonte aparece "Com erro"
     com a mensagem.
-12. **Rede → Playlists → editar:** "Uma notícia a cada" 2, marque
-    **Embaralhar**; deixe **Relógio** e **Clima** marcados. Na grade, clique
+12. **Rede → Playlists → editar:** "Um informativo a cada" 2, marque
+    **Embaralhar**, **Cartão do tempo** e **Cartão de cotações**; deixe
+    **Relógio** e **Clima** marcados. Na grade, clique
     no 📌 do primeiro item para ele não entrar no sorteio e salve. Na TV, em
     até 1 minuto a fila passa a intercalar notícias, com a hora e a
     temperatura no canto (o clima precisa da cidade preenchida no cadastro do

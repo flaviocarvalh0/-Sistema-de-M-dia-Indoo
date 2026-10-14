@@ -75,6 +75,7 @@ class BancoLocal {
       versaoNoticias: mapa['versaoNoticias'],
       composicao: _json(mapa['composicao'], Composicao.fromJson) ?? const Composicao(),
       clima: _json(mapa['clima'], Clima.fromJson),
+      cotacoes: _lista(mapa['cotacoes'], Cotacao.fromJson),
     );
   }
 
@@ -86,6 +87,7 @@ class BancoLocal {
     Composicao? composicao,
     bool gravarClima = false,
     Clima? clima,
+    List<Cotacao>? cotacoes,
   }) =>
       _db.transaction((txn) async {
         if (fusoHorario != null) await _gravar(txn, 'fusoHorario', fusoHorario);
@@ -94,6 +96,14 @@ class BancoLocal {
           await _gravar(txn, 'intervalo', '$intervaloSincronizacaoSegundos');
         }
         if (composicao != null) await _gravar(txn, 'composicao', jsonEncode(composicao.toJson()));
+        // Cotações: a resposta sempre traz a lista quando o cartão está ligado; nula, apaga.
+        if (gravarClima) {
+          if (cotacoes == null) {
+            await txn.delete('estado', where: 'chave = ?', whereArgs: ['cotacoes']);
+          } else {
+            await _gravar(txn, 'cotacoes', jsonEncode([for (final c in cotacoes) c.toJson()]));
+          }
+        }
         if (gravarClima) {
           if (clima == null) {
             await txn.delete('estado', where: 'chave = ?', whereArgs: ['clima']);
@@ -142,6 +152,15 @@ class BancoLocal {
 
   /// Esquece a versão das notícias: a próxima sincronização manda todas, com URLs novas.
   Future<void> esquecerVersaoNoticias() => _db.delete('estado', where: 'chave = ?', whereArgs: ['versaoNoticias']);
+
+  static List<T> _lista<T>(String? texto, T Function(Map<String, dynamic>) ler) {
+    if (texto == null) return const [];
+    try {
+      return (jsonDecode(texto) as List<dynamic>).map((e) => ler(e as Map<String, dynamic>)).toList();
+    } on Object {
+      return const [];
+    }
+  }
 
   static T? _json<T>(String? texto, T Function(Map<String, dynamic>) ler) {
     if (texto == null) return null;
@@ -228,6 +247,7 @@ class EstadoLocal {
     this.versaoNoticias,
     this.composicao = const Composicao(),
     this.clima,
+    this.cotacoes = const [],
   });
 
   final String? versaoGrade;
@@ -237,4 +257,5 @@ class EstadoLocal {
   final String? versaoNoticias;
   final Composicao composicao;
   final Clima? clima;
+  final List<Cotacao> cotacoes;
 }

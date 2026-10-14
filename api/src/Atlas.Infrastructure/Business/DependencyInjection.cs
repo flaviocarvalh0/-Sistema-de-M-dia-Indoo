@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Conteudo.Clima;
 using Atlas.Application.Business.Conteudo.Common;
+using Atlas.Application.Business.Conteudo.Cotacoes;
 using Atlas.Application.Business.Conteudo.Noticias;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Parceiros.Common;
@@ -37,7 +38,7 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Notícias (feeds RSS) e clima (Open-Meteo): os coletores, o cliente HTTP
+    /// Notícias (feeds RSS), clima (Open-Meteo) e cotações (PTAX do Banco Central): os coletores, o cliente HTTP
     /// e a coleta em segundo plano (<see cref="ColetorConteudoExterno"/>).
     /// </summary>
     private static void AddConteudoExterno(this IServiceCollection services)
@@ -45,6 +46,7 @@ public static class DependencyInjection
         services.AddSingleton<IClienteConteudoExterno>(_ => new ClienteConteudoExterno(ClienteConteudoExterno.CriarHttpClient()));
         services.AddScoped<ColetorNoticias>();
         services.AddScoped<ColetorClima>();
+        services.AddScoped<ColetorCotacoes>();
         services.AddHostedService<ColetorConteudoExterno>();
     }
 

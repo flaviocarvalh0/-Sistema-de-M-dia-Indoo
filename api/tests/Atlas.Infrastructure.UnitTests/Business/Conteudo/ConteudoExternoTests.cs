@@ -353,7 +353,8 @@ public class ConteudoExternoTests : IDisposable
 
     private const string Previsao = """
         {"current":{"time":"2026-10-14T12:00","temperature_2m":22.46,"weather_code":61},
-         "daily":{"time":["2026-10-14"],"temperature_2m_max":[25.04],"temperature_2m_min":[17.5]}}
+         "daily":{"time":["2026-10-14","2026-10-15","2026-10-16","2026-10-17"],"weather_code":[61,3,0,95],
+                  "temperature_2m_max":[25.04,26.0,28.3,24.9],"temperature_2m_min":[17.5,18.1,19.0,null]}}
         """;
 
     [Theory]
@@ -372,7 +373,7 @@ public class ConteudoExternoTests : IDisposable
     {
         var host = await CriarHostComTelaAsync("São José - SE");
         _cliente.Respostas["https://geo.test/v1/search?name=S%C3%A3o%20Jos%C3%A9&count=10&language=pt&format=json&countryCode=BR"] = Encoding.UTF8.GetBytes(Geo);
-        _cliente.Respostas["https://clima.test/v1/forecast?latitude=-10.1&longitude=-37&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1"] = Encoding.UTF8.GetBytes(Previsao);
+        _cliente.Respostas["https://clima.test/v1/forecast?latitude=-10.1&longitude=-37&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4"] = Encoding.UTF8.GetBytes(Previsao);
 
         await Clima().AtualizarTodosAsync(CancellationToken.None);
 
@@ -391,6 +392,11 @@ public class ConteudoExternoTests : IDisposable
             AtualizadaEm = (DateTimeOffset?)Agora,
             UltimoErro = (string?)null,
         });
+
+        ColetorClima.DiasDe(previsao.PrevisaoDias).Should().Equal(
+            new DiaPrevisao(new DateOnly(2026, 10, 14), 17.5m, 25.0m, 61),
+            new DiaPrevisao(new DateOnly(2026, 10, 15), 18.1m, 26.0m, 3),
+            new DiaPrevisao(new DateOnly(2026, 10, 16), 19.0m, 28.3m, 0));
 
         // Segunda atualização: não geocodifica de novo.
         _cliente.Pedidos.Clear();
@@ -423,7 +429,70 @@ public class ConteudoExternoTests : IDisposable
         (await _context.PrevisoesClima.AnyAsync()).Should().BeFalse();
     }
 
+    // ---------- Cotações (PTAX) ----------
+
+    private static string Ptax(params (string DataHora, decimal Compra, decimal Venda, string Tipo)[] boletins) =>
+        "{\"@odata.context\":\"x\",\"value\":[" + string.Join(",", boletins.Select(b =>
+            $"{{\"cotacaoCompra\":{b.Compra.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"cotacaoVenda\":{b.Venda.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"dataHoraCotacao\":\"{b.DataHora}\",\"tipoBoletim\":\"{b.Tipo}\"}}")) + "]}";
+
+    private static string UrlPtax(string moeda) =>
+        $"https://bcb.test/odata/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)"
+        + $"?%40moeda='{moeda}'&%40dataInicial='10-04-2026'&%40dataFinalCotacao='10-14-2026'&%24format=json&%24select=cotacaoCompra,cotacaoVenda,dataHoraCotacao,tipoBoletim";
+
+    [Fact]
+    public async Task Cotacoes_UltimoBoletimEVariacaoContraOFechamentoAnterior()
+    {
+        _cliente.Respostas[new Uri(UrlPtax("USD")).AbsoluteUri] = Encoding.UTF8.GetBytes(Ptax(
+            ("2026-10-13 10:04:21.100", 5.40m, 5.41m, "Abertura"),
+            ("2026-10-13 13:09:27.800", 5.45m, 5.46m, "Fechamento PTAX"),
+            ("2026-10-14 10:03:11.000", 5.50m, 5.51m, "Abertura"),
+            ("2026-10-14 11:04:59.000", 5.5150m, 5.5156m, "Intermediário")));
+        _cliente.Respostas[new Uri(UrlPtax("EUR")).AbsoluteUri] = Encoding.UTF8.GetBytes(Ptax(
+            ("2026-10-14 10:03:11.000", 6.10m, 6.12m, "Abertura")));
+
+        await Cotacoes().AtualizarTodasAsync(CancellationToken.None);
+
+        var dolar = await _context.Cotacoes.SingleAsync(c => c.Moeda == "USD");
+        dolar.Venda.Should().Be(5.5156m);
+        dolar.Compra.Should().Be(5.5150m);
+        dolar.Boletim.Should().Be("Intermediário");
+        dolar.CotadaEm.Should().Be(new DateTimeOffset(2026, 10, 14, 11, 4, 59, TimeSpan.FromHours(-3)));
+        dolar.FechamentoAnterior.Should().Be(5.46m);
+        dolar.VariacaoPercentual.Should().Be(1.02m);
+
+        var euro = await _context.Cotacoes.SingleAsync(c => c.Moeda == "EUR");
+        euro.Venda.Should().Be(6.12m);
+        euro.VariacaoPercentual.Should().BeNull("sem fechamento anterior na janela");
+    }
+
+    [Fact]
+    public async Task Cotacoes_ServicoForaDoArMantemAUltimaERegistraOErro()
+    {
+        _cliente.Respostas[new Uri(UrlPtax("USD")).AbsoluteUri] = Encoding.UTF8.GetBytes(Ptax(("2026-10-14 10:03:11.000", 5.50m, 5.51m, "Abertura")));
+        await Cotacoes().AtualizarAsync("USD", CancellationToken.None);
+        _cliente.Respostas.Clear();
+
+        await Cotacoes().AtualizarAsync("USD", CancellationToken.None);
+
+        var dolar = await _context.Cotacoes.SingleAsync();
+        dolar.Venda.Should().Be(5.51m);
+        dolar.UltimoErro.Should().Contain("não respondeu");
+    }
+
+    [Fact]
+    public async Task Cotacoes_SemBoletinsNaoCriaRegistro()
+    {
+        _cliente.Respostas[new Uri(UrlPtax("USD")).AbsoluteUri] = Encoding.UTF8.GetBytes(Ptax());
+
+        await Cotacoes().AtualizarAsync("USD", CancellationToken.None);
+
+        (await _context.Cotacoes.AnyAsync()).Should().BeFalse();
+    }
+
     // ---------- Apoio ----------
+
+    private Atlas.Application.Business.Conteudo.Cotacoes.ColetorCotacoes Cotacoes() =>
+        new(_context, _cliente, new ConfiguracaoIndoorFake(), _relogio, NullLogger<Atlas.Application.Business.Conteudo.Cotacoes.ColetorCotacoes>.Instance);
 
     private ColetorNoticias Coletor() =>
         new(_context, _armazenamento, _cliente, _relogio, NullLogger<ColetorNoticias>.Instance);

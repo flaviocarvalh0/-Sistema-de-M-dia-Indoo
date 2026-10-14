@@ -78,6 +78,7 @@ Linux, use o `Environment=` do serviço systemd.
 | `Indoor__Coleta__Ativa` | não | Padrão `true`. Liga a coleta de notícias e clima em segundo plano |
 | `Indoor__Coleta__NoticiasMinutos` | não | Padrão `60` (mínimo 15) |
 | `Indoor__Coleta__ClimaMinutos` | não | Padrão `30` (mínimo 15) |
+| `Indoor__Coleta__CotacoesMinutos` | não | Padrão `30` (mínimo 15). Cotações do dólar e do euro (PTAX) |
 
 Sem a configuração do Supabase a API sobe, mas as rotas de mídia respondem
 503.
@@ -85,7 +86,8 @@ Sem a configuração do Supabase a API sobe, mas as rotas de mídia respondem
 **Saída para a internet:** a API lê os feeds de notícias (ex.:
 `agenciabrasil.ebc.com.br`), abre as páginas das notícias para achar a foto
 de destaque, baixa as imagens e consulta o Open-Meteo
-(`api.open-meteo.com` e `geocoding-api.open-meteo.com`). Libere HTTPS de
+(`api.open-meteo.com` e `geocoding-api.open-meteo.com`) e as cotações do
+Banco Central (`olinda.bcb.gov.br`). Libere HTTPS de
 saída para esses endereços no firewall/proxy do servidor. Sem isso, a API
 funciona, as fontes aparecem "Com erro" no painel e as TVs ficam sem
 notícias novas e sem clima.

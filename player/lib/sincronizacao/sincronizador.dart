@@ -46,6 +46,7 @@ class SituacaoPlayer {
     this.composicao = const Composicao(),
     this.noticias = const [],
     this.clima,
+    this.cotacoes = const [],
   });
 
   final List<ItemGrade> grade;
@@ -58,6 +59,9 @@ class SituacaoPlayer {
 
   /// Última leitura do clima que chegou (a tela confere a validade).
   final Clima? clima;
+
+  /// Últimas cotações que chegaram (a tela confere a validade).
+  final List<Cotacao> cotacoes;
   final String fusoHorario;
   final String? nomeTela;
   final ResultadoCiclo? ultimoResultado;
@@ -113,6 +117,7 @@ class Sincronizador {
       composicao: estado.composicao,
       noticias: (await banco.lerNoticias()).where((n) => !n.temImagem || baixadorNoticias.pronto(n)).toList(),
       clima: estado.clima,
+      cotacoes: estado.cotacoes,
     );
   }
 
@@ -163,6 +168,7 @@ class Sincronizador {
       composicao: resposta.composicao,
       gravarClima: true,
       clima: resposta.clima,
+      cotacoes: resposta.cotacoes,
     );
 
     final noticiasCompletas = await _atualizarNoticias(resposta);

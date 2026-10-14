@@ -84,6 +84,7 @@ public sealed partial class ColetorClima(
         previsao.Local = null;
         previsao.TemperaturaC = previsao.MinimaC = previsao.MaximaC = null;
         previsao.CodigoTempo = null;
+        previsao.PrevisaoDias = null;
         previsao.AtualizadaEm = null;
 
         if (!json.RootElement.TryGetProperty("results", out var resultados) || resultados.GetArrayLength() == 0)
@@ -109,7 +110,7 @@ public sealed partial class ColetorClima(
     private async Task LerPrevisaoAsync(PrevisaoClima previsao, double latitude, double longitude, CancellationToken cancellationToken)
     {
         var url = new Uri(string.Create(CultureInfo.InvariantCulture,
-            $"{configuracao.UrlPrevisaoClima}?latitude={latitude:0.####}&longitude={longitude:0.####}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1"));
+            $"{configuracao.UrlPrevisaoClima}?latitude={latitude:0.####}&longitude={longitude:0.####}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days={DiasPrevisao}"));
 
         using var json = await LerJsonAsync(url, cancellationToken);
         var atual = json.RootElement.GetProperty("current");
@@ -119,7 +120,58 @@ public sealed partial class ColetorClima(
         previsao.CodigoTempo = atual.GetProperty("weather_code").GetInt32();
         previsao.MaximaC = PrimeiroValor(diario, "temperature_2m_max");
         previsao.MinimaC = PrimeiroValor(diario, "temperature_2m_min");
+        previsao.PrevisaoDias = JsonSerializer.Serialize(LerDias(diario));
         previsao.AtualizadaEm = timeProvider.GetUtcNow();
+    }
+
+    /// <summary>Hoje e os próximos dias (cartão "Previsão do tempo").</summary>
+    public const int DiasPrevisao = 4;
+
+    private static List<DiaPrevisao> LerDias(JsonElement diario)
+    {
+        var dias = new List<DiaPrevisao>();
+        if (!diario.TryGetProperty("time", out var datas))
+        {
+            return dias;
+        }
+
+        for (var i = 0; i < datas.GetArrayLength(); i++)
+        {
+            if (!DateOnly.TryParse(datas[i].GetString(), CultureInfo.InvariantCulture, out var data)
+                || Valor(diario, "temperature_2m_min", i) is not { } minima
+                || Valor(diario, "temperature_2m_max", i) is not { } maxima
+                || Valor(diario, "weather_code", i) is not { } codigo)
+            {
+                continue;
+            }
+
+            dias.Add(new DiaPrevisao(data, minima, maxima, (int)codigo));
+        }
+
+        return dias;
+    }
+
+    private static decimal? Valor(JsonElement diario, string campo, int indice) =>
+        diario.TryGetProperty(campo, out var valores) && indice < valores.GetArrayLength() && valores[indice].ValueKind == JsonValueKind.Number
+            ? Math.Round(valores[indice].GetDecimal(), 1)
+            : null;
+
+    /// <summary>Lê o JSON de <see cref="PrevisaoClima.PrevisaoDias"/>; inválido ou vazio vira lista vazia.</summary>
+    public static IReadOnlyList<DiaPrevisao> DiasDe(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<DiaPrevisao>>(json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 
     private static decimal? PrimeiroValor(JsonElement diario, string campo) =>
@@ -159,3 +211,6 @@ public sealed partial class ColetorClima(
         ["SE"] = "Sergipe", ["TO"] = "Tocantins",
     };
 }
+
+/// <summary>Um dia da previsão: mínima, máxima e o código WMO do tempo.</summary>
+public sealed record DiaPrevisao(DateOnly Data, decimal MinimaC, decimal MaximaC, int Codigo);

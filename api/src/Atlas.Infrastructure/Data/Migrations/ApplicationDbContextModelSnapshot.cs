@@ -22,6 +22,70 @@ namespace Atlas.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.Cotacao", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("AtualizadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("atualizada_em");
+
+                    b.Property<string>("Boletim")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("boletim");
+
+                    b.Property<decimal>("Compra")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("compra");
+
+                    b.Property<DateTimeOffset>("CotadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cotada_em");
+
+                    b.Property<decimal?>("FechamentoAnterior")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("fechamento_anterior");
+
+                    b.Property<string>("Moeda")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("moeda");
+
+                    b.Property<string>("UltimoErro")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ultimo_erro");
+
+                    b.Property<decimal>("Venda")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("venda");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cotacao");
+
+                    b.HasIndex("Moeda")
+                        .IsUnique()
+                        .HasDatabaseName("ix_cotacao_moeda");
+
+                    b.ToTable("cotacao", "indoor");
+                });
+
             modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.FonteNoticia", b =>
                 {
                     b.Property<long>("Id")
@@ -226,6 +290,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.Property<long>("ParceiroId")
                         .HasColumnType("bigint")
                         .HasColumnName("parceiro_id");
+
+                    b.Property<string>("PrevisaoDias")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("previsao_dias");
 
                     b.Property<decimal?>("TemperaturaC")
                         .HasPrecision(4, 1)
@@ -457,6 +526,14 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean")
                         .HasColumnName("ativo");
+
+                    b.Property<bool>("CartaoCotacoes")
+                        .HasColumnType("boolean")
+                        .HasColumnName("cartao_cotacoes");
+
+                    b.Property<bool>("CartaoTempo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("cartao_tempo");
 
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone")

@@ -78,7 +78,9 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
     "duracaoNoticiaSegundos": 10,
     "embaralharAnuncios": true,
     "exibirRelogio": true,
-    "exibirClima": true
+    "exibirClima": true,
+    "cartaoTempo": true,
+    "cartaoCotacoes": true
   },
   "versaoNoticias": "<sha-256>",
   "noticias": [
@@ -102,13 +104,32 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
     "icone": "sol-nuvem",
     "local": "Manaus, Amazonas",
     "atualizadaEm": "2026-10-14T11:12:00+00:00",
-    "credito": "Clima: Open-Meteo"
-  }
+    "credito": "Clima: Open-Meteo",
+    "dias": [
+      { "data": "2026-10-14", "minimaC": 24.1, "maximaC": 33.9, "codigo": 80, "descricao": "Pancadas de chuva fracas", "icone": "chuva" },
+      { "data": "2026-10-15", "minimaC": 24.0, "maximaC": 34.2, "codigo": 0, "descricao": "Céu limpo", "icone": "sol" }
+    ]
+  },
+  "cotacoes": [
+    {
+      "moeda": "USD",
+      "nome": "Dólar",
+      "compra": 5.5150,
+      "venda": 5.5156,
+      "variacaoPercentual": 1.02,
+      "cotadaEm": "2026-10-14T14:04:59+00:00",
+      "boletim": "Intermediário",
+      "credito": "Fonte: Banco Central (PTAX)"
+    }
+  ]
 }
 ```
 
 - `composicao` e `clima` vêm em toda resposta `200`. `clima` é nulo quando a
-  playlist não exibe clima ou não há leitura recente (6 h).
+  playlist não usa o clima do canto nem o cartão do tempo, ou quando não há
+  leitura recente (6 h). `dias` traz hoje e os próximos dias.
+- `cotacoes` vem em toda resposta quando a playlist usa o cartão de cotações
+  (nulo quando não usa): dólar e euro, só com cotação dos últimos 4 dias.
 - `noticias` vem só quando a `versaoNoticias` mudou: vazia quando a playlist
   não intercala notícias. Notícia sem foto vem com `url`, `hash`,
   `tamanhoBytes` e `tipoConteudo` nulos.
@@ -159,10 +180,12 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 10. **Fila montada na TV, a cada volta** (ADR-016), com os anúncios do dia:
     - `embaralharAnuncios`: sortear a ordem a cada volta; itens com
       `posicaoFixa` ficam na posição deles;
-    - `noticiaACadaAnuncios` > 0: uma notícia depois de cada N anúncios, em
-      rodízio (mais recentes primeiro), por `duracaoNoticiaSegundos`. A
+    - `noticiaACadaAnuncios` > 0: um informativo depois de cada N anúncios,
+      por `duracaoNoticiaSegundos`, no rodízio notícia, tempo, notícia,
+      cotações (só os cartões ligados e com dados; sem notícias, só os
+      cartões). As notícias seguem rodízio próprio, mais recentes primeiro. A
       contagem continua de uma volta para a outra;
-    - sem anúncios para hoje e com notícias, tocar só as notícias.
+    - sem anúncios para hoje e com informativos, tocar só os informativos.
 11. **Notícias:** imagem baixada como as mídias (regra 2), numa pasta
     própria; a lista nova só entra com as imagens prontas. Imagem que falhar
     fica de fora e a versão não é guardada (o próximo ciclo pede de novo).
@@ -171,3 +194,8 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 12. **Relógio e clima:** por cima de tudo, se `exibirRelogio`/`exibirClima`.
     A hora é a do `fusoHorario` (não a do aparelho). O clima guardado vale até
     6 h depois de `atualizadaEm`, com o `credito` ao lado.
+13. **Cartões:** "Previsão do tempo" (agora, mínima e máxima de hoje e os
+    próximos 3 dias de `clima.dias`) e "Cotações" (venda de cada moeda e a
+    variação do dia). Guardar o último recebido e mostrar enquanto valer
+    (clima 6 h; cotação 4 dias), sempre com o `credito`. Sem dado válido, o
+    cartão sai do rodízio.

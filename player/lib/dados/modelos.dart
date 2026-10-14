@@ -133,6 +133,8 @@ class Composicao {
     this.embaralharAnuncios = false,
     this.exibirRelogio = true,
     this.exibirClima = true,
+    this.cartaoTempo = false,
+    this.cartaoCotacoes = false,
   });
 
   factory Composicao.fromJson(Map<String, dynamic> json) => Composicao(
@@ -141,14 +143,20 @@ class Composicao {
         embaralharAnuncios: json['embaralharAnuncios'] as bool? ?? false,
         exibirRelogio: json['exibirRelogio'] as bool? ?? true,
         exibirClima: json['exibirClima'] as bool? ?? true,
+        cartaoTempo: json['cartaoTempo'] as bool? ?? false,
+        cartaoCotacoes: json['cartaoCotacoes'] as bool? ?? false,
       );
 
-  /// Uma notícia depois de cada N anúncios; 0 = sem notícias.
+  /// Um informativo (notícia ou cartão) depois de cada N anúncios; 0 = nenhum.
   final int noticiaACadaAnuncios;
   final int duracaoNoticiaSegundos;
   final bool embaralharAnuncios;
   final bool exibirRelogio;
   final bool exibirClima;
+
+  /// Cartões no rodízio dos informativos, junto com as notícias.
+  final bool cartaoTempo;
+  final bool cartaoCotacoes;
 
   Map<String, dynamic> toJson() => {
         'noticiaACadaAnuncios': noticiaACadaAnuncios,
@@ -156,6 +164,8 @@ class Composicao {
         'embaralharAnuncios': embaralharAnuncios,
         'exibirRelogio': exibirRelogio,
         'exibirClima': exibirClima,
+        'cartaoTempo': cartaoTempo,
+        'cartaoCotacoes': cartaoCotacoes,
       };
 }
 
@@ -222,6 +232,7 @@ class Clima {
     this.minimaC,
     this.maximaC,
     this.local,
+    this.dias = const [],
   });
 
   factory Clima.fromJson(Map<String, dynamic> json) => Clima(
@@ -234,6 +245,9 @@ class Clima {
         local: json['local'] as String?,
         atualizadaEm: DateTime.parse(json['atualizadaEm'] as String).toUtc(),
         credito: json['credito'] as String? ?? 'Clima: Open-Meteo',
+        dias: (json['dias'] as List<dynamic>? ?? const [])
+            .map((e) => DiaPrevisao.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   /// Leitura mais velha que isto sai da tela (a TV ficou muito tempo offline).
@@ -251,6 +265,9 @@ class Clima {
   final DateTime atualizadaEm;
   final String credito;
 
+  /// Hoje e os próximos dias (cartão "Previsão do tempo").
+  final List<DiaPrevisao> dias;
+
   bool valido(DateTime agora) => agora.toUtc().difference(atualizadaEm) < validade;
 
   Map<String, dynamic> toJson() => {
@@ -262,6 +279,91 @@ class Clima {
         'icone': icone,
         'local': local,
         'atualizadaEm': atualizadaEm.toIso8601String(),
+        'credito': credito,
+        'dias': [for (final d in dias) d.toJson()],
+      };
+}
+
+/// Um dia da previsão do tempo.
+class DiaPrevisao {
+  const DiaPrevisao({
+    required this.data,
+    required this.minimaC,
+    required this.maximaC,
+    required this.descricao,
+    required this.icone,
+  });
+
+  factory DiaPrevisao.fromJson(Map<String, dynamic> json) => DiaPrevisao(
+        data: DateTime.parse(json['data'] as String),
+        minimaC: (json['minimaC'] as num).toDouble(),
+        maximaC: (json['maximaC'] as num).toDouble(),
+        descricao: json['descricao'] as String,
+        icone: json['icone'] as String,
+      );
+
+  /// Data (sem hora) no fuso do estabelecimento.
+  final DateTime data;
+  final double minimaC;
+  final double maximaC;
+  final String descricao;
+  final String icone;
+
+  Map<String, dynamic> toJson() => {
+        'data': '${data.year.toString().padLeft(4, '0')}-${data.month.toString().padLeft(2, '0')}-${data.day.toString().padLeft(2, '0')}',
+        'minimaC': minimaC,
+        'maximaC': maximaC,
+        'descricao': descricao,
+        'icone': icone,
+      };
+}
+
+/// Cotação oficial (PTAX do Banco Central) para o cartão "Cotações".
+class Cotacao {
+  const Cotacao({
+    required this.moeda,
+    required this.nome,
+    required this.compra,
+    required this.venda,
+    required this.cotadaEm,
+    required this.credito,
+    this.variacaoPercentual,
+    this.boletim,
+  });
+
+  factory Cotacao.fromJson(Map<String, dynamic> json) => Cotacao(
+        moeda: json['moeda'] as String,
+        nome: json['nome'] as String,
+        compra: (json['compra'] as num).toDouble(),
+        venda: (json['venda'] as num).toDouble(),
+        variacaoPercentual: (json['variacaoPercentual'] as num?)?.toDouble(),
+        cotadaEm: DateTime.parse(json['cotadaEm'] as String),
+        boletim: json['boletim'] as String?,
+        credito: json['credito'] as String? ?? 'Fonte: Banco Central (PTAX)',
+      );
+
+  /// Cotação mais velha que isto sai da tela (cobre fim de semana e feriado).
+  static const validade = Duration(days: 4);
+
+  final String moeda;
+  final String nome;
+  final double compra;
+  final double venda;
+  final double? variacaoPercentual;
+  final DateTime cotadaEm;
+  final String? boletim;
+  final String credito;
+
+  bool valida(DateTime agora) => agora.toUtc().difference(cotadaEm.toUtc()) < validade;
+
+  Map<String, dynamic> toJson() => {
+        'moeda': moeda,
+        'nome': nome,
+        'compra': compra,
+        'venda': venda,
+        'variacaoPercentual': variacaoPercentual,
+        'cotadaEm': cotadaEm.toIso8601String(),
+        'boletim': boletim,
         'credito': credito,
       };
 }
@@ -280,6 +382,7 @@ class RespostaSincronizacao {
     this.versaoNoticias,
     this.noticias,
     this.clima,
+    this.cotacoes,
   });
 
   factory RespostaSincronizacao.fromJson(Map<String, dynamic> json) => RespostaSincronizacao(
@@ -300,6 +403,9 @@ class RespostaSincronizacao {
             ?.map((e) => Noticia.fromJson(e as Map<String, dynamic>))
             .toList(),
         clima: json['clima'] is Map<String, dynamic> ? Clima.fromJson(json['clima'] as Map<String, dynamic>) : null,
+        cotacoes: (json['cotacoes'] as List<dynamic>?)
+            ?.map((e) => Cotacao.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   final bool alterada;
@@ -323,4 +429,7 @@ class RespostaSincronizacao {
 
   /// Nulo: a playlist não exibe clima ou não há leitura recente.
   final Clima? clima;
+
+  /// Nulo: a playlist não usa o cartão de cotações.
+  final List<Cotacao>? cotacoes;
 }

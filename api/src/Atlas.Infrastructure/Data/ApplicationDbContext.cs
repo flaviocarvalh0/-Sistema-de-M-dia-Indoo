@@ -57,6 +57,7 @@ public class ApplicationDbContext
     public DbSet<FonteNoticia> FontesNoticia => Set<FonteNoticia>();
     public DbSet<Noticia> Noticias => Set<Noticia>();
     public DbSet<PrevisaoClima> PrevisoesClima => Set<PrevisaoClima>();
+    public DbSet<Cotacao> Cotacoes => Set<Cotacao>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -68,6 +68,15 @@ Restrições:
   - A sincronização manda a leitura (até 6 h) em toda resposta; a TV guarda
     a última e a mostra enquanto valer, mesmo offline.
 - **Relógio:** na hora do fuso do estabelecimento, não na do aparelho.
+- **Cartões informativos** (ligados na playlist: `CartaoTempo`,
+  `CartaoCotacoes`) entram no lugar de uma notícia, no rodízio notícia,
+  tempo, notícia, cotações; o "a cada N anúncios" vale para todos.
+  - Tempo: o mesmo Open-Meteo, agora com a previsão de 4 dias
+    (`PrevisaoClima.PrevisaoDias`).
+  - Cotações: PTAX do Banco Central (dados abertos, sem chave), dólar e
+    euro, a cada 30 min. Vale o último boletim; a variação é contra o
+    fechamento do dia útil anterior. É a cotação oficial, não em tempo real
+    (serviços de cotação ao vivo são de terceiros, sem garantia).
 
 ## Justificativa
 

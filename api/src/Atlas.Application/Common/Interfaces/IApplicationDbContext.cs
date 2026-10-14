@@ -38,6 +38,7 @@ public interface IApplicationDbContext
     DbSet<FonteNoticia> FontesNoticia { get; }
     DbSet<Noticia> Noticias { get; }
     DbSet<PrevisaoClima> PrevisoesClima { get; }
+    DbSet<Cotacao> Cotacoes { get; }
 
     /// <summary>
     /// Retorna a entrada de rastreamento do ChangeTracker para a entidade informada.

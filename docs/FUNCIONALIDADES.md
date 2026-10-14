@@ -53,7 +53,8 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Duplicar | "Clonar" cria outra playlist com a mesma grade (mídias inativas ficam de fora) |
 | Ativar / inativar | Inativa: as telas dela ficam sem grade |
 | Concorrência | Salvar com a versão: edição simultânea não sobrescreve a do outro (409) |
-| Notícias | "Uma notícia a cada N anúncios" (0 = sem notícias) e o tempo de cada notícia na tela (5 a 60 s) |
+| Informativos | "Um informativo a cada N anúncios" (0 = nenhum) e o tempo de cada um na tela (5 a 60 s). Rodízio: notícia, tempo, notícia, cotações |
+| Cartões | "Previsão do tempo" (agora e os próximos 3 dias, da cidade do estabelecimento) e "Cotações" (dólar e euro, PTAX do Banco Central, com a variação do dia) |
 | Embaralhar | Sorteia a ordem dos anúncios a cada volta, na TV; itens com 📌 (posição fixa) ficam no lugar |
 | Relógio e clima | Liga ou desliga o relógio e a temperatura na tela |
 
@@ -106,6 +107,7 @@ escolhe a playlist.
 | Composição na TV | A cada volta: ordem sorteada (se a playlist pedir, com os itens fixos no lugar) e uma notícia a cada N anúncios, em rodízio |
 | Notícias | Foto em tela cheia, título animado e crédito da fonte; sem foto, fundo da marca. Mais de 48 h, sai da tela mesmo offline |
 | Relógio e clima | No canto da tela: hora do estabelecimento e temperatura da cidade dele (Open-Meteo, com crédito). O clima some depois de 6 h sem atualizar |
+| Cartões | Previsão do tempo com ícones e cotações com seta de alta ou baixa, em tela cheia, com o crédito da fonte. Funcionam offline enquanto o dado valer (tempo 6 h, cotação 4 dias) |
 | Tela de espera | Sem nada para hoje, mostra o nome da tela |
 | Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, notícias, clima, servidor e versão |
 | Sempre no ar | Tela cheia, sempre acesa, abre sozinho ao ligar a TV |

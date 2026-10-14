@@ -219,6 +219,7 @@ void main() {
     var noticias = <Map<String, dynamic>>[];
     String versaoNoticias() => noticias.map((n) => n['id']).join(',');
     Map<String, dynamic>? clima;
+    List<Map<String, dynamic>>? cotacoes;
 
     Map<String, dynamic> noticiaJson(int id, {String? imagem, Duration idade = const Duration(hours: 1)}) => {
           'id': id,
@@ -239,7 +240,14 @@ void main() {
         'temperaturaC': 31.4, 'minimaC': 24.0, 'maximaC': 33.2, 'codigo': 2, 'descricao': 'Parcialmente nublado',
         'icone': 'sol-nuvem', 'local': 'Manaus, Amazonas', 'atualizadaEm': DateTime.now().toUtc().toIso8601String(),
         'credito': 'Clima: Open-Meteo',
+        'dias': [
+          {'data': '2026-10-15', 'minimaC': 24, 'maximaC': 33, 'codigo': 95, 'descricao': 'Trovoadas', 'icone': 'tempestade'},
+        ],
       };
+      cotacoes = [
+        {'moeda': 'USD', 'nome': 'Dólar', 'compra': 5.5150, 'venda': 5.5156, 'variacaoPercentual': 1.02,
+         'cotadaEm': '2026-10-14T11:04:59-03:00', 'boletim': 'Intermediário', 'credito': 'Fonte: Banco Central (PTAX)'},
+      ];
       base = servidor.sincronizacao!;
       servidor.sincronizacao = (q) => {
             ...base(q),
@@ -250,6 +258,7 @@ void main() {
             'versaoNoticias': versaoNoticias(),
             'noticias': q['versaoNoticias'] == versaoNoticias() ? null : noticias,
             'clima': clima,
+            'cotacoes': cotacoes,
           };
     });
 
@@ -297,6 +306,19 @@ void main() {
       expect(await sync.sincronizar(), ResultadoCiclo.semMudanca);
       expect(servidor.ultimaQuery['versaoNoticias'], '', reason: 'versão não gravada: pede tudo de novo');
       expect(sync.situacao.value!.noticias.map((n) => n.id), [2, 1]);
+    });
+
+    test('guarda a previsão dos próximos dias e as cotações', () async {
+      await sync.sincronizar();
+      final s = sync.situacao.value!;
+      expect(s.clima!.dias.single.icone, 'tempestade');
+      expect(s.clima!.dias.single.data, DateTime(2026, 10, 15));
+      expect(s.cotacoes.single.venda, 5.5156);
+      expect(s.cotacoes.single.variacaoPercentual, 1.02);
+
+      cotacoes = null;
+      await sync.sincronizar();
+      expect(sync.situacao.value!.cotacoes, isEmpty, reason: 'cartão desligado: some');
     });
 
     test('clima nulo na resposta apaga o guardado', () async {
