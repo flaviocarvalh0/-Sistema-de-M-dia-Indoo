@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+using Atlas.Infrastructure.Business;
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Dispositivo.Autenticacao;
 using Atlas.Application.Business.Dispositivo.Common;
@@ -176,7 +178,7 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
 
         await using (var context = fixture.CreateDbContext())
         {
-            var telas = await new GetTelasRedeQueryHandler(context, Identity, TimeProvider.System)
+            var telas = await new GetTelasRedeQueryHandler(context, Identity, new ConfiguracaoIndoor(new ConfigurationBuilder().Build()), TimeProvider.System)
                 .Handle(new GetTelasRedeQuery { ParceiroId = _parceiroA }, CancellationToken.None);
 
             telas.Items.Should().HaveCount(3);
@@ -188,7 +190,7 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
             telas.Items.Should().OnlyContain(t => t.ParceiroNome.Length > 0);
 
             var dePoisDeAmanha = new RelogioFixo(agora.AddDays(2));
-            var expirada = await new GetTelaRedeByIdQueryHandler(context, Identity, dePoisDeAmanha)
+            var expirada = await new GetTelaRedeByIdQueryHandler(context, Identity, new ConfiguracaoIndoor(new ConfigurationBuilder().Build()), dePoisDeAmanha)
                 .Handle(new GetTelaRedeByIdQuery(aguardando), CancellationToken.None);
             expirada.CodigoPareamento.Should().BeNull();
         }

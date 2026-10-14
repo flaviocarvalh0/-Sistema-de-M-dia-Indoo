@@ -36,6 +36,18 @@ public sealed record TelaDto : IDtoAuditavel
 
     public DateTimeOffset? CodigoPareamentoExpiraEm { get; init; }
 
+    /// <summary>A TV mostra o QR code do diretório de anunciantes.</summary>
+    public bool DiretorioAtivo { get; init; }
+
+    /// <summary>Código do endereço público (só na visão da operadora).</summary>
+    public string? CodigoDiretorio { get; init; }
+
+    /// <summary>
+    /// Endereço público do diretório (só na visão da operadora); nulo sem
+    /// código ou sem <c>Indoor:UrlPublica</c> configurada na API.
+    /// </summary>
+    public Uri? UrlDiretorio { get; set; }
+
     public DateTimeOffset Created { get; init; }
     public long? CreatedBy { get; init; }
     public string? CreatedByName { get; set; }
@@ -50,6 +62,12 @@ public sealed record TelaDto : IDtoAuditavel
 /// <param name="ExpiraEm">Depois disso é preciso gerar outro.</param>
 /// <param name="Version">Nova versão da tela.</param>
 public sealed record CodigoPareamentoDto(string Codigo, DateTimeOffset ExpiraEm, uint Version);
+
+/// <summary>Endereço novo do diretório.</summary>
+/// <param name="Codigo">10 caracteres.</param>
+/// <param name="Url">Endereço completo; nulo sem <c>Indoor:UrlPublica</c>.</param>
+/// <param name="Version">Nova versão da tela.</param>
+public sealed record CodigoDiretorioDto(string Codigo, Uri? Url, uint Version);
 
 public static class TelaProjecao
 {
@@ -85,6 +103,8 @@ public static class TelaProjecao
             VersaoApp = t.Estado != null ? t.Estado.VersaoApp : null,
             CodigoPareamento = comPareamento && t.CodigoPareamentoExpiraEm > agora ? t.CodigoPareamento : null,
             CodigoPareamentoExpiraEm = comPareamento && t.CodigoPareamentoExpiraEm > agora ? t.CodigoPareamentoExpiraEm : null,
+            DiretorioAtivo = t.DiretorioAtivo,
+            CodigoDiretorio = comPareamento ? t.CodigoDiretorio : null,
             Created = t.Created,
             CreatedBy = t.CreatedBy,
             LastModified = t.LastModified,

@@ -26,6 +26,7 @@ public class RedeTelasTests : IDisposable
             .Options);
 
     private readonly RelogioFixo _relogio = new(Agora);
+    private readonly ConfiguracaoIndoorFake _configuracao = new();
     private readonly long _parceiroA;
     private readonly long _parceiroB;
 
@@ -239,9 +240,9 @@ public class RedeTelasTests : IDisposable
         new CriarTelaCommandHandler(_context).Handle(comando, CancellationToken.None);
 
     private Task<Application.Business.Indoor.Telas.Dtos.TelaDto> Obter(long id) =>
-        new GetTelaRedeByIdQueryHandler(_context, new IdentityNomesFake(), _relogio)
+        new GetTelaRedeByIdQueryHandler(_context, new IdentityNomesFake(), _configuracao, _relogio)
             .Handle(new GetTelaRedeByIdQuery(id), CancellationToken.None);
 
     private Task<Application.Common.Models.Pagination.PaginatedList<Application.Business.Indoor.Telas.Dtos.TelaDto>> Listar(GetTelasRedeQuery query) =>
-        new GetTelasRedeQueryHandler(_context, new IdentityNomesFake(), _relogio).Handle(query, CancellationToken.None);
+        new GetTelasRedeQueryHandler(_context, new IdentityNomesFake(), _configuracao, _relogio).Handle(query, CancellationToken.None);
 }

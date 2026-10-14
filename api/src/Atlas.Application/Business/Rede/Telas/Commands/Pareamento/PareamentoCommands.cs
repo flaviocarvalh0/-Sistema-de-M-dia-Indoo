@@ -1,4 +1,6 @@
 using System.Security.Cryptography;
+using Atlas.Application.Business.Common;
+using Atlas.Application.Business.Diretorio;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Application.Business.Indoor.Telas.Dtos;
 using Atlas.Application.Business.Rede.Telas.Commands.SalvarTela;
@@ -18,6 +20,31 @@ public record GerarCodigoPareamentoCommand(long Id, uint Version) : IRequest<Cod
 /// <summary>Tira a TV da tela: o token dela para de valer na próxima sincronização.</summary>
 [Authorize(Policy = BusinessPermissionKeys.Telas.Update)]
 public record DesvincularTelaCommand(long Id, uint Version) : IRequest<uint>;
+
+/// <summary>
+/// Troca o endereço público do diretório (ex.: o QR foi fotografado e
+/// divulgado fora do estabelecimento). O anterior para de funcionar na hora; a
+/// TV mostra o QR novo na próxima sincronização.
+/// </summary>
+[Authorize(Policy = BusinessPermissionKeys.Telas.Update)]
+public record TrocarCodigoDiretorioCommand(long Id, uint Version) : IRequest<CodigoDiretorioDto>;
+
+public class TrocarCodigoDiretorioCommandHandler(IApplicationDbContext context, IConfiguracaoIndoor configuracao)
+    : IRequestHandler<TrocarCodigoDiretorioCommand, CodigoDiretorioDto>
+{
+    public async Task<CodigoDiretorioDto> Handle(TrocarCodigoDiretorioCommand request, CancellationToken cancellationToken)
+    {
+        var tela = await RegrasTela.CarregarAsync(context, request.Id, cancellationToken);
+        var codigo = await EnderecoDiretorio.GerarCodigoUnicoAsync(context, cancellationToken);
+
+        context.ConferirVersao(tela, request.Version);
+        tela.DefinirCodigoDiretorio(codigo);
+
+        var version = await context.SalvarAsync(tela, cancellationToken);
+
+        return new CodigoDiretorioDto(codigo, EnderecoDiretorio.Montar(configuracao, codigo), version);
+    }
+}
 
 public class GerarCodigoPareamentoCommandHandler(IApplicationDbContext context, TimeProvider timeProvider)
     : IRequestHandler<GerarCodigoPareamentoCommand, CodigoPareamentoDto>

@@ -200,6 +200,16 @@ da API).
     **Pix** (chave, nome e cidade; valor opcional): uma chave inválida ou um
     campo faltando mostra o erro sem salvar. Na TV, o QR aparece por cima do
     anúncio no canto e no tamanho escolhidos.
+14. **Diretório da TV:** como dono, em **Mídias**, use **Aparecer no
+    diretório** no cartão "Diretório das TVs": marque o aceite e preencha
+    WhatsApp, Instagram ou site. Como operadora, edite a tela em **Rede →
+    Telas**, marque **Diretório de anunciantes** e salve; o ícone de pessoas
+    da linha (**Diretório de anunciantes**) mostra o QR code e o endereço.
+    **Abrir página** mostra o que o celular vê: o estabelecimento primeiro e
+    só quem aceitou. Para ler com o celular de verdade, a API precisa de um
+    endereço que o celular alcance em `Indoor:UrlPublica` (em
+    desenvolvimento, `https://localhost:7216` só abre no próprio PC; na rede
+    local use `http://<IP do PC>:5366` com o celular no mesmo Wi-Fi).
 
 ## 8. App das TVs (`player/`)
 
@@ -226,6 +236,9 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
 6. Cadastre um QR code numa mídia (passo 7, item 13): na próxima
    sincronização a TV mostra o QR por cima do anúncio. Leia com o celular a
    uns 2 m da tela; se não ler, use o tamanho **Grande**.
+7. Ligue o diretório na tela (passo 7, item 14): nos anúncios sem QR próprio
+   aparece um QR pequeno no canto inferior direito, "Contatos dos
+   anunciantes". O painel de informações (OK) mostra o endereço.
 
 TV de verdade na rede: veja `player/README.md` (API ouvindo em `*` — não em `0.0.0.0`, que deixa o painel lento —,
 endereço `https://<IP do PC>:7216`).

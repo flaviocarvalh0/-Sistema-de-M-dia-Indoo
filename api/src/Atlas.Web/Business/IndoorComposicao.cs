@@ -18,6 +18,7 @@ public static class IndoorComposicao
     {
         builder.AddBusinessServices();
         builder.Services.AddIndoorRateLimiting();
+        builder.Services.AddSingleton<CacheDiretorio>();
         builder.Services.AddTransient<IStartupFilter, CorsDoPainel>();
 
         // Antes do tratador da plataforma (AddWebServices vem depois no Program.cs).
@@ -73,6 +74,9 @@ public static class IndoorComposicao
                 Janela(httpContext.User.FindFirstValue(ClaimsDispositivo.TelaId)
                     ?? httpContext.Connection.RemoteIpAddress?.ToString()
                     ?? "desconhecido", limite: 30, TimeSpan.FromMinutes(1)));
+
+            options.AddPolicy(IndoorRateLimits.Diretorio, httpContext =>
+                Janela(httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido", limite: 60, TimeSpan.FromMinutes(1)));
         });
     }
 
@@ -96,4 +100,10 @@ public static class IndoorRateLimits
 
     /// <summary>Sincronização: 30 por tela por minuto (o normal é 1 a cada 5 minutos).</summary>
     public const string Sincronizacao = "indoor-sincronizacao";
+
+    /// <summary>
+    /// Diretório público das TVs (página e JSON): 60 por IP por minuto. Quem
+    /// abre a página usa 1; tentar adivinhar códigos (32¹⁰) esbarra aqui.
+    /// </summary>
+    public const string Diretorio = "indoor-diretorio";
 }

@@ -10,6 +10,7 @@ import { LinhaMidia, MidiaDto, TipoMidia, UsoArmazenamento } from '../models/mid
 import { MIDIA_COLUNAS, TIPO_QR_ROTULO, camposQrDaMidia, criarCamposMidia, criarCamposQrCode } from '../configs/midia.config';
 import { preencherCampos } from '../../../shared/utils/form.util';
 import { formatarBytes } from '../../../shared/models/indoor.util';
+import { PerfilPublicoDto, PerfilPublicoService, criarCamposPerfilPublico, telefoneLegivel } from '../../perfil/perfil-publico';
 
 /** Nome físico da tabela — chave do RBAC no front. */
 const ENTIDADE = 'midia';
@@ -46,6 +47,29 @@ const ENTIDADE = 'midia';
               <span class="text-muted">Para trocar o anúncio, use "Substituir arquivo" ou inative uma mídia antes de ativar outra.</span>
             }
           </div>
+        </div>
+      </div>
+    }
+
+    @if (perfil(); as p) {
+      <div class="card mb-3" data-teste="diretorio-perfil">
+        <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2 small">
+          <i class="bi bi-people"></i>
+          <span class="me-auto">
+            <strong>Diretório das TVs:</strong>
+            @if (p.exibirNoDiretorioPublico) {
+              <span class="badge text-bg-success ms-1">você aparece</span>
+              <span class="text-muted ms-1">{{ resumoContatos(p) }}</span>
+            } @else {
+              <span class="badge text-bg-secondary ms-1">você não aparece</span>
+              <span class="text-muted ms-1">Quem lê o QR code da TV vê os contatos dos anunciantes que aceitaram.</span>
+            }
+          </span>
+          @if (p.podeEditar) {
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="editarPerfil(p)">
+              <i class="bi bi-pencil me-1"></i>{{ p.exibirNoDiretorioPublico ? 'Editar perfil público' : 'Aparecer no diretório' }}
+            </button>
+          }
         </div>
       </div>
     }
@@ -152,6 +176,10 @@ export class MidiaListPageComponent implements OnInit {
   tipo = signal<TipoMidia | null>(null);
   ativo = signal<boolean | null>(null);
   uso = signal<UsoArmazenamento | null>(null);
+  /** Perfil público (diretório das TVs). */
+  perfil = signal<PerfilPublicoDto | null>(null);
+  private perfilService = inject(PerfilPublicoService);
+
   /** Mídia com a prévia do QR code aberta. */
   qrAberto = signal<LinhaMidia | null>(null);
 
@@ -200,6 +228,37 @@ export class MidiaListPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregar();
+    this.carregarPerfil();
+  }
+
+  carregarPerfil(): void {
+    this.perfilService.obter().subscribe(p => this.perfil.set(p));
+  }
+
+  resumoContatos(p: PerfilPublicoDto): string {
+    const contatos = [
+      p.whatsappPublico ? `WhatsApp ${telefoneLegivel(p.whatsappPublico)}` : '',
+      p.instagramPublico ? `@${p.instagramPublico}` : '',
+      p.sitePublico ? 'site' : '',
+    ].filter(Boolean);
+    return contatos.length ? `com ${contatos.join(', ')}` : 'só com o nome (e os QR codes dos anúncios)';
+  }
+
+  editarPerfil(p: PerfilPublicoDto): void {
+    const valores = { ...p, whatsappPublico: telefoneLegivel(p.whatsappPublico), instagramPublico: p.instagramPublico ? `@${p.instagramPublico}` : '' };
+    this.formModal.open({
+      // Sem `entidade`: o framework trocaria o título por "Cadastrar …" (o perfil não tem id).
+      titulo: 'Perfil no diretório das TVs',
+      ocultarAcoesCabecalho: true,
+      campos: preencherCampos(criarCamposPerfilPublico(), valores),
+      largura: '640px',
+      errosInline: true,
+      permitirContinuar: false,
+      mostrarBotaoSalvarECopiar: false,
+      registro: p,
+      persistir: (valor, atual: PerfilPublicoDto) => this.perfilService.salvar(valor, atual.version),
+      msgSucesso: 'Perfil salvo. A página das TVs mostra a mudança em até 1 minuto.',
+    }).subscribe(res => { if (res?.recarregar || res?.acao === 'fechar') this.carregarPerfil(); });
   }
 
   carregar(): void {

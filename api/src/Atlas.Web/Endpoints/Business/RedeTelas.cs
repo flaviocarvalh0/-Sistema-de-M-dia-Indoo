@@ -35,6 +35,7 @@ public class RedeTelas : IEndpointGroup
         groupBuilder.MapPost(CriarTela).RequireAuthorization(BusinessPermissionKeys.Telas.Create);
         groupBuilder.MapPut(AtualizarTela, "{id:long}").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
         groupBuilder.MapPost(GerarCodigoPareamento, "{id:long}/codigo-pareamento").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
+        groupBuilder.MapPost(TrocarCodigoDiretorio, "{id:long}/codigo-diretorio").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
         groupBuilder.MapPost(DesvincularTela, "{id:long}/desvincular").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
         groupBuilder.MapPost(AtivarTela, "{id:long}/ativar").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
         groupBuilder.MapPost(InativarTela, "{id:long}/inativar").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
@@ -91,6 +92,14 @@ public class RedeTelas : IEndpointGroup
         ISender sender, long id, [FromQuery] uint version, CancellationToken cancellationToken)
     {
         return TypedResults.Ok(await sender.Send(new GerarCodigoPareamentoCommand(id, version), cancellationToken));
+    }
+
+    [EndpointSummary("Trocar o endereço do diretório")]
+    [EndpointDescription("Gera outro código para a página pública da TV; o endereço anterior para de funcionar e a TV mostra o QR novo na próxima sincronização. Devolve o código, o endereço e a nova versão.")]
+    public static async Task<Ok<CodigoDiretorioDto>> TrocarCodigoDiretorio(
+        ISender sender, long id, [FromQuery] uint version, CancellationToken cancellationToken)
+    {
+        return TypedResults.Ok(await sender.Send(new TrocarCodigoDiretorioCommand(id, version), cancellationToken));
     }
 
     [EndpointSummary("Desvincular TV")]

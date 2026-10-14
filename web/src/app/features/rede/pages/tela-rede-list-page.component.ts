@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { interval } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { QRCodeComponent } from 'angularx-qrcode';
 import {
   AcaoLinha, AtlasAuthService, CampoOption, ConfirmModalService, EventoFiltro, EventoPaginacao,
   FormItemConfig, FormModalService, ListagemDinamicaComponent, QueryParams, ToastService,
@@ -34,7 +35,7 @@ interface CodigoExibido {
 @Component({
   selector: 'app-tela-rede-list-page',
   standalone: true,
-  imports: [ListagemDinamicaComponent, DatePipe, FormsModule],
+  imports: [ListagemDinamicaComponent, DatePipe, FormsModule, QRCodeComponent],
   template: `
     @if (codigo(); as c) {
       <div class="card border-primary mb-3">
@@ -54,6 +55,49 @@ interface CodigoExibido {
           <button type="button" class="btn btn-outline-secondary btn-sm" (click)="fecharCodigo()">
             <i class="bi bi-check2 me-1"></i>Feito
           </button>
+        </div>
+      </div>
+    }
+
+    @if (diretorio(); as t) {
+      <div class="card mb-3" data-teste="diretorio-tela">
+        <div class="card-header d-flex align-items-center">
+          <strong class="me-auto">Diretório de anunciantes — {{ t.nome }} ({{ t.parceiroNome }})</strong>
+          <button type="button" class="btn btn-sm btn-outline-secondary" title="Fechar" (click)="diretorio.set(null)">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="card-body d-flex flex-wrap gap-4 align-items-start">
+          @if (t.urlDiretorio; as url) {
+            <qrcode [qrdata]="url" [width]="200" [margin]="2" errorCorrectionLevel="M"></qrcode>
+          }
+          <div class="flex-grow-1 small" style="min-width: 260px">
+            @if (!t.diretorioAtivo) {
+              <div class="alert alert-secondary py-2">Desligado: a TV não mostra o QR code e o endereço responde "Página indisponível". Ligue em <strong>Editar</strong>.</div>
+            }
+            @if (t.urlDiretorio; as url) {
+              <div class="text-muted">Endereço público (é o que o QR code da TV abre):</div>
+              <div class="font-monospace fs-6 mb-2 text-break" data-teste="url-diretorio">{{ url }}</div>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <a class="btn btn-sm btn-primary" [href]="url" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right me-1"></i>Abrir página</a>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="copiar(url)"><i class="bi bi-clipboard me-1"></i>Copiar endereço</button>
+              </div>
+            } @else {
+              <div class="alert alert-warning py-2">
+                A API está sem endereço público (<code>Indoor:UrlPublica</code>): sem ele a TV não mostra o QR code.
+                Configure com o endereço HTTPS da API na internet (ver docs/IMPLANTACAO.md).
+              </div>
+            }
+            <p class="text-muted mb-2">
+              A página lista os anunciantes da grade de hoje desta TV que aceitaram aparecer (no perfil de cada um),
+              com o estabelecimento primeiro. Mudanças aparecem em até 1 minuto.
+            </p>
+            @if (podeAtualizar()) {
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="trocarEnderecoDiretorio(t)">
+                <i class="bi bi-arrow-repeat me-1"></i>Trocar endereço
+              </button>
+            }
+          </div>
         </div>
       </div>
     }
@@ -124,6 +168,7 @@ export class TelaRedeListPageComponent implements OnInit {
   parceiros = signal<CampoOption<number>[]>([]);
   playlists = signal<CampoOption<number>[]>([]);
   codigo = signal<CodigoExibido | null>(null);
+  diretorio = signal<TelaDto | null>(null);
   private agora = signal(Date.now());
 
   restante = computed(() => Math.max(0, Math.floor(((this.codigo()?.expiraEm ?? 0) - this.agora()) / 1000)));
@@ -140,6 +185,10 @@ export class TelaRedeListPageComponent implements OnInit {
       id: 'codigo', label: (t: LinhaTela) => (t.situacao === 'AguardandoPareamento' ? 'Gerar código' : 'Parear outra TV'),
       icone: 'bi bi-qr-code', classe: 'btn-outline-primary',
       visivel: (t: LinhaTela) => t.ativo && this.podeAtualizar(),
+    },
+    {
+      id: 'diretorio', label: 'Diretório de anunciantes', icone: 'bi bi-people', classe: 'btn-outline-secondary',
+      visivel: (t: LinhaTela) => !!t.codigoDiretorio,
     },
     {
       id: 'desvincular', label: 'Desvincular TV', icone: 'bi bi-link-45deg', classe: 'btn-outline-danger',
@@ -209,6 +258,7 @@ export class TelaRedeListPageComponent implements OnInit {
   onAcaoLinha(ev: { acaoId: string; item: LinhaTela }): void {
     if (ev.acaoId === 'codigo') this.gerarCodigo(ev.item);
     if (ev.acaoId === 'desvincular') this.desvincular(ev.item);
+    if (ev.acaoId === 'diretorio') this.service.getById(ev.item.id).subscribe(t => this.diretorio.set(t));
     if (ev.acaoId === 'ativar') this.definirAtivo(ev.item, true);
     if (ev.acaoId === 'inativar') this.definirAtivo(ev.item, false);
   }
@@ -227,6 +277,31 @@ export class TelaRedeListPageComponent implements OnInit {
       this.service.excluir(t.id).subscribe(() => {
         this.toast.success('Tela excluída.');
         this.carregar();
+      });
+    });
+  }
+
+  copiar(texto: string): void {
+    navigator.clipboard?.writeText(texto).then(
+      () => this.toast.success('Endereço copiado.'),
+      () => this.toast.error('Não foi possível copiar. Selecione o endereço e copie.'),
+    );
+  }
+
+  trocarEnderecoDiretorio(t: TelaDto): void {
+    this.confirmModal.confirm({
+      title: 'Trocar endereço do diretório',
+      message: `O endereço atual de "${t.nome}" para de funcionar (inclusive QR codes impressos ou fotografados). `
+        + 'A TV mostra o QR code novo na próxima sincronização. Confirma?',
+      confirmText: 'Trocar endereço',
+      cancelText: 'Cancelar',
+      iconClass: 'bi bi-arrow-repeat text-danger',
+    }).subscribe(ok => {
+      if (!ok) return;
+      this.service.trocarCodigoDiretorio(t.id, t.version).subscribe(() => {
+        this.toast.success('Endereço trocado.');
+        this.service.getById(t.id).subscribe(atual => this.diretorio.set(atual));
+        this.carregar(false);
       });
     });
   }
@@ -264,7 +339,12 @@ export class TelaRedeListPageComponent implements OnInit {
       registro: tela,
       persistir: (valor, atual) => this.service.salvar(atual?.id ?? null, valor, atual?.version),
       msgSucesso: tela ? 'Tela salva.' : 'Tela cadastrada. Use "Gerar código" para parear a TV.',
-    }).subscribe(res => { if (res?.recarregar || res?.acao === 'fechar') this.carregar(); });
+    }).subscribe(res => {
+      if (res?.recarregar || res?.acao === 'fechar') this.carregar();
+      // O cartão do diretório aberto acompanha a edição (ligar/desligar).
+      const aberto = this.diretorio();
+      if (aberto && res?.recarregar) this.service.getById(aberto.id).subscribe(atual => this.diretorio.set(atual));
+    });
   }
 
   private gerarCodigo(t: LinhaTela): void {
@@ -309,7 +389,7 @@ export class TelaRedeListPageComponent implements OnInit {
     });
   }
 
-  private podeAtualizar(): boolean {
+  podeAtualizar(): boolean {
     return this.atlasAuth.canUpdateEntity(ENTIDADE);
   }
 }

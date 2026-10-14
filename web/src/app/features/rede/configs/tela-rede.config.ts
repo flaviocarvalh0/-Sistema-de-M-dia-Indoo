@@ -9,6 +9,7 @@ export const TELA_REDE_COLUNAS: ColunaDef[] = [
   { campo: 'playlist', titulo: 'Playlist', tipo: 'texto' },
   { campo: 'situacaoRotulo', titulo: 'Conexão', tipo: 'badge', badgeMap: SITUACAO_TELA_BADGE },
   { campo: 'vistaPorUltimo', titulo: 'Última sincronização', tipo: 'texto' },
+  { campo: 'diretorio', titulo: 'Diretório', tipo: 'texto' },
   { campo: 'ativo', titulo: 'Situação', tipo: 'status' },
 ];
 
@@ -29,6 +30,11 @@ export function criarCamposTelaRede(parceiros: CampoOption[], playlists: CampoOp
       type: 'texto', name: 'identificacaoAparelho', label: 'Identificação do aparelho', col: 'col-12',
       placeholder: 'MAC, número de série ou etiqueta',
       hint: 'Só para controle da instalação. A TV é reconhecida pelo pareamento.',
+    },
+    {
+      type: 'checkbox', name: 'diretorioAtivo', label: 'Diretório de anunciantes', col: 'col-12', value: false,
+      placeholder: 'Mostrar na TV o QR code com os contatos dos anunciantes',
+      hint: 'A página lista só os anunciantes desta grade que aceitaram aparecer (no perfil deles). Vale na próxima sincronização.',
     },
   ];
 }

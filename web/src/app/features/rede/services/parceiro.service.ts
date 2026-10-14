@@ -29,6 +29,7 @@ export class ParceiroService extends CrudService<ParceiroDto, number> {
             ...p,
             usoArmazenamento: `${formatarBytes(p.armazenamentoUsadoBytes)} de ${p.cotaArmazenamentoMb} MB`,
             usoMidiasAtivas: `${p.midiasAtivas} de ${p.limiteMidiasAtivas}`,
+            diretorio: p.exibirNoDiretorioPublico ? 'Aparece' : '—',
           })),
         })),
       );

@@ -4,7 +4,7 @@ import '../config/configuracao.dart';
 import '../sincronizacao/sincronizador.dart';
 
 /// Informações da TV (botão OK do controle): conexão, grade, notícias, clima,
-/// servidor e versão, com "Parear de novo".
+/// diretório, servidor e versão, com "Parear de novo".
 ///
 /// Cabe em qualquer tela: as linhas rolam e os botões ficam sempre visíveis
 /// (num celular deitado a altura útil é pouco mais de 300 pontos).
@@ -58,6 +58,7 @@ class PainelInfo extends StatelessWidget {
           : '1 a cada ${s.composicao.noticiaACadaAnuncios} anúncio(s): $noticias notícia(s)'
               '${s.composicao.cartaoTempo ? ' + tempo' : ''}${s.composicao.cartaoCotacoes ? ' + cotações (${s.cotacoes.length})' : ''}'),
       ('Clima', _clima(s)),
+      ('Diretório', s?.diretorio?.url ?? 'desligado na tela'),
       ('Servidor', servidor),
       ('Versão do app', Configuracao.versaoApp),
     ];

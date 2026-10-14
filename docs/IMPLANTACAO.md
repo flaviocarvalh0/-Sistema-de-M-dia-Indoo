@@ -14,6 +14,8 @@ Para rodar na sua máquina, veja [COMO_TESTAR.md](COMO_TESTAR.md).
                              ▲
   TVs (app Android) ──https──┘ download (URL assinada, 24 h)
          └──────────https──────────►  API  (pareamento e sincronização)
+
+  Celular (QR da TV, 4G) ──https──►  API  /d/{codigo}  (diretório público)
 ```
 
 Topologia recomendada: **dois subdomínios do mesmo domínio**, ambos com
@@ -23,6 +25,13 @@ certificado válido:
 |---|---|
 | API | `https://api.suaempresa.com.br` |
 | Painel | `https://painel.suaempresa.com.br` |
+
+O **diretório das TVs** (ADR-018) é uma página servida pela própria API em
+`/d/{codigo}`: quem lê o QR code da TV abre no celular, pelo 4G. Por isso a
+**API precisa estar na internet com HTTPS** (o painel pode ficar restrito).
+O endereço vai em `Indoor__UrlPublica`. Prefira um endereço curto
+(ex.: `https://tv.suaempresa.com.br`, apontando para a mesma API): quanto
+mais curto, menos denso o QR code e mais longe ele é lido.
 
 O login do painel usa cookie `Secure` com `SameSite=None`. No mesmo domínio
 (subdomínios), o navegador não trata o cookie como de terceiros.
@@ -69,9 +78,10 @@ Linux, use o `Environment=` do serviço systemd.
 | `Jwt__Key` | sim | Frase aleatória com 64 caracteres ou mais. **Diferente** da de desenvolvimento. Trocar depois exige parear todas as TVs de novo |
 | `PlatformSettings__InitialAdminPassword` | 1ª subida | Senha inicial do `admin` (ver 2.4) |
 | `Indoor__UrlPainel` | sim | `https://painel.suaempresa.com.br`. Vai nos e-mails e é a origem liberada no CORS |
+| `Indoor__UrlPublica` | para o diretório | Endereço HTTPS da API na internet, ex.: `https://tv.suaempresa.com.br`. Base do QR code do diretório (`/d/{codigo}`). Vazio: as TVs não mostram o QR do diretório e o painel avisa |
 | `Indoor__Armazenamento__Supabase__Url` | sim | `https://<projeto>.supabase.co` |
 | `Indoor__Armazenamento__Supabase__ChaveServico` | sim | Chave `service_role`. **Segredo crítico**: nunca no painel nem nas TVs |
-| `Indoor__ProxiesConfiaveis__0` | atrás de proxy | IP do proxy reverso (ex.: `127.0.0.1` com nginx na mesma máquina). Sem ele, o limite de tentativas de pareamento vê só o IP do proxy. No IIS *in-process* não é necessário |
+| `Indoor__ProxiesConfiaveis__0` | atrás de proxy | IP do proxy reverso (ex.: `127.0.0.1` com nginx na mesma máquina). Sem ele, os limites por IP (pareamento e diretório) veem só o IP do proxy. No IIS *in-process* não é necessário |
 | `Indoor__Dispositivo__IntervaloSincronizacaoSegundos` | não | Padrão `60` (mínimo 30). A TV aparece Offline depois de 5 min sem sincronizar |
 | `Indoor__Dispositivo__ValidadeTokenDias` | não | Padrão `30` |
 | `Indoor__Dispositivo__ValidadeUrlDownloadHoras` | não | Padrão `24` |
@@ -215,6 +225,9 @@ APK só instalam por cima se forem assinadas com a mesma chave.
       ambiente (nada em `appsettings`).
 - [ ] `Jwt:Key` e senha do `admin` diferentes das de desenvolvimento.
 - [ ] `Indoor:UrlPainel` com o endereço real do painel.
+- [ ] `Indoor:UrlPublica` com o endereço HTTPS da API na internet. Teste no
+      celular **pelo 4G** (Wi-Fi desligado): ligue o diretório numa tela, abra
+      **Diretório de anunciantes** em Rede → Telas e leia o QR code.
 - [ ] Admin e ícones criados (2.4) e `studio-indoor.sql` aplicado (2.5).
 - [ ] SMTP configurado e testado.
 - [ ] Bucket `midias` privado no Supabase. Chave `service_role` só na API.
@@ -229,6 +242,9 @@ APK só instalam por cima se forem assinadas com a mesma chave.
 - **CORS:** a lista fixa do `Program.cs` da plataforma só tem endereços de
   desenvolvimento. A origem do painel em produção é liberada pelo produto a
   partir de `Indoor:UrlPainel` (`Atlas.Web/Business/CorsDoPainel.cs`).
+- **Diretório público:** `/d/{codigo}` e `/api/v1/publico/diretorio/{codigo}`
+  são anônimos por decisão (ADR-018), com limite de 60 acessos por minuto por
+  IP e cache de 60 s. Mostram só o que cada parceiro aceitou publicar.
 - **Documentação da API exposta:** a plataforma publica `/scalar` e
   `/openapi` em qualquer ambiente. Se não quiser expor, bloqueie esses
   caminhos no proxy ou no IIS.

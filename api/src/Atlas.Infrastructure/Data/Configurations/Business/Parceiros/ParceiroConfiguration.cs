@@ -24,6 +24,14 @@ public class ParceiroConfiguration : IEntityTypeConfiguration<Parceiro>
             table.HasCheckConstraint("ck_parceiro_cota", "cota_armazenamento_mb BETWEEN 1 AND 1048576");
 
             table.HasCheckConstraint("ck_parceiro_limite_midias_ativas", "limite_midias_ativas BETWEEN 1 AND 1000");
+
+            // Diretório das TVs: o aceite tem data; os contatos já vêm normalizados.
+            table.HasCheckConstraint(
+                "ck_parceiro_diretorio_aceite",
+                "(exibir_no_diretorio_publico) = (diretorio_aceito_em IS NOT NULL)");
+            table.HasCheckConstraint("ck_parceiro_whatsapp_publico", "whatsapp_publico IS NULL OR whatsapp_publico ~ '^[0-9]{12,15}$'");
+            table.HasCheckConstraint("ck_parceiro_instagram_publico", "instagram_publico IS NULL OR instagram_publico ~ '^[A-Za-z0-9._]{1,30}$'");
+            table.HasCheckConstraint("ck_parceiro_site_publico", "site_publico IS NULL OR site_publico ~ '^https?://'");
         });
 
         builder.HasIndex(p => p.Situacao);
@@ -36,6 +44,11 @@ public class ParceiroConfiguration : IEntityTypeConfiguration<Parceiro>
         builder.Property(p => p.Cidade).HasMaxLength(100);
         builder.Property(p => p.MotivoBloqueio).HasMaxLength(500);
         builder.Property(p => p.ObservacaoInterna).HasColumnType("text");
+        builder.Property(p => p.Categoria).HasMaxLength(Parceiro.TamanhoMaximoCategoria);
+        builder.Property(p => p.DescricaoPublica).HasMaxLength(Parceiro.TamanhoMaximoDescricaoPublica);
+        builder.Property(p => p.WhatsappPublico).HasMaxLength(15);
+        builder.Property(p => p.InstagramPublico).HasMaxLength(30);
+        builder.Property(p => p.SitePublico).HasMaxLength(300);
 
         builder.Property(p => p.FusoHorario)
             .HasMaxLength(64)

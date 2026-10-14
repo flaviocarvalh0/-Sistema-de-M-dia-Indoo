@@ -37,6 +37,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Plano | "Mídias ativas: x de y" na lista, com aviso de plano completo também na página de envio |
 | Substituir arquivo | Troca o vídeo/imagem de uma mídia sem tirá-la das grades nem mudar a situação; as TVs baixam o novo pelo hash. O arquivo antigo sai do storage |
 | QR code | Opcional, na aba "QR code" da edição. O formulário pede só o que o tipo precisa: **Link** (endereço), **WhatsApp** (telefone e mensagem inicial), **Instagram** (usuário), **Telefone** (número) ou **Pix** (chave, nome e cidade de quem recebe e valor opcional — vira um Pix copia e cola do Banco Central). Legenda, canto da tela e tamanho escolhidos pelo parceiro. "Ver QR code" mostra a prévia para testar com o celular |
+| Diretório das TVs | Cartão no topo de Mídias: **Aparecer no diretório** (aceite do dono, desligado por padrão) com categoria, descrição, WhatsApp, Instagram e site. Os QR codes dos anúncios em exibição também viram botões ("Copiar Pix" no Pix) |
 | Pré-visualizar | Link temporário de 1 h |
 | Excluir | Só mídia fora das grades; o arquivo sai do storage |
 | Espaço usado | Barra com uso e cota do parceiro |
@@ -88,6 +89,7 @@ escolhe a playlist.
 | Trocar estabelecimento ou playlist | Vale na próxima sincronização; a TV continua pareada |
 | Ativar / inativar | Inativa: a TV continua no que já baixou, sem receber grade nova |
 | Copiar | "Clonar" cria outra tela no mesmo estabelecimento e local |
+| Diretório de anunciantes | Liga na edição da tela: a TV mostra um QR code fixo que abre uma página pública com os anunciantes da grade de hoje que aceitaram aparecer, o estabelecimento primeiro. **Diretório de anunciantes** na linha mostra o QR (para testar ou imprimir), abre a página e permite **Trocar endereço** (o anterior para de funcionar) |
 
 ## Onde meus anúncios passam (parceiro)
 
@@ -110,6 +112,7 @@ escolhe a playlist.
 | Relógio e clima | No canto da tela: hora do estabelecimento e temperatura da cidade dele (Open-Meteo, com crédito). O clima some depois de 6 h sem atualizar |
 | Cartões | Previsão do tempo com ícones e cotações com seta de alta ou baixa, em tela cheia, com o crédito da fonte. Funcionam offline enquanto o dado valer (tempo 6 h, cotação 4 dias) |
 | QR code | Por cima do anúncio, no canto escolhido, num cartão branco com a legenda; gerado na TV, funciona offline. O médio ocupa 30% da altura da tela |
+| QR do diretório | Com o diretório ligado na tela: QR pequeno no canto inferior direito, nos anúncios sem QR próprio e na tela de espera |
 | Tela de espera | Sem nada para hoje, mostra o nome da tela |
 | Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, notícias, clima, servidor e versão |
 | Sempre no ar | Tela cheia, sempre acesa, abre sozinho ao ligar a TV |
@@ -125,6 +128,11 @@ escolhe a playlist.
 - O pareamento tem limite de 10 tentativas por IP a cada 5 minutos. A
   sincronização tem limite de 30 por minuto por tela.
 - Histórico de alterações de parceiros, telas, mídias e playlists.
+- Diretório das TVs (ADR-018): página pública sem login, mas com código
+  aleatório por tela (não o id), limite de 60 acessos por minuto por IP e
+  cache de 60 s. Mostra só quem aceitou e só os dados do perfil público e
+  dos QR codes; fora dos buscadores (`noindex`) e sem dizer ao site do
+  anunciante de qual TV veio a visita.
 
 ## Fora do escopo atual
 
@@ -134,5 +142,7 @@ escolhe a playlist.
 - Operadora acessar o painel de um parceiro ("acessar como").
 - Relatório de exibições (prova de veiculação).
 - Contagem de leituras do QR code (o QR é estático e leva direto ao destino).
+- Diretório: contagem de acessos e de cliques por anunciante, e o logo no
+  cartão (fase 2 da Entrega 5).
 - Fontes de notícias por playlist (hoje as fontes ativas valem para toda a rede).
 - Agendamento por horário do dia (hoje: dia da semana e período).

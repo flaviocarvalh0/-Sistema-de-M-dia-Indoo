@@ -28,6 +28,11 @@ public sealed record ParceiroDto : IDtoAuditavel
 
     public int QuantidadeTelas { get; init; }
     public SituacaoParceiro Situacao { get; init; }
+
+    /// <summary>O parceiro aceitou aparecer no diretório das TVs (só ele muda; aqui é leitura).</summary>
+    public bool ExibirNoDiretorioPublico { get; init; }
+
+    public DateTimeOffset? DiretorioAceitoEm { get; init; }
     public string? MotivoBloqueio { get; init; }
     public string? ObservacaoInterna { get; init; }
     public DateTimeOffset Created { get; init; }
@@ -59,6 +64,8 @@ public static class ParceiroProjecao
             // Telas que o parceiro hospeda (o estabelecimento onde a TV está).
             QuantidadeTelas = context.Telas.Count(t => t.ParceiroId == p.Id),
             Situacao = p.Situacao,
+            ExibirNoDiretorioPublico = p.ExibirNoDiretorioPublico,
+            DiretorioAceitoEm = p.DiretorioAceitoEm,
             MotivoBloqueio = p.MotivoBloqueio,
             ObservacaoInterna = p.ObservacaoInterna,
             Created = p.Created,

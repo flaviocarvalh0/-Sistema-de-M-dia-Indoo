@@ -85,6 +85,7 @@ class BancoLocal {
       composicao: _json(mapa['composicao'], Composicao.fromJson) ?? const Composicao(),
       clima: _json(mapa['clima'], Clima.fromJson),
       cotacoes: _lista(mapa['cotacoes'], Cotacao.fromJson),
+      diretorio: _json(mapa['diretorio'], DiretorioTv.fromJson),
     );
   }
 
@@ -97,6 +98,7 @@ class BancoLocal {
     bool gravarClima = false,
     Clima? clima,
     List<Cotacao>? cotacoes,
+    DiretorioTv? diretorio,
   }) =>
       _db.transaction((txn) async {
         if (fusoHorario != null) await _gravar(txn, 'fusoHorario', fusoHorario);
@@ -111,6 +113,14 @@ class BancoLocal {
             await txn.delete('estado', where: 'chave = ?', whereArgs: ['cotacoes']);
           } else {
             await _gravar(txn, 'cotacoes', jsonEncode([for (final c in cotacoes) c.toJson()]));
+          }
+        }
+        // Diretório: vem em toda resposta 200 quando ligado; nulo, apaga (desligado na tela).
+        if (gravarClima) {
+          if (diretorio == null) {
+            await txn.delete('estado', where: 'chave = ?', whereArgs: ['diretorio']);
+          } else {
+            await _gravar(txn, 'diretorio', jsonEncode(diretorio.toJson()));
           }
         }
         if (gravarClima) {
@@ -269,6 +279,7 @@ class EstadoLocal {
     this.composicao = const Composicao(),
     this.clima,
     this.cotacoes = const [],
+    this.diretorio,
   });
 
   final String? versaoGrade;
@@ -279,4 +290,5 @@ class EstadoLocal {
   final Composicao composicao;
   final Clima? clima;
   final List<Cotacao> cotacoes;
+  final DiretorioTv? diretorio;
 }

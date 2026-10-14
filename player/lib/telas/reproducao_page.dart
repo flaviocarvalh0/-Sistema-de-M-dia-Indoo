@@ -188,7 +188,12 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                 child: KeyedSubtree(key: ValueKey(_loop.geracao), child: _conteudo(situacao)),
               ),
               // QR code do anúncio na tela (só durante o anúncio, não nas notícias).
-              if (_loop.atual?.qrCode case final qr?) QrCodeSobreposto(key: ValueKey('qr-${_loop.geracao}'), qrCode: qr),
+              if (_loop.atual?.qrCode case final qr?)
+                QrCodeSobreposto(key: ValueKey('qr-${_loop.geracao}'), qrCode: qr)
+              // Sem QR próprio do anúncio, o do diretório da TV (ADR-018). Fica
+              // fora das notícias e dos cartões, que têm título e crédito nos cantos.
+              else if (situacao?.diretorio case final diretorio? when _loop.noticia == null && _loop.cartao == null)
+                QrCodeSobreposto(key: const ValueKey('qr-diretorio'), qrCode: diretorio.qrCode),
               if (situacao != null)
                 SobreposicaoRelogioClima(
                   // O QR code no canto superior direito empurra o relógio para a esquerda.

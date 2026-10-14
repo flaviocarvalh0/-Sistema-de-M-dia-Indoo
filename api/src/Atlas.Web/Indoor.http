@@ -185,7 +185,8 @@ Content-Type: application/json
   "nome": "Recepção",
   "localizacao": "Entrada",
   "identificacaoAparelho": "SN-0001",
-  "playlistId": {{playlist.response.body.$}}
+  "playlistId": {{playlist.response.body.$}},
+  "diretorioAtivo": true
 }
 
 ###
@@ -231,3 +232,37 @@ Authorization: Bearer {{tv.response.body.token}}
 
 ### 15. No painel do dono a tela aparece Online
 GET {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}
+
+### ===================== Diretório da TV (Entrega 5, ADR-018) =====================
+
+### 16. O dono aceita aparecer no diretório e publica os contatos (logado como dono)
+# @name perfil
+GET {{api}}/api/v1/business/parceiro/perfil
+
+###
+PUT {{api}}/api/v1/business/parceiro/perfil
+Content-Type: application/json
+
+{
+  "exibirNoDiretorioPublico": true,
+  "categoria": "Academia",
+  "descricaoPublica": "Musculação e funcional, das 6h às 22h",
+  "whatsappPublico": "(92) 99999-0000",
+  "instagramPublico": "@academiacentro",
+  "sitePublico": "https://academiacentro.com.br",
+  "version": {{perfil.response.body.version}}
+}
+
+### 17. A TV recebe o endereço do diretório (campo diretorio) na sincronização
+GET {{api}}/api/v1/dispositivo/sincronizacao
+Authorization: Bearer {{tv.response.body.token}}
+
+### 18. O que o celular vê: abra {{api}}/d/<codigoDiretorio> no navegador. Em JSON:
+# @name telaDiretorio
+GET {{api}}/api/v1/business/rede/telas/{{tela.response.body.$}}
+
+###
+GET {{api}}/api/v1/publico/diretorio/{{telaDiretorio.response.body.codigoDiretorio}}
+
+### 19. Trocar o endereço (o anterior para de funcionar)
+POST {{api}}/api/v1/business/rede/telas/{{tela.response.body.$}}/codigo-diretorio?version={{telaDiretorio.response.body.version}}

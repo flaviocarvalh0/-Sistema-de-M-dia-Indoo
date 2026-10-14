@@ -669,6 +669,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("ativo");
 
+                    b.Property<string>("CodigoDiretorio")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("codigo_diretorio");
+
                     b.Property<string>("CodigoPareamento")
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)")
@@ -685,6 +690,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.Property<long?>("CreatedBy")
                         .HasColumnType("bigint")
                         .HasColumnName("created_by");
+
+                    b.Property<bool>("DiretorioAtivo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("diretorio_ativo");
 
                     b.Property<string>("DispositivoId")
                         .HasMaxLength(100)
@@ -742,6 +751,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_tela");
 
+                    b.HasIndex("CodigoDiretorio")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tela_codigo_diretorio")
+                        .HasFilter("codigo_diretorio IS NOT NULL");
+
                     b.HasIndex("CodigoPareamento")
                         .IsUnique()
                         .HasDatabaseName("ix_tela_codigo_pareamento")
@@ -756,7 +770,11 @@ namespace Atlas.Infrastructure.Data.Migrations
 
                     b.ToTable("tela", "indoor", t =>
                         {
+                            t.HasCheckConstraint("ck_tela_codigo_diretorio", "codigo_diretorio IS NULL OR codigo_diretorio ~ '^[A-Z0-9]{10}$'");
+
                             t.HasCheckConstraint("ck_tela_codigo_pareamento", "codigo_pareamento IS NULL OR (codigo_pareamento ~ '^[A-Z0-9]{8}$' AND codigo_pareamento_expira_em IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_tela_diretorio", "NOT diretorio_ativo OR codigo_diretorio IS NOT NULL");
 
                             t.HasCheckConstraint("ck_tela_pareada_em", "(dispositivo_id IS NULL) = (pareada_em IS NULL)");
                         });
@@ -770,6 +788,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Categoria")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("categoria");
 
                     b.Property<string>("Cidade")
                         .HasMaxLength(100)
@@ -790,6 +813,15 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("DescricaoPublica")
+                        .HasMaxLength(140)
+                        .HasColumnType("character varying(140)")
+                        .HasColumnName("descricao_publica");
+
+                    b.Property<DateTimeOffset?>("DiretorioAceitoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("diretorio_aceito_em");
+
                     b.Property<string>("Documento")
                         .HasMaxLength(14)
                         .HasColumnType("character varying(14)")
@@ -801,6 +833,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(254)")
                         .HasColumnName("email");
 
+                    b.Property<bool>("ExibirNoDiretorioPublico")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exibir_no_diretorio_publico");
+
                     b.Property<string>("FusoHorario")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -808,6 +844,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(64)")
                         .HasDefaultValue("America/Sao_Paulo")
                         .HasColumnName("fuso_horario");
+
+                    b.Property<string>("InstagramPublico")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("instagram_publico");
 
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone")
@@ -843,6 +884,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("observacao_interna");
 
+                    b.Property<string>("SitePublico")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("site_publico");
+
                     b.Property<int>("Situacao")
                         .HasColumnType("integer")
                         .HasColumnName("situacao");
@@ -858,6 +904,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
+                    b.Property<string>("WhatsappPublico")
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("whatsapp_publico");
+
                     b.HasKey("Id")
                         .HasName("pk_parceiro");
 
@@ -868,13 +919,21 @@ namespace Atlas.Infrastructure.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_parceiro_cota", "cota_armazenamento_mb BETWEEN 1 AND 1048576");
 
+                            t.HasCheckConstraint("ck_parceiro_diretorio_aceite", "(exibir_no_diretorio_publico) = (diretorio_aceito_em IS NOT NULL)");
+
                             t.HasCheckConstraint("ck_parceiro_documento", "documento IS NULL OR documento ~ '^[0-9]{11}$' OR documento ~ '^[0-9A-Z]{12}[0-9]{2}$'");
+
+                            t.HasCheckConstraint("ck_parceiro_instagram_publico", "instagram_publico IS NULL OR instagram_publico ~ '^[A-Za-z0-9._]{1,30}$'");
 
                             t.HasCheckConstraint("ck_parceiro_limite_midias_ativas", "limite_midias_ativas BETWEEN 1 AND 1000");
 
                             t.HasCheckConstraint("ck_parceiro_motivo_bloqueio", "situacao <> 2 OR motivo_bloqueio IS NOT NULL");
 
+                            t.HasCheckConstraint("ck_parceiro_site_publico", "site_publico IS NULL OR site_publico ~ '^https?://'");
+
                             t.HasCheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{10,11}$'");
+
+                            t.HasCheckConstraint("ck_parceiro_whatsapp_publico", "whatsapp_publico IS NULL OR whatsapp_publico ~ '^[0-9]{12,15}$'");
                         });
                 });
 

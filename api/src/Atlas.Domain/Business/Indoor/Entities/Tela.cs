@@ -21,6 +21,9 @@ public class Tela : BaseAuditableEntity, IDoParceiro
 {
     public const int TamanhoCodigoPareamento = 8;
 
+    /// <summary>Tamanho do código do endereço público do diretório (<c>/d/{codigo}</c>).</summary>
+    public const int TamanhoCodigoDiretorio = 10;
+
     public static readonly TimeSpan ValidadeCodigoPareamento = TimeSpan.FromHours(24);
 
     /// <summary>
@@ -49,6 +52,32 @@ public class Tela : BaseAuditableEntity, IDoParceiro
     public Playlist? Playlist { get; set; }
 
     public bool Ativo { get; set; } = true;
+
+    // ── Diretório de anunciantes ────────────────────────────────────────
+
+    /// <summary>
+    /// A TV mostra o QR code do diretório: uma página pública com os contatos
+    /// dos anunciantes desta tela que aceitaram aparecer nela (ADR-018).
+    /// </summary>
+    public bool DiretorioAtivo { get; set; }
+
+    /// <summary>
+    /// Código aleatório do endereço público (<c>/d/{codigo}</c>), no lugar do
+    /// id (sequencial, daria para listar a rede inteira). Criado ao ligar o
+    /// diretório pela primeira vez; desligar mantém o código, para o QR
+    /// impresso continuar valendo. Trocar invalida o endereço anterior.
+    /// </summary>
+    public string? CodigoDiretorio { get; private set; }
+
+    public void DefinirCodigoDiretorio(string codigo)
+    {
+        if (codigo.Length != TamanhoCodigoDiretorio)
+        {
+            throw new InvalidOperationException($"O código do diretório deve ter {TamanhoCodigoDiretorio} caracteres.");
+        }
+
+        CodigoDiretorio = codigo;
+    }
 
     // ── Pareamento ──────────────────────────────────────────────────────
 

@@ -49,8 +49,16 @@ business.parceiro ──< business.usuario_parceiro >── platform.user
 | `situacao` | int | 1 Ativo, 2 Bloqueado (exige `motivo_bloqueio`) |
 | `motivo_bloqueio` | varchar(500) | |
 | `observacao_interna` | text | só a operadora vê |
+| `exibir_no_diretorio_publico` | bool | aceite do próprio parceiro para aparecer no diretório das TVs (padrão falso) |
+| `diretorio_aceito_em` | timestamptz | presente se e só se há aceite (registro do consentimento) |
+| `categoria` | varchar(40) | perfil público |
+| `descricao_publica` | varchar(140) | perfil público |
+| `whatsapp_publico` | varchar(15) | só dígitos com o país, 12 a 15 |
+| `instagram_publico` | varchar(30) | usuário, sem `@` |
+| `site_publico` | varchar(300) | começa com `http(s)://` |
 
-Histórico ativo. Permissões `Parceiros.*` (operadora).
+Histórico ativo. Permissões `Parceiros.*` (operadora). O perfil público é
+editado pelo próprio dono (`/parceiro/perfil`, ADR-018).
 
 ### `business.usuario_parceiro`
 
@@ -99,6 +107,8 @@ posição na lista vira a ordem.
 | `dispositivo_id` | varchar(100) | nulo = sem TV |
 | `pareada_em` | timestamptz | presente se e só se há dispositivo |
 | `versao_credencial` | int | vai no token da TV; incrementa ao parear/desvincular |
+| `diretorio_ativo` | bool | a TV mostra o QR code do diretório (exige `codigo_diretorio`) |
+| `codigo_diretorio` | varchar(10) | `[A-Z0-9]{10}`, único entre os não nulos; endereço público `/d/{codigo}` |
 
 Histórico ativo. Permissões `Telas.*`.
 

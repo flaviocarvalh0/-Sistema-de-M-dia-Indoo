@@ -600,11 +600,34 @@ public class DispositivoTests : IDisposable
         await acao.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
-    private Task<SincronizacaoDto> Sincronizar(CredencialFake credencial, GetSincronizacaoQuery query) =>
+    private Task<SincronizacaoDto> Sincronizar(CredencialFake credencial, GetSincronizacaoQuery query, ConfiguracaoIndoorFake? configuracao = null) =>
         new GetSincronizacaoQueryHandler(
-                _context, Atual(credencial), _armazenamento, _gerador, new ConfiguracaoIndoorFake(), _relogio,
+                _context, Atual(credencial), _armazenamento, _gerador, configuracao ?? new ConfiguracaoIndoorFake(), _relogio,
                 NullLogger<GetSincronizacaoQueryHandler>.Instance)
             .Handle(query, CancellationToken.None);
+
+    [Fact]
+    public async Task Sincronizar_DiretorioLigadoVemComOEnderecoPublico()
+    {
+        var credencial = await ParearComGradeAsync((Midia("Promo"), DiasSemana.Todos));
+
+        (await Sincronizar(credencial, new GetSincronizacaoQuery())).Diretorio.Should().BeNull("o diretório nasce desligado");
+
+        _tela.DefinirCodigoDiretorio("ABCDEFGH23");
+        _tela.DiretorioAtivo = true;
+        await _context.SaveChangesAsync();
+        var ligado = await Sincronizar(credencial, new GetSincronizacaoQuery());
+        ligado.Diretorio!.Url.Should().Be("https://tv.indoor.test/d/ABCDEFGH23");
+        ligado.Diretorio.Legenda.Should().Be(DiretorioSincronizacaoDto.LegendaPadrao);
+
+        // Mudar o diretório não reenvia a grade.
+        var mesmaGrade = await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoGrade = ligado.VersaoGrade });
+        mesmaGrade.Alterada.Should().BeFalse();
+        mesmaGrade.Diretorio.Should().NotBeNull();
+
+        var semUrlPublica = await Sincronizar(credencial, new GetSincronizacaoQuery(), new ConfiguracaoIndoorFake { UrlPublica = null });
+        semUrlPublica.Diretorio.Should().BeNull("sem endereço público a TV não teria o que mostrar");
+    }
 
     /// <summary>Pareia a TV e põe a playlist com os itens informados na tela.</summary>
     private async Task<CredencialFake> ParearComGradeAsync(params (Midia Midia, DiasSemana Dias)[] itens)

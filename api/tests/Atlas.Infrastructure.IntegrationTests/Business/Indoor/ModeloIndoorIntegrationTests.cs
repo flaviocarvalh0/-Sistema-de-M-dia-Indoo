@@ -1,3 +1,4 @@
+using Atlas.Application.Business.Diretorio;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
 using Atlas.Domain.Business.Parceiros.Entities;
@@ -246,6 +247,64 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
 
             (await context.EstadosTela.AnyAsync(e => e.TelaId == telaId)).Should().BeFalse();
         }
+    }
+
+    [Fact]
+    public async Task Diretorio_DeveSairDoPostgresComOHostPrimeiroESoQuemAceitou()
+    {
+        var codigo = ("D" + _sufixo.ToUpperInvariant().Replace('0', 'A').Replace('1', 'B') + "Z")[..Tela.TamanhoCodigoDiretorio];
+        var midia = await CriarMidiaAsync();
+
+        await using (var context = fixture.CreateDbContext())
+        {
+            var host = await context.Parceiros.SingleAsync(p => p.Id == _parceiroId);
+            host.DefinirExibicaoNoDiretorio(true, DateTimeOffset.UtcNow);
+            host.WhatsappPublico = "5592999990000";
+            var playlist = new Playlist { Nome = $"Grade {_sufixo}" };
+            playlist.DefinirItens([new ItemPlaylistInformado(null, midia, DiasSemana.Todos)]);
+            var tela = new Tela { ParceiroId = _parceiroId, Nome = $"Balcão {_sufixo}", Playlist = playlist, DiretorioAtivo = true };
+            tela.DefinirCodigoDiretorio(codigo);
+            context.Telas.Add(tela);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = fixture.CreateDbContext())
+        {
+            var diretorio = await new GetDiretorioPublicoQueryHandler(context, TimeProvider.System)
+                .Handle(new GetDiretorioPublicoQuery(codigo.ToLowerInvariant()), CancellationToken.None);
+
+            diretorio.Anunciantes.Should().ContainSingle();
+            diretorio.Anunciantes[0].Anfitriao.Should().BeTrue();
+            diretorio.Anunciantes[0].Contatos.Single().Valor.Should().Be("https://wa.me/5592999990000");
+        }
+    }
+
+    [Theory]
+    [InlineData("ck_tela_diretorio")]
+    [InlineData("ck_parceiro_diretorio_aceite")]
+    [InlineData("ck_parceiro_whatsapp_publico")]
+    public async Task Diretorio_DeveRecusarDadosInvalidosNoBanco(string restricao)
+    {
+        await using var context = fixture.CreateDbContext();
+
+        Func<Task> acao = restricao switch
+        {
+            // Diretório ligado sem endereço.
+            "ck_tela_diretorio" => () =>
+            {
+                context.Telas.Add(new Tela { ParceiroId = _parceiroId, Nome = $"TV {_sufixo}", DiretorioAtivo = true });
+                return context.SaveChangesAsync();
+            },
+            // Aceite sem data.
+            "ck_parceiro_diretorio_aceite" => () => context.Database.ExecuteSqlAsync(
+                $"UPDATE business.parceiro SET exibir_no_diretorio_publico = true WHERE id = {_parceiroId}"),
+            _ => () => context.Database.ExecuteSqlAsync(
+                $"UPDATE business.parceiro SET whatsapp_publico = '92 9999' WHERE id = {_parceiroId}"),
+        };
+
+        var excecao = await acao.Should().ThrowAsync<Exception>();
+        (excecao.Which as PostgresException ?? excecao.Which.InnerException as PostgresException)!
+            .ConstraintName.Should().Be(restricao);
     }
 
     private async Task<long> CriarMidiaAsync(DateOnly? inicio = null, DateOnly? fim = null)

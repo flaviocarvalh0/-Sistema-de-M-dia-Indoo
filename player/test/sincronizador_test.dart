@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:midia_indoor_player/dados/api_dispositivo.dart';
 import 'package:midia_indoor_player/dados/banco_local.dart';
 import 'package:midia_indoor_player/dados/credenciais.dart';
+import 'package:midia_indoor_player/dados/modelos.dart';
 import 'package:midia_indoor_player/sincronizacao/baixador_midia.dart';
 import 'package:midia_indoor_player/sincronizacao/sincronizador.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -337,6 +338,26 @@ void main() {
       expect(s.noticias, isEmpty);
       expect(s.clima, isNull);
     });
+  });
+
+  test('diretório: guarda o QR da TV, sobrevive sem rede e some quando desligado', () async {
+    final base = servidor.sincronizacao!;
+    Map<String, dynamic>? diretorio = {'url': 'https://tv.rede.test/d/ABCDEFGH23', 'legenda': 'Contatos dos anunciantes'};
+    servidor.sincronizacao = (q) => {...base(q), 'diretorio': diretorio};
+
+    await sync.sincronizar();
+    expect(sync.situacao.value!.diretorio!.url, 'https://tv.rede.test/d/ABCDEFGH23');
+    expect(sync.situacao.value!.diretorio!.qrCode.tamanho, TamanhoQrCode.pequeno);
+
+    // Sem rede: continua com o último recebido.
+    servidor.statusSincronizacao = 503;
+    expect(await sync.sincronizar(), ResultadoCiclo.semConexao);
+    expect(sync.situacao.value!.diretorio, isNotNull);
+
+    servidor.statusSincronizacao = 200;
+    diretorio = null;
+    await sync.sincronizar();
+    expect(sync.situacao.value!.diretorio, isNull);
   });
 
   test('banco da versão 1 é atualizado sem perder a grade', () async {

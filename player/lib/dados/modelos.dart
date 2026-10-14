@@ -410,6 +410,26 @@ class Cotacao {
       };
 }
 
+/// QR code fixo do diretório de anunciantes da TV (ADR-018): a página
+/// pública com os contatos dos anunciantes que aceitaram aparecer.
+class DiretorioTv {
+  const DiretorioTv({required this.url, this.legenda = 'Contatos dos anunciantes'});
+
+  factory DiretorioTv.fromJson(Map<String, dynamic> json) => DiretorioTv(
+        url: json['url'] as String,
+        legenda: json['legenda'] as String? ?? 'Contatos dos anunciantes',
+      );
+
+  final String url;
+  final String legenda;
+
+  /// No canto inferior direito, pequeno: fica fora do relógio (em cima) e
+  /// some quando o anúncio tem QR code próprio.
+  QrCodeAnuncio get qrCode => QrCodeAnuncio(conteudo: url, legenda: legenda, tamanho: TamanhoQrCode.pequeno);
+
+  Map<String, dynamic> toJson() => {'url': url, 'legenda': legenda};
+}
+
 /// Resposta de `GET /sincronizacao`.
 class RespostaSincronizacao {
   const RespostaSincronizacao({
@@ -425,6 +445,7 @@ class RespostaSincronizacao {
     this.noticias,
     this.clima,
     this.cotacoes,
+    this.diretorio,
   });
 
   factory RespostaSincronizacao.fromJson(Map<String, dynamic> json) => RespostaSincronizacao(
@@ -448,6 +469,9 @@ class RespostaSincronizacao {
         cotacoes: (json['cotacoes'] as List<dynamic>?)
             ?.map((e) => Cotacao.fromJson(e as Map<String, dynamic>))
             .toList(),
+        diretorio: json['diretorio'] is Map<String, dynamic>
+            ? DiretorioTv.fromJson(json['diretorio'] as Map<String, dynamic>)
+            : null,
       );
 
   final bool alterada;
@@ -474,4 +498,7 @@ class RespostaSincronizacao {
 
   /// Nulo: a playlist não usa o cartão de cotações.
   final List<Cotacao>? cotacoes;
+
+  /// Nulo: diretório desligado na tela (ou API sem endereço público).
+  final DiretorioTv? diretorio;
 }

@@ -6,6 +6,13 @@ public interface IConfiguracaoIndoor
     /// <summary>Endereço do painel (pasta <c>web/</c>), usado nos e-mails.</summary>
     string UrlPainel { get; }
 
+    /// <summary>
+    /// Endereço público da API na internet (<c>Indoor:UrlPublica</c>, ex.:
+    /// <c>https://tv.minharede.com.br</c>), base do diretório das TVs
+    /// (<c>/d/{codigo}</c>). Nulo = diretório indisponível: as TVs não mostram o QR.
+    /// </summary>
+    Uri? UrlPublica { get; }
+
     /// <summary>De quanto em quanto tempo a TV consulta a grade (<c>Indoor:Dispositivo:IntervaloSincronizacaoSegundos</c>, padrão 60).</summary>
     TimeSpan IntervaloSincronizacao { get; }
 

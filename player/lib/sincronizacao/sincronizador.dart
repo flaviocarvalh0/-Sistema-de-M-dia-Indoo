@@ -47,6 +47,7 @@ class SituacaoPlayer {
     this.noticias = const [],
     this.clima,
     this.cotacoes = const [],
+    this.diretorio,
   });
 
   final List<ItemGrade> grade;
@@ -62,6 +63,9 @@ class SituacaoPlayer {
 
   /// Últimas cotações que chegaram (a tela confere a validade).
   final List<Cotacao> cotacoes;
+
+  /// QR code do diretório de anunciantes; nulo = desligado na tela.
+  final DiretorioTv? diretorio;
   final String fusoHorario;
   final String? nomeTela;
   final ResultadoCiclo? ultimoResultado;
@@ -118,6 +122,7 @@ class Sincronizador {
       noticias: (await banco.lerNoticias()).where((n) => !n.temImagem || baixadorNoticias.pronto(n)).toList(),
       clima: estado.clima,
       cotacoes: estado.cotacoes,
+      diretorio: estado.diretorio,
     );
   }
 
@@ -169,6 +174,7 @@ class Sincronizador {
       gravarClima: true,
       clima: resposta.clima,
       cotacoes: resposta.cotacoes,
+      diretorio: resposta.diretorio,
     );
 
     final noticiasCompletas = await _atualizarNoticias(resposta);

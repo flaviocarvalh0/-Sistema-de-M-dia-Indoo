@@ -271,3 +271,21 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
 - [x] Testes: montagem e validação de cada tipo (Pix conferido com o exemplo
   do manual do Banco Central), restrições no Postgres, sincronização, banco
   local e tela do player em vários tamanhos, roteiro no navegador.
+
+### Entrega 5 — Diretório da TV (fase 1) ✅
+
+- [x] Dupla autorização ([ADR-018](../api/docs/decisions/ADR-018-Diretorio-de-Anunciantes-da-TV.md)):
+  a operadora liga o diretório na tela; cada parceiro aceita aparecer no
+  perfil público (padrão não; só o dono; data do aceite gravada).
+- [x] Página pública `/d/{codigo}` servida pela API (HTML leve, sem
+  framework: o pacote inicial do painel tem ~440 KB), código aleatório por
+  tela, "Trocar endereço", cache de 60 s, limite por IP, CSP com nonce; o
+  mesmo conteúdo em JSON.
+- [x] Lista: estabelecimento primeiro, depois os anunciantes da grade de
+  hoje; contatos do perfil e dos QR codes dos anúncios ("Copiar Pix").
+- [x] Painel: diretório na edição da tela com QR e endereço; perfil público
+  no topo de Mídias; coluna "Diretório das TVs" em Parceiros.
+- [x] Player: `diretorio` na sincronização (regra 15), QR fixo pequeno que
+  some quando o anúncio tem QR próprio.
+- [x] `Indoor:UrlPublica` e a API com HTTPS na internet (IMPLANTACAO.md).
+- [ ] Fase 2: contagem de acessos e cliques por anunciante, logo no cartão.

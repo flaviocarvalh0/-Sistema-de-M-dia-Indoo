@@ -48,6 +48,27 @@ void main() {
     });
   });
 
+  group('diretório da TV', () {
+    test('vem na sincronização e vira um QR pequeno no canto inferior direito', () {
+      final resposta = RespostaSincronizacao.fromJson({
+        'alterada': false, 'versaoGrade': 'v', 'fusoHorario': 'America/Manaus', 'intervaloSincronizacaoSegundos': 60,
+        'nomeTela': 'Balcão', 'diretorio': {'url': 'https://tv.rede.test/d/ABCDEFGH23', 'legenda': 'Veja os anunciantes'},
+      });
+      final qr = resposta.diretorio!.qrCode;
+      expect(qr.conteudo, 'https://tv.rede.test/d/ABCDEFGH23');
+      expect(qr.legenda, 'Veja os anunciantes');
+      expect(qr.posicao, PosicaoQrCode.inferiorDireito);
+      expect(qr.tamanho, TamanhoQrCode.pequeno);
+    });
+
+    test('ausente (desligado ou API antiga) fica nulo', () {
+      final resposta = RespostaSincronizacao.fromJson({
+        'alterada': false, 'versaoGrade': 'v', 'fusoHorario': 'America/Manaus', 'intervaloSincronizacaoSegundos': 60, 'nomeTela': 'Balcão',
+      });
+      expect(resposta.diretorio, isNull);
+    });
+  });
+
   group('banco local', () {
     late Directory pasta;
     setUp(() => pasta = Directory.systemTemp.createTempSync('qr_'));

@@ -98,7 +98,7 @@ lib/
     noticia_view.dart             notícia em tela cheia: foto, título animado e crédito
     sobreposicao_relogio_clima.dart   relógio (fuso do estabelecimento) e clima no canto
     cartoes_view.dart             cartões "Previsão do tempo" e "Cotações" (dólar e euro)
-    qr_code_sobreposto.dart       QR code do anúncio por cima da mídia (qr_flutter, gerado na TV)
+    qr_code_sobreposto.dart       QR code do anúncio (ou o do diretório da TV) por cima da mídia (qr_flutter, gerado na TV)
     painel_info.dart              painel de informações (botão OK do controle)
 ```
 

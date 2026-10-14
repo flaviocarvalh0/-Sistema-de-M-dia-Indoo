@@ -54,6 +54,50 @@ public class Parceiro : BaseAuditableEntity
     /// <summary>Anotação da operadora; nunca exibida ao parceiro.</summary>
     public string? ObservacaoInterna { get; set; }
 
+    // ── Perfil público (diretório das TVs, ADR-018) ─────────────────────
+
+    public const int TamanhoMaximoCategoria = 40;
+    public const int TamanhoMaximoDescricaoPublica = 140;
+
+    /// <summary>
+    /// O próprio parceiro aceitou aparecer na página pública das TVs onde os
+    /// anúncios dele passam (padrão: não). Só o dono do parceiro muda.
+    /// </summary>
+    public bool ExibirNoDiretorioPublico { get; private set; }
+
+    /// <summary>Quando o aceite foi dado (registro do consentimento); nulo sem aceite.</summary>
+    public DateTimeOffset? DiretorioAceitoEm { get; private set; }
+
+    /// <summary>Ramo exibido no cartão (ex.: "Padaria").</summary>
+    public string? Categoria { get; set; }
+
+    /// <summary>Uma frase sobre o negócio, no cartão.</summary>
+    public string? DescricaoPublica { get; set; }
+
+    /// <summary>WhatsApp público, só dígitos com o código do país (5592999990000).</summary>
+    public string? WhatsappPublico { get; set; }
+
+    /// <summary>Usuário do Instagram, sem o @.</summary>
+    public string? InstagramPublico { get; set; }
+
+    /// <summary>Site (URL absoluta http/https).</summary>
+    public string? SitePublico { get; set; }
+
+    /// <summary>Liga ou desliga a exibição; ligar registra o momento do aceite.</summary>
+    public void DefinirExibicaoNoDiretorio(bool exibir, DateTimeOffset agora)
+    {
+        if (exibir && !ExibirNoDiretorioPublico)
+        {
+            DiretorioAceitoEm = agora;
+        }
+        else if (!exibir)
+        {
+            DiretorioAceitoEm = null;
+        }
+
+        ExibirNoDiretorioPublico = exibir;
+    }
+
     public bool Bloqueado => Situacao == SituacaoParceiro.Bloqueado;
 
     public long CotaArmazenamentoBytes => CotaArmazenamentoMb * 1024L * 1024L;

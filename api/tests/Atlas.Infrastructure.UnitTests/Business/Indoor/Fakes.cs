@@ -11,9 +11,10 @@ namespace Atlas.Infrastructure.UnitTests.Business.Indoor;
 internal sealed class ParceiroAtualFake(long parceiroId) : IParceiroAtual
 {
     public long ParceiroId { get; set; } = parceiroId;
+    public PapelParceiro Papel { get; set; } = PapelParceiro.Proprietario;
 
     public Task<ParceiroDoUsuario> ObterAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(new ParceiroDoUsuario(ParceiroId, PapelParceiro.Proprietario, "America/Sao_Paulo"));
+        Task.FromResult(new ParceiroDoUsuario(ParceiroId, Papel, "America/Sao_Paulo"));
 }
 
 /// <summary>Storage em memória: o teste põe o arquivo como se o navegador tivesse enviado.</summary>
@@ -109,6 +110,7 @@ internal static class Arquivos
 internal sealed class ConfiguracaoIndoorFake : IConfiguracaoIndoor
 {
     public string UrlPainel => "https://painel.indoor.test/";
+    public Uri? UrlPublica { get; set; } = new("https://tv.indoor.test");
     public TimeSpan IntervaloSincronizacao => TimeSpan.FromMinutes(5);
     public TimeSpan ValidadeTokenDispositivo => TimeSpan.FromDays(30);
     public TimeSpan ValidadeUrlDownload => TimeSpan.FromHours(24);

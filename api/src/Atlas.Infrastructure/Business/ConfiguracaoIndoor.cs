@@ -10,6 +10,11 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfig
         configuration["Indoor:UrlPainel"]
         ?? throw new InvalidOperationException("Configuração 'Indoor:UrlPainel' ausente no appsettings.");
 
+    public Uri? UrlPublica =>
+        Uri.TryCreate(configuration["Indoor:UrlPublica"], UriKind.Absolute, out var url) && url.Scheme is "http" or "https"
+            ? url
+            : null;
+
     public TimeSpan IntervaloSincronizacao =>
         TimeSpan.FromSeconds(Inteiro("Indoor:Dispositivo:IntervaloSincronizacaoSegundos", padrao: 60, minimo: 30));
 

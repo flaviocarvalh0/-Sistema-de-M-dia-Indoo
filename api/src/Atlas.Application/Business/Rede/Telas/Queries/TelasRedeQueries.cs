@@ -1,4 +1,5 @@
 using Atlas.Application.Business.Common;
+using Atlas.Application.Business.Diretorio;
 using Atlas.Application.Business.Indoor.Telas.Dtos;
 using Atlas.Application.Common.Extensions.Pagination;
 using Atlas.Application.Common.Models.Pagination;
@@ -28,6 +29,7 @@ public record GetTelasRedeQuery : IRequest<PaginatedList<TelaDto>>
 public class GetTelasRedeQueryHandler(
     IApplicationDbContext context,
     IIdentityService identityService,
+    IConfiguracaoIndoor configuracao,
     TimeProvider timeProvider)
     : IRequestHandler<GetTelasRedeQuery, PaginatedList<TelaDto>>
 {
@@ -62,6 +64,10 @@ public class GetTelasRedeQueryHandler(
             .ToEntityPaginatedListAsync(context, "tela", request.PaginationParams, cancellationToken);
 
         await identityService.PreencherNomesAsync(pagina.Items, cancellationToken);
+        foreach (var tela in pagina.Items)
+        {
+            tela.UrlDiretorio = EnderecoDiretorio.Montar(configuracao, tela.CodigoDiretorio);
+        }
 
         return pagina;
     }
@@ -74,6 +80,7 @@ public record GetTelaRedeByIdQuery(long Id) : IRequest<TelaDto>;
 public class GetTelaRedeByIdQueryHandler(
     IApplicationDbContext context,
     IIdentityService identityService,
+    IConfiguracaoIndoor configuracao,
     TimeProvider timeProvider)
     : IRequestHandler<GetTelaRedeByIdQuery, TelaDto>
 {
@@ -88,6 +95,7 @@ public class GetTelaRedeByIdQueryHandler(
         Guard.Against.NotFound(request.Id, tela);
 
         await identityService.PreencherNomesAsync([tela], cancellationToken);
+        tela.UrlDiretorio = EnderecoDiretorio.Montar(configuracao, tela.CodigoDiretorio);
 
         return tela;
     }

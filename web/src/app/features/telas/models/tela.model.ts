@@ -26,6 +26,12 @@ export interface TelaDto {
   /** Código ainda válido para parear (some ao parear ou ao expirar). Só na visão da operadora. */
   codigoPareamento?: string | null;
   codigoPareamentoExpiraEm?: string | null;
+  /** A TV mostra o QR code do diretório de anunciantes (ADR-018). */
+  diretorioAtivo: boolean;
+  /** Código do endereço público. Só na visão da operadora. */
+  codigoDiretorio?: string | null;
+  /** Endereço público do diretório; nulo sem código ou sem `Indoor:UrlPublica` na API. */
+  urlDiretorio?: string | null;
   created: string;
   createdByName?: string | null;
   lastModified?: string | null;
@@ -39,4 +45,11 @@ export interface CodigoPareamento {
   version: number;
 }
 
-export type LinhaTela = TelaDto & { situacaoRotulo: string; playlist: string; vistaPorUltimo: string };
+/** Endereço novo do diretório ("Trocar endereço"). */
+export interface CodigoDiretorio {
+  codigo: string;
+  url?: string | null;
+  version: number;
+}
+
+export type LinhaTela = TelaDto & { situacaoRotulo: string; playlist: string; vistaPorUltimo: string; diretorio: string };

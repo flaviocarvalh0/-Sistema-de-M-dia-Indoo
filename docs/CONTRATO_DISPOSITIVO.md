@@ -127,7 +127,11 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
       "boletim": "Intermediário",
       "credito": "Fonte: Banco Central (PTAX)"
     }
-  ]
+  ],
+  "diretorio": {
+    "url": "https://tv.suaempresa.com.br/d/K7M2Q9XHAB",
+    "legenda": "Contatos dos anunciantes"
+  }
 }
 ```
 
@@ -136,6 +140,9 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
   leitura recente (6 h). `dias` traz hoje e os próximos dias.
 - `cotacoes` vem em toda resposta quando a playlist usa o cartão de cotações
   (nulo quando não usa): dólar e euro, só com cotação dos últimos 4 dias.
+- `diretorio` vem em toda resposta `200` quando a operadora ligou o
+  diretório na tela (nulo se desligado ou se a API não tem endereço público).
+  Não entra na `versaoGrade`.
 - `qrCode` do item é nulo quando a mídia não tem QR code. `conteudo` é o
   texto a codificar, já pronto (link, `tel:` ou Pix copia e cola);
   `posicao` é `InferiorDireito`, `InferiorEsquerdo`, `SuperiorDireito` ou
@@ -216,3 +223,9 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
     (pequeno, médio, grande), com margem branca e correção de erro M. O
     relógio vai para o outro canto de cima se o QR ocupar o dele. Notícias e
     cartões não têm QR.
+15. **Diretório da TV** (ADR-018): com `diretorio`, a TV gera um QR code
+    pequeno (22% da menor dimensão) com a `url`, no canto inferior direito,
+    com a `legenda`. Aparece nos anúncios **sem** QR code próprio e na tela
+    de espera; some nos anúncios com QR (o do anúncio vale), nas notícias e
+    nos cartões. Guardar o último recebido (funciona offline); nulo na
+    resposta apaga.

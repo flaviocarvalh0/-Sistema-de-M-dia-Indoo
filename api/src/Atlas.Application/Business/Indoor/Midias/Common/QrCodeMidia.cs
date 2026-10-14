@@ -69,9 +69,9 @@ public static partial class MontadorQrCode
             switch (tipo)
             {
                 case TipoQrCode.Link:
-                    if (Uri.TryCreate(destino, UriKind.Absolute, out var url) && url.Scheme is "http" or "https" && destino.Length <= 500)
+                    if (NormalizarLink(destino, 500) is { } link)
                     {
-                        destino = url.AbsoluteUri;
+                        destino = link;
                         conteudo = destino;
                     }
                     else
@@ -82,7 +82,7 @@ public static partial class MontadorQrCode
                     break;
 
                 case TipoQrCode.WhatsApp:
-                    if (Telefone(destino) is { } whatsapp)
+                    if (NormalizarTelefone(destino) is { } whatsapp)
                     {
                         destino = whatsapp;
                         conteudo = $"https://wa.me/{whatsapp}" + (mensagem is null ? string.Empty : $"?text={Uri.EscapeDataString(mensagem)}");
@@ -100,8 +100,7 @@ public static partial class MontadorQrCode
                     break;
 
                 case TipoQrCode.Instagram:
-                    var usuario = UsuarioInstagram().Match(destino) is { Success: true } m ? m.Groups["usuario"].Value : null;
-                    if (usuario is not null)
+                    if (NormalizarInstagram(destino) is { } usuario)
                     {
                         destino = usuario;
                         conteudo = $"https://instagram.com/{usuario}";
@@ -114,7 +113,7 @@ public static partial class MontadorQrCode
                     break;
 
                 case TipoQrCode.Telefone:
-                    if (Telefone(destino) is { } telefone)
+                    if (NormalizarTelefone(destino) is { } telefone)
                     {
                         destino = telefone;
                         conteudo = $"tel:+{telefone}";
@@ -191,8 +190,19 @@ public static partial class MontadorQrCode
             conteudo);
     }
 
+    /// <summary>Endereço absoluto http(s), como o navegador escreve; nulo se não for um.</summary>
+    public static string? NormalizarLink(string valor, int tamanhoMaximo) =>
+        Uri.TryCreate(valor.Trim(), UriKind.Absolute, out var url) && url.Scheme is "http" or "https"
+            && url.AbsoluteUri.Length <= tamanhoMaximo
+            ? url.AbsoluteUri
+            : null;
+
+    /// <summary>O usuário do Instagram (aceita <c>@usuario</c> ou o link do perfil); nulo se inválido.</summary>
+    public static string? NormalizarInstagram(string valor) =>
+        UsuarioInstagram().Match(valor.Trim()) is { Success: true } m ? m.Groups["usuario"].Value : null;
+
     /// <summary>Só dígitos com o código do país: DDD + número ganha o 55 na frente.</summary>
-    private static string? Telefone(string valor)
+    public static string? NormalizarTelefone(string valor)
     {
         var digitos = DocumentosBrasil.SomenteDigitos(valor);
         if (digitos.Length is 10 or 11 && !valor.TrimStart().StartsWith('+'))

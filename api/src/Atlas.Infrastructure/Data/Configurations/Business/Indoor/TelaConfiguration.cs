@@ -16,6 +16,13 @@ public class TelaConfiguration : IEntityTypeConfiguration<Tela>
             table.HasCheckConstraint(
                 "ck_tela_pareada_em",
                 "(dispositivo_id IS NULL) = (pareada_em IS NULL)");
+
+            table.HasCheckConstraint(
+                "ck_tela_codigo_diretorio",
+                $"codigo_diretorio IS NULL OR codigo_diretorio ~ '^[A-Z0-9]{{{Tela.TamanhoCodigoDiretorio}}}$'");
+
+            // Diretório ligado sempre tem endereço.
+            table.HasCheckConstraint("ck_tela_diretorio", "NOT diretorio_ativo OR codigo_diretorio IS NOT NULL");
         });
 
         builder.Property(t => t.Nome).HasMaxLength(100).IsRequired();
@@ -24,6 +31,7 @@ public class TelaConfiguration : IEntityTypeConfiguration<Tela>
         // varchar e não char(8): ver MidiaConfiguration (histórico da plataforma).
         builder.Property(t => t.CodigoPareamento).HasMaxLength(Tela.TamanhoCodigoPareamento);
         builder.Property(t => t.DispositivoId).HasMaxLength(100);
+        builder.Property(t => t.CodigoDiretorio).HasMaxLength(Tela.TamanhoCodigoDiretorio);
         builder.Property(t => t.VersaoCredencial).HasDefaultValue(1);
 
         builder.Ignore(t => t.Pareada);
@@ -35,6 +43,11 @@ public class TelaConfiguration : IEntityTypeConfiguration<Tela>
         builder.HasIndex(t => t.CodigoPareamento)
             .IsUnique()
             .HasFilter("codigo_pareamento IS NOT NULL");
+
+        // O celular abre /d/{codigo}: o código acha a tela.
+        builder.HasIndex(t => t.CodigoDiretorio)
+            .IsUnique()
+            .HasFilter("codigo_diretorio IS NOT NULL");
 
         builder.HasOne(t => t.Parceiro)
             .WithMany()

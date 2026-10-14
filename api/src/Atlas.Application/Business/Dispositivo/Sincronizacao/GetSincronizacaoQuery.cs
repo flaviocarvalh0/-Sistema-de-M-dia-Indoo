@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Conteudo.Clima;
+using Atlas.Application.Business.Diretorio;
 using Atlas.Application.Business.Dispositivo.Common;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Midias.Common;
@@ -86,6 +87,23 @@ public sealed record SincronizacaoDto
 
     /// <summary>Dólar e euro (PTAX) para o cartão "Cotações"; nulo se a playlist não usa o cartão.</summary>
     public IReadOnlyList<CotacaoSincronizacaoDto>? Cotacoes { get; init; }
+
+    /// <summary>
+    /// QR code fixo do diretório de anunciantes desta TV; nulo com o diretório
+    /// desligado na tela ou sem endereço público configurado na API.
+    /// </summary>
+    public DiretorioSincronizacaoDto? Diretorio { get; init; }
+}
+
+public sealed record DiretorioSincronizacaoDto
+{
+    /// <summary>Endereço da página pública (o QR code codifica este texto).</summary>
+    public string Url { get; init; } = null!;
+
+    /// <summary>Texto curto embaixo do QR code.</summary>
+    public string Legenda { get; init; } = LegendaPadrao;
+
+    public const string LegendaPadrao = "Contatos dos anunciantes";
 }
 
 public sealed record CotacaoSincronizacaoDto
@@ -248,6 +266,8 @@ public class GetSincronizacaoQueryHandler(
                 t.Nome,
                 t.PlaylistId,
                 t.ParceiroId,
+                t.DiretorioAtivo,
+                t.CodigoDiretorio,
                 PlaylistAtiva = t.Playlist != null && t.Playlist.Ativo,
                 t.Parceiro.FusoHorario,
                 Composicao = t.Playlist == null
@@ -330,6 +350,9 @@ public class GetSincronizacaoQueryHandler(
                 ? await ObterClimaAsync(tela.ParceiroId, agora, hoje, cancellationToken)
                 : null,
             Cotacoes = composicao.CartaoCotacoes ? await ListarCotacoesAsync(agora, cancellationToken) : null,
+            Diretorio = tela.DiretorioAtivo && EnderecoDiretorio.Montar(configuracao, tela.CodigoDiretorio) is { } urlDiretorio
+                ? new DiretorioSincronizacaoDto { Url = urlDiretorio.AbsoluteUri }
+                : null,
         };
     }
 

@@ -89,6 +89,14 @@ Na edição da mídia, a aba **QR code** mostra só os campos do tipo escolhido
 Pix copia e cola). A prévia da lista usa o `angularx-qrcode` com o mesmo
 conteúdo que vai para a TV.
 
+## Diretório das TVs
+
+A página pública que o celular abre (`/d/{codigo}`) **não** é deste painel:
+é HTML servido pela API (ADR-018), porque o pacote inicial do painel é
+pesado para o 4G. Aqui ficam a chave na tela (Rede → Telas, com o QR e
+"Trocar endereço") e o perfil público do parceiro (cartão no topo de Mídias,
+`features/perfil/perfil-publico.ts`).
+
 ## Publicar
 
 `npm run publicar` gera o build e publica no IIS — ver o cabeçalho de

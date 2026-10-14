@@ -14,6 +14,7 @@ export const PARCEIRO_COLUNAS: ColunaDef[] = [
   { campo: 'quantidadeTelas', titulo: 'Telas no local', tipo: 'numero' },
   { campo: 'usoMidiasAtivas', titulo: 'Mídias ativas', tipo: 'texto' },
   { campo: 'usoArmazenamento', titulo: 'Armazenamento', tipo: 'texto' },
+  { campo: 'diretorio', titulo: 'Diretório das TVs', tipo: 'texto' },
   { campo: 'situacao', titulo: 'Situação', tipo: 'badge', badgeMap: SITUACAO_PARCEIRO_BADGE },
 ];
 

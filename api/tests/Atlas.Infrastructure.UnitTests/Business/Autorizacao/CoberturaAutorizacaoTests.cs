@@ -1,3 +1,4 @@
+using Atlas.Application.Business.Diretorio;
 using System.Reflection;
 using Atlas.Application.Business.Dispositivo.Autenticacao;
 using Atlas.Application.Business.Dispositivo.Sincronizacao;
@@ -33,11 +34,14 @@ public class CoberturaAutorizacaoTests
     /// Sem <c>[Authorize]</c> de usuário, por decisão: o pareamento da TV é
     /// anônimo (limite de tentativas por IP) e a sincronização exige o token
     /// da TV (política <c>Dispositivo</c> no endpoint e <c>IDispositivoAtual</c> no handler).
+    /// O diretório da TV é a página pública do QR code (ADR-018): código
+    /// aleatório, limite por IP e só dados que o parceiro aceitou publicar.
     /// </summary>
     private static readonly Type[] Anonimos =
     [
         typeof(AutenticarDispositivoCommand),
         typeof(GetSincronizacaoQuery),
+        typeof(GetDiretorioPublicoQuery),
     ];
 
     private static List<Type> Requests() =>

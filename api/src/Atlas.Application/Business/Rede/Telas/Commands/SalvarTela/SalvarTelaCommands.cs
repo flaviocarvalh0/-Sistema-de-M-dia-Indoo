@@ -1,3 +1,4 @@
+using Atlas.Application.Business.Diretorio;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
@@ -17,6 +18,7 @@ public record CriarTelaCommand : IRequest<long>, IDadosTela
     public string? Localizacao { get; init; }
     public string? IdentificacaoAparelho { get; init; }
     public long? PlaylistId { get; init; }
+    public bool DiretorioAtivo { get; init; }
 }
 
 /// <summary>
@@ -32,6 +34,7 @@ public record AtualizarTelaCommand : IRequest<uint>, IDadosTela
     public string? Localizacao { get; init; }
     public string? IdentificacaoAparelho { get; init; }
     public long? PlaylistId { get; init; }
+    public bool DiretorioAtivo { get; init; }
     public uint Version { get; init; }
 }
 
@@ -42,6 +45,9 @@ public interface IDadosTela
     string? Localizacao { get; }
     string? IdentificacaoAparelho { get; }
     long? PlaylistId { get; }
+
+    /// <summary>A TV mostra o QR code do diretório de anunciantes (ADR-018).</summary>
+    bool DiretorioAtivo { get; }
 }
 
 public class CriarTelaCommandHandler(IApplicationDbContext context)
@@ -64,6 +70,7 @@ public class CriarTelaCommandHandler(IApplicationDbContext context)
             PlaylistId = request.PlaylistId,
         };
 
+        await RegrasTela.DefinirDiretorioAsync(context, tela, request.DiretorioAtivo, cancellationToken);
         context.Telas.Add(tela);
         await context.SaveChangesAsync(cancellationToken);
 
@@ -93,6 +100,7 @@ public class AtualizarTelaCommandHandler(IApplicationDbContext context)
         tela.Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao);
         tela.IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho);
         tela.PlaylistId = request.PlaylistId;
+        await RegrasTela.DefinirDiretorioAsync(context, tela, request.DiretorioAtivo, cancellationToken);
 
         return await context.SalvarAsync(tela, cancellationToken);
     }
@@ -125,6 +133,17 @@ internal static class RegrasTela
         {
             throw new ValidationException(nameof(Tela.PlaylistId), ["Playlist não encontrada."]);
         }
+    }
+
+    /// <summary>Ligar pela primeira vez cria o endereço público; desligar mantém o código.</summary>
+    public static async Task DefinirDiretorioAsync(IApplicationDbContext context, Tela tela, bool ativo, CancellationToken cancellationToken)
+    {
+        if (ativo && tela.CodigoDiretorio is null)
+        {
+            tela.DefinirCodigoDiretorio(await EnderecoDiretorio.GerarCodigoUnicoAsync(context, cancellationToken));
+        }
+
+        tela.DiretorioAtivo = ativo;
     }
 
     /// <summary>O nome é único dentro do host (é como ele reconhece a TV).</summary>

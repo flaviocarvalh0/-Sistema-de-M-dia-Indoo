@@ -20,6 +20,9 @@ export interface ParceiroDto {
   midiasAtivas: number;
   quantidadeTelas: number;
   situacao: SituacaoParceiro;
+  /** Aceitou aparecer no diretório das TVs (decisão do próprio parceiro; aqui é só leitura). */
+  exibirNoDiretorioPublico: boolean;
+  diretorioAceitoEm?: string | null;
   motivoBloqueio?: string | null;
   observacaoInterna?: string | null;
   created: string;
@@ -30,4 +33,4 @@ export interface ParceiroDto {
 }
 
 /** Linha da grid: o DTO mais as colunas calculadas. */
-export type LinhaParceiro = ParceiroDto & { usoArmazenamento: string; usoMidiasAtivas: string };
+export type LinhaParceiro = ParceiroDto & { usoArmazenamento: string; usoMidiasAtivas: string; diretorio: string };
