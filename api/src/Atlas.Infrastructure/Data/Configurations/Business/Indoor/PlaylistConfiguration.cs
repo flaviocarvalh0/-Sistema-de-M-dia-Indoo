@@ -25,6 +25,10 @@ public class PlaylistConfiguration : IEntityTypeConfiguration<Playlist>
             table.HasCheckConstraint(
                 "ck_playlist_duracao_noticia",
                 $"duracao_noticia_segundos BETWEEN {Playlist.DuracaoNoticiaMinimaSegundos} AND {Playlist.DuracaoNoticiaMaximaSegundos}");
+
+            table.HasCheckConstraint(
+                "ck_playlist_duracao_maxima_volta",
+                $"duracao_maxima_volta_segundos = 0 OR duracao_maxima_volta_segundos BETWEEN {Playlist.DuracaoVoltaMinimaSegundos} AND {Playlist.DuracaoVoltaMaximaSegundos}");
         });
 
         // A playlist é da rede (da operadora), não de um parceiro.

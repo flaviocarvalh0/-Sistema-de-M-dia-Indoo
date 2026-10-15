@@ -16,6 +16,7 @@ public record CriarPlaylistCommand : IRequest<long>, IDadosPlaylist
     public int NoticiaACadaAnuncios { get; init; }
     public int DuracaoNoticiaSegundos { get; init; } = Playlist.DuracaoNoticiaPadraoSegundos;
     public bool EmbaralharAnuncios { get; init; }
+    public int DuracaoMaximaVoltaSegundos { get; init; }
     public bool ExibirRelogio { get; init; } = true;
     public bool ExibirClima { get; init; } = true;
     public bool CartaoTempo { get; init; }
@@ -31,6 +32,7 @@ public record AtualizarPlaylistCommand : IRequest<uint>, IDadosPlaylist
     public int NoticiaACadaAnuncios { get; init; }
     public int DuracaoNoticiaSegundos { get; init; } = Playlist.DuracaoNoticiaPadraoSegundos;
     public bool EmbaralharAnuncios { get; init; }
+    public int DuracaoMaximaVoltaSegundos { get; init; }
     public bool ExibirRelogio { get; init; } = true;
     public bool ExibirClima { get; init; } = true;
     public bool CartaoTempo { get; init; }
@@ -50,6 +52,9 @@ public interface IDadosPlaylist
     int NoticiaACadaAnuncios { get; }
     int DuracaoNoticiaSegundos { get; }
     bool EmbaralharAnuncios { get; }
+
+    /// <summary>Segundos de anúncios por volta; 0 = todos em toda volta.</summary>
+    int DuracaoMaximaVoltaSegundos { get; }
     bool ExibirRelogio { get; }
     bool ExibirClima { get; }
     bool CartaoTempo { get; }
@@ -105,6 +110,7 @@ internal static class RegrasPlaylist
         playlist.NoticiaACadaAnuncios = dados.NoticiaACadaAnuncios;
         playlist.DuracaoNoticiaSegundos = dados.DuracaoNoticiaSegundos;
         playlist.EmbaralharAnuncios = dados.EmbaralharAnuncios;
+        playlist.DuracaoMaximaVoltaSegundos = dados.DuracaoMaximaVoltaSegundos;
         playlist.ExibirRelogio = dados.ExibirRelogio;
         playlist.ExibirClima = dados.ExibirClima;
         playlist.CartaoTempo = dados.CartaoTempo;
@@ -172,5 +178,9 @@ internal static class ValidacaoPlaylist
         validador.RuleFor(x => x.DuracaoNoticiaSegundos)
             .InclusiveBetween(Playlist.DuracaoNoticiaMinimaSegundos, Playlist.DuracaoNoticiaMaximaSegundos)
             .WithMessage($"A notícia fica de {Playlist.DuracaoNoticiaMinimaSegundos} a {Playlist.DuracaoNoticiaMaximaSegundos} segundos na tela.");
+
+        validador.RuleFor(x => x.DuracaoMaximaVoltaSegundos)
+            .Must(s => s == 0 || s is >= Playlist.DuracaoVoltaMinimaSegundos and <= Playlist.DuracaoVoltaMaximaSegundos)
+            .WithMessage($"A volta tem de {Playlist.DuracaoVoltaMinimaSegundos} a {Playlist.DuracaoVoltaMaximaSegundos} segundos (0 = todos os anúncios em toda volta).");
     }
 }

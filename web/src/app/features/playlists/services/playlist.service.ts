@@ -96,6 +96,7 @@ function corpoPlaylist(valor: Partial<PlaylistDto>) {
     noticiaACadaAnuncios: Number(valor.noticiaACadaAnuncios ?? 0) || 0,
     duracaoNoticiaSegundos: Number(valor.duracaoNoticiaSegundos ?? 10) || 10,
     embaralharAnuncios: !!valor.embaralharAnuncios,
+    duracaoMaximaVoltaSegundos: Number(valor.duracaoMaximaVoltaSegundos ?? 0) || 0,
     exibirRelogio: valor.exibirRelogio ?? true,
     exibirClima: valor.exibirClima ?? true,
     cartaoTempo: !!valor.cartaoTempo,

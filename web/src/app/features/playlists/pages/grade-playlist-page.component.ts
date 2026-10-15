@@ -287,6 +287,11 @@ export class GradePlaylistPageComponent implements OnInit {
   /** "Ordem sorteada a cada volta · 1 notícia a cada 3 anúncios (10 s) · relógio · clima". */
   resumoComposicao(p: PlaylistDto): string {
     const partes = [p.embaralharAnuncios ? 'Ordem sorteada a cada volta (📌 ficam no lugar)' : 'Ordem fixa'];
+    if (p.duracaoMaximaVoltaSegundos > 0) {
+      const voltas = this.voltasParaTodos(p.duracaoMaximaVoltaSegundos);
+      partes.push(`voltas de ${formatarDuracao(p.duracaoMaximaVoltaSegundos)}`
+        + (voltas > 1 ? `: todos passam a cada ${voltas} voltas (📌 em toda volta)` : ': cabe tudo numa volta'));
+    }
     const informativos = ['notícias', p.cartaoTempo ? 'tempo' : '', p.cartaoCotacoes ? 'cotações' : ''].filter(Boolean).join(', ');
     partes.push(p.noticiaACadaAnuncios > 0
       ? `1 informativo (${informativos}) a cada ${p.noticiaACadaAnuncios} anúncio(s) (${p.duracaoNoticiaSegundos} s)`
@@ -294,6 +299,17 @@ export class GradePlaylistPageComponent implements OnInit {
     if (p.exibirRelogio) partes.push('relógio');
     if (p.exibirClima) partes.push('clima');
     return partes.join(' · ');
+  }
+
+  /**
+   * Quantas voltas o carrossel leva para passar todos os não fixados
+   * (aproximado: soma das durações, sem o filtro do dia).
+   */
+  voltasParaTodos(limite: number): number {
+    const fixos = this.itens().filter(i => i.posicaoFixa).reduce((s, i) => s + i.duracaoSegundos, 0);
+    const soltos = this.itens().filter(i => !i.posicaoFixa).reduce((s, i) => s + i.duracaoSegundos, 0);
+    const porVolta = Math.max(limite - fixos, 1);
+    return soltos === 0 ? 1 : Math.max(1, Math.ceil(soltos / porVolta));
   }
 
   temDia(item: ItemEdicao, bit: number): boolean {

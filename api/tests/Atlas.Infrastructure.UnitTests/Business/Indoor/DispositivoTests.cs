@@ -322,12 +322,14 @@ public class DispositivoTests : IDisposable
         playlist.DuracaoNoticiaSegundos = 12;
         playlist.EmbaralharAnuncios = true;
         playlist.ExibirRelogio = false;
+        playlist.DuracaoMaximaVoltaSegundos = 180;
         await _context.SaveChangesAsync();
 
         var antes = await Sincronizar(credencial, new GetSincronizacaoQuery());
         antes.Composicao.Should().BeEquivalentTo(new ComposicaoFilaDto
         {
             NoticiaACadaAnuncios = 3, DuracaoNoticiaSegundos = 12, EmbaralharAnuncios = true, ExibirRelogio = false, ExibirClima = true,
+            DuracaoMaximaVoltaSegundos = 180,
         });
         antes.Itens!.Select(i => i.PosicaoFixa).Should().Equal(false, false);
 

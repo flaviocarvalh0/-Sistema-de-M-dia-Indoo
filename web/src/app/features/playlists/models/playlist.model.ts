@@ -13,6 +13,8 @@ export interface PlaylistDto {
   noticiaACadaAnuncios: number;
   duracaoNoticiaSegundos: number;
   embaralharAnuncios: boolean;
+  /** Segundos de anúncios por volta (carrossel com cursor na TV); 0 = todos em toda volta. */
+  duracaoMaximaVoltaSegundos: number;
   exibirRelogio: boolean;
   exibirClima: boolean;
   /** Cartões no rodízio dos informativos, junto com as notícias. */

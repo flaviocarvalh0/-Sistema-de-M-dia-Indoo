@@ -83,6 +83,7 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
     "noticiaACadaAnuncios": 3,
     "duracaoNoticiaSegundos": 10,
     "embaralharAnuncios": true,
+    "duracaoMaximaVoltaSegundos": 180,
     "exibirRelogio": true,
     "exibirClima": true,
     "cartaoTempo": true,
@@ -192,12 +193,23 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
    60 s) e ao ligar. Sem sincronizar por 5 min, o painel mostra a TV como
    Offline.
 9. **Grade nova não interrompe:** o item que está na tela vai até o fim; o
-   próximo já sai da grade nova. Eventos repetidos do player (fim de vídeo
+   próximo já sai da grade nova. No carrossel (regra 10), a volta em andamento
+   vai até o fim (pulando quem saiu da grade) e a grade nova entra na volta
+   seguinte — remontar no meio gastaria o cursor sem exibir os anúncios. Eventos repetidos do player (fim de vídeo
    avisado duas vezes, timer de segurança de um item que já acabou) não podem
    avançar o loop mais de uma vez.
 10. **Fila montada na TV, a cada volta** (ADR-016), com os anúncios do dia:
     - `embaralharAnuncios`: sortear a ordem a cada volta; itens com
       `posicaoFixa` ficam na posição deles;
+    - `duracaoMaximaVoltaSegundos` > 0: **carrossel com cursor** (ADR-019).
+      Os itens com `posicaoFixa` entram em toda volta, na posição deles; os
+      outros formam uma lista circular (embaralhada se `embaralharAnuncios`,
+      senão na ordem da grade). Cada volta puxa a partir do cursor enquanto a
+      soma das durações (fixos inclusos, informativos não) couber no limite —
+      pelo menos um por volta — e o cursor avança. No fim da lista, embaralha
+      de novo e recomeça, sem repetir um anúncio na mesma volta nem emendar o
+      mesmo duas vezes seguidas. Grade nova: quem saiu sai da lista, quem
+      entrou entra no trecho que ainda não passou. 0 = todos em toda volta;
     - `noticiaACadaAnuncios` > 0: um informativo depois de cada N anúncios,
       por `duracaoNoticiaSegundos`, no rodízio notícia, tempo, notícia,
       cotações (só os cartões ligados e com dados; sem notícias, só os

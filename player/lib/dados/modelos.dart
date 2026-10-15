@@ -177,6 +177,7 @@ class Composicao {
     this.exibirClima = true,
     this.cartaoTempo = false,
     this.cartaoCotacoes = false,
+    this.duracaoMaximaVoltaSegundos = 0,
   });
 
   factory Composicao.fromJson(Map<String, dynamic> json) => Composicao(
@@ -187,6 +188,7 @@ class Composicao {
         exibirClima: json['exibirClima'] as bool? ?? true,
         cartaoTempo: json['cartaoTempo'] as bool? ?? false,
         cartaoCotacoes: json['cartaoCotacoes'] as bool? ?? false,
+        duracaoMaximaVoltaSegundos: (json['duracaoMaximaVoltaSegundos'] as num?)?.toInt() ?? 0,
       );
 
   /// Um informativo (notícia ou cartão) depois de cada N anúncios; 0 = nenhum.
@@ -200,6 +202,12 @@ class Composicao {
   final bool cartaoTempo;
   final bool cartaoCotacoes;
 
+  /// Segundos de anúncios por volta; 0 = todos em toda volta. Com limite, a
+  /// fila vira um carrossel com cursor (ver [ComposicaoFila]).
+  final int duracaoMaximaVoltaSegundos;
+
+  bool get carrossel => duracaoMaximaVoltaSegundos > 0;
+
   Map<String, dynamic> toJson() => {
         'noticiaACadaAnuncios': noticiaACadaAnuncios,
         'duracaoNoticiaSegundos': duracaoNoticiaSegundos,
@@ -208,6 +216,7 @@ class Composicao {
         'exibirClima': exibirClima,
         'cartaoTempo': cartaoTempo,
         'cartaoCotacoes': cartaoCotacoes,
+        'duracaoMaximaVoltaSegundos': duracaoMaximaVoltaSegundos,
       };
 }
 

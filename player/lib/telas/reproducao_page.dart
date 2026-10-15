@@ -43,6 +43,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   late final ControladorReproducao _loop = ControladorReproducao(
     itensDeHoje: _itensDeHoje,
     compor: _compor,
+    manterVolta: () => _sync.situacao.value?.composicao.carrossel ?? false,
     arquivoDe: widget.servicos.baixador.arquivoDe,
     criarVideo: VideoDoAparelho.new,
   );

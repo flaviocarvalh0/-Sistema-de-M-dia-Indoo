@@ -211,6 +211,11 @@ da API).
     desenvolvimento, `https://localhost:7216` só abre no próprio PC; na rede
     local use `http://<IP do PC>:5366` com o celular no mesmo Wi-Fi).
 
+15. **Carrossel:** em **Rede → Playlists → editar**, ponha **Tamanho da
+    volta** = 30 numa grade com 6 imagens de 10 s (e **Embaralhar** ligado).
+    Na grade aparece "voltas de 0:30: todos passam a cada 2 voltas". Na TV,
+    cada volta mostra 3 anúncios e os 6 passam antes de qualquer um repetir.
+
 ## 8. App das TVs (`player/`)
 
 Pré-requisitos: Flutter (estável atual) e Android Studio com um emulador

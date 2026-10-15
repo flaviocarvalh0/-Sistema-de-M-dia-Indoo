@@ -92,6 +92,7 @@ public class RedePlaylistsTests : IDisposable
         var id = await new CriarPlaylistCommandHandler(_context).Handle(new CriarPlaylistCommand
         {
             Nome = "Com notícias", NoticiaACadaAnuncios = 3, DuracaoNoticiaSegundos = 12, EmbaralharAnuncios = true, ExibirClima = false,
+            DuracaoMaximaVoltaSegundos = 180,
         }, CancellationToken.None);
 
         var dto = await new GetPlaylistByIdQueryHandler(_context, new IdentityNomesFake())
@@ -100,12 +101,29 @@ public class RedePlaylistsTests : IDisposable
         dto.Should().BeEquivalentTo(new
         {
             NoticiaACadaAnuncios = 3, DuracaoNoticiaSegundos = 12, EmbaralharAnuncios = true, ExibirRelogio = true, ExibirClima = false,
+            DuracaoMaximaVoltaSegundos = 180,
         });
 
         // Sem os campos novos (cliente antigo): relógio e clima ligados, sem notícias.
         var padrao = await new CriarPlaylistCommandHandler(_context).Handle(new CriarPlaylistCommand { Nome = "Padrão" }, CancellationToken.None);
         (await _context.Playlists.SingleAsync(p => p.Id == padrao)).Should().Match<Playlist>(p =>
-            p.NoticiaACadaAnuncios == 0 && p.DuracaoNoticiaSegundos == 10 && !p.EmbaralharAnuncios && p.ExibirRelogio && p.ExibirClima);
+            p.NoticiaACadaAnuncios == 0 && p.DuracaoNoticiaSegundos == 10 && !p.EmbaralharAnuncios && p.ExibirRelogio && p.ExibirClima
+            && p.DuracaoMaximaVoltaSegundos == 0);
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(30, true)]
+    [InlineData(180, true)]
+    [InlineData(3600, true)]
+    [InlineData(29, false)]
+    [InlineData(3601, false)]
+    [InlineData(-1, false)]
+    public void ValidadorPlaylist_DuracaoMaximaDaVolta(int segundos, bool valido)
+    {
+        new CriarPlaylistCommandValidator()
+            .Validate(new CriarPlaylistCommand { Nome = "A", DuracaoMaximaVoltaSegundos = segundos })
+            .IsValid.Should().Be(valido);
     }
 
     [Theory]

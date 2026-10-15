@@ -23,6 +23,8 @@ public class Playlist : BaseAuditableEntity
     public const int DuracaoNoticiaMinimaSegundos = 5;
     public const int DuracaoNoticiaMaximaSegundos = 60;
     public const int DuracaoNoticiaPadraoSegundos = 10;
+    public const int DuracaoVoltaMinimaSegundos = 30;
+    public const int DuracaoVoltaMaximaSegundos = 3600;
 
     /// <summary>
     /// Composição da fila na TV: um informativo (notícia, tempo ou cotações)
@@ -39,6 +41,15 @@ public class Playlist : BaseAuditableEntity
     /// <see cref="ItemPlaylist.PosicaoFixa"/> ficam no lugar.
     /// </summary>
     public bool EmbaralharAnuncios { get; set; }
+
+    /// <summary>
+    /// Tamanho de uma volta do loop, em segundos de anúncios (0 = sem limite:
+    /// todos os anúncios em toda volta). Com limite, a TV roda um carrossel:
+    /// cada volta puxa os próximos anúncios de uma lista embaralhada a partir
+    /// de um cursor, e só reembaralha quando todos passaram — todo anunciante
+    /// com a mesma frequência, mesmo offline (ADR-019).
+    /// </summary>
+    public int DuracaoMaximaVoltaSegundos { get; set; }
 
     /// <summary>Relógio sobreposto, na hora do estabelecimento (host) da tela.</summary>
     public bool ExibirRelogio { get; set; } = true;

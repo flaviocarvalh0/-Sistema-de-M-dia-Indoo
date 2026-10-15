@@ -34,6 +34,11 @@ export function criarCamposPlaylist(): FormItemConfig[] {
       type: 'checkbox', name: 'embaralharAnuncios', label: 'Embaralhar', col: 'col-12', value: false,
       placeholder: 'Sortear a ordem dos anúncios a cada volta (os itens fixados na grade ficam no lugar)',
     },
+    {
+      type: 'numero', name: 'duracaoMaximaVoltaSegundos', label: 'Tamanho da volta (s)', col: 'col-12', value: 0, min: 0, max: 3600,
+      hint: 'Com muitos anúncios: segundos de anúncios por volta (ex.: 180). A TV passa os próximos da fila a cada volta e só repete '
+        + 'quando todos passaram — mesma frequência para todos. Os fixados (📌) entram em toda volta. 0 = todos em toda volta.',
+    },
     { type: 'checkbox', name: 'exibirRelogio', label: 'Relógio', col: 'col-md-6', value: true, placeholder: 'Mostrar o relógio na TV' },
     { type: 'checkbox', name: 'exibirClima', label: 'Clima', col: 'col-md-6', value: true, placeholder: 'Mostrar a temperatura da cidade do estabelecimento' },
   ];

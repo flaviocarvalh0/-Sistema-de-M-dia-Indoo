@@ -155,6 +155,12 @@ public sealed record ComposicaoFilaDto
     /// <summary>Sorteia a ordem dos anúncios a cada volta; itens com <c>posicaoFixa</c> ficam no lugar.</summary>
     public bool EmbaralharAnuncios { get; init; }
 
+    /// <summary>
+    /// Segundos de anúncios por volta (fora os informativos); 0 = todos os
+    /// anúncios em toda volta. Com limite, a TV roda o carrossel com cursor (regra 10).
+    /// </summary>
+    public int DuracaoMaximaVoltaSegundos { get; init; }
+
     public bool ExibirRelogio { get; init; }
     public bool ExibirClima { get; init; }
 
@@ -277,6 +283,7 @@ public class GetSincronizacaoQueryHandler(
                         NoticiaACadaAnuncios = t.Playlist.NoticiaACadaAnuncios,
                         DuracaoNoticiaSegundos = t.Playlist.DuracaoNoticiaSegundos,
                         EmbaralharAnuncios = t.Playlist.EmbaralharAnuncios,
+                        DuracaoMaximaVoltaSegundos = t.Playlist.DuracaoMaximaVoltaSegundos,
                         ExibirRelogio = t.Playlist.ExibirRelogio,
                         ExibirClima = t.Playlist.ExibirClima,
                         CartaoTempo = t.Playlist.CartaoTempo,

@@ -59,6 +59,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Cartões | "Previsão do tempo" (agora e os próximos 3 dias, da cidade do estabelecimento) e "Cotações" (dólar e euro, PTAX do Banco Central, com a variação do dia) |
 | Embaralhar | Sorteia a ordem dos anúncios a cada volta, na TV; itens com 📌 (posição fixa) ficam no lugar |
 | Relógio e clima | Liga ou desliga o relógio e a temperatura na tela |
+| Tamanho da volta | Segundos de anúncios por volta (ex.: 180). Com mais anúncios do que cabem, a TV roda o carrossel com cursor; a grade mostra em quantas voltas todos passam. 0 = todos em toda volta |
 
 ## Fontes de notícias (operadora, Rede → Fontes de notícias)
 
@@ -108,6 +109,7 @@ escolhe a playlist.
 | Agenda | Dias da semana e período calculados na TV, no fuso do estabelecimento, a cada volta |
 | Loop | Vídeo até o fim, imagem pela duração; arquivo com problema é pulado |
 | Composição na TV | A cada volta: ordem sorteada (se a playlist pedir, com os itens fixos no lugar) e uma notícia a cada N anúncios, em rodízio |
+| Carrossel com cursor | Com "Tamanho da volta" na playlist: cada volta mostra os próximos anúncios de uma fila circular e todos passam uma vez antes de qualquer um repetir (mesma frequência para todos), offline. Os fixados entram em toda volta |
 | Notícias | Foto em tela cheia, título animado e crédito da fonte; sem foto, fundo da marca. Mais de 48 h, sai da tela mesmo offline |
 | Relógio e clima | No canto da tela: hora do estabelecimento e temperatura da cidade dele (Open-Meteo, com crédito). O clima some depois de 6 h sem atualizar |
 | Cartões | Previsão do tempo com ícones e cotações com seta de alta ou baixa, em tela cheia, com o crédito da fonte. Funcionam offline enquanto o dado valer (tempo 6 h, cotação 4 dias) |

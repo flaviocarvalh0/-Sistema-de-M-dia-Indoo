@@ -33,6 +33,7 @@ Cada ADR registra uma decisão arquitetural relevante, seu contexto, as alternat
 | [ADR-016](ADR-016-Composicao-da-Fila-na-TV-Noticias-e-Clima.md) | Composição da Fila na TV, Notícias e Clima | Aceito |
 | [ADR-017](ADR-017-QR-Code-nos-Anuncios.md) | QR Code nos Anúncios | Aceito |
 | [ADR-018](ADR-018-Diretorio-de-Anunciantes-da-TV.md) | Diretório de Anunciantes da TV | Aceito |
+| [ADR-019](ADR-019-Carrossel-com-Cursor.md) | Carrossel com Cursor na Fila da TV | Aceito |
 ## Como criar um ADR
 
 1. Copie o arquivo [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md).

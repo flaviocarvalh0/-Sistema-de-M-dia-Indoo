@@ -21,6 +21,9 @@ public sealed record PlaylistDto : IDtoAuditavel
     /// <summary>Uma notícia depois de cada N anúncios (0 = sem notícias).</summary>
     public int NoticiaACadaAnuncios { get; init; }
     public int DuracaoNoticiaSegundos { get; init; }
+
+    /// <summary>Segundos de anúncios por volta (carrossel); 0 = todos em toda volta.</summary>
+    public int DuracaoMaximaVoltaSegundos { get; init; }
     public bool EmbaralharAnuncios { get; init; }
     public bool ExibirRelogio { get; init; }
     public bool ExibirClima { get; init; }
@@ -79,6 +82,7 @@ public static class PlaylistProjecao
             DuracaoTotalSegundos = p.Itens.Sum(i => (int?)i.Midia.DuracaoSegundos) ?? 0,
             NoticiaACadaAnuncios = p.NoticiaACadaAnuncios,
             DuracaoNoticiaSegundos = p.DuracaoNoticiaSegundos,
+            DuracaoMaximaVoltaSegundos = p.DuracaoMaximaVoltaSegundos,
             EmbaralharAnuncios = p.EmbaralharAnuncios,
             ExibirRelogio = p.ExibirRelogio,
             ExibirClima = p.ExibirClima,

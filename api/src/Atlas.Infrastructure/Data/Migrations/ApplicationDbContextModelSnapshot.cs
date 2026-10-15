@@ -599,6 +599,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("descricao");
 
+                    b.Property<int>("DuracaoMaximaVoltaSegundos")
+                        .HasColumnType("integer")
+                        .HasColumnName("duracao_maxima_volta_segundos");
+
                     b.Property<int>("DuracaoNoticiaSegundos")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -650,6 +654,8 @@ namespace Atlas.Infrastructure.Data.Migrations
 
                     b.ToTable("playlist", "indoor", t =>
                         {
+                            t.HasCheckConstraint("ck_playlist_duracao_maxima_volta", "duracao_maxima_volta_segundos = 0 OR duracao_maxima_volta_segundos BETWEEN 30 AND 3600");
+
                             t.HasCheckConstraint("ck_playlist_duracao_noticia", "duracao_noticia_segundos BETWEEN 5 AND 60");
 
                             t.HasCheckConstraint("ck_playlist_noticia_a_cada", "noticia_a_cada_anuncios BETWEEN 0 AND 20");

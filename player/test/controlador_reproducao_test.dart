@@ -205,6 +205,47 @@ void main() {
     });
   });
 
+  test('carrossel: sincronizar no meio da volta não remonta a fila (não gasta o cursor)', () {
+    fakeAsync((async) {
+      grade = [for (var i = 0; i < 6; i++) item(i)];
+      var montagens = 0;
+      loop = ControladorReproducao(
+        itensDeHoje: () => grade,
+        arquivoDe: (i) => File(i.hash),
+        criarVideo: (arquivo) => VideoFalso(arquivo.path),
+        manterVolta: () => true,
+        // Voltas de 3: a primeira com 0, 1, 2; a seguinte com 3, 4, 5.
+        compor: (anuncios) {
+          final inicio = (montagens++ % 2) * 3;
+          return [for (final a in anuncios.skip(inicio).take(3)) EntradaFila.anuncio(a)];
+        },
+      )..iniciar();
+      async.flushMicrotasks();
+
+      // Uma sincronização por item, como a TV faz a cada minuto.
+      final vistos = <int?>[];
+      for (var i = 0; i < 6; i++) {
+        vistos.add(loop.atual?.ordem);
+        loop.gradeAtualizada();
+        async.elapse(const Duration(seconds: 10));
+      }
+      expect(vistos, [0, 1, 2, 3, 4, 5], reason: 'cada volta vai até o fim antes da próxima montagem');
+      expect(montagens, 3);
+
+      // Terceira volta (0, 1, 2) tocando o 0; o 2 sai da grade no meio dela.
+      expect(loop.atual?.ordem, 0);
+      grade = [for (var i = 0; i < 6; i++) if (i != 2) item(i)];
+      loop.gradeAtualizada();
+      async.elapse(const Duration(seconds: 10));
+      expect(loop.atual?.ordem, 1, reason: 'a volta segue');
+      expect(montagens, 3);
+      async.elapse(const Duration(seconds: 10));
+      expect(loop.atual?.ordem, isNot(2), reason: 'quem saiu da grade é pulado');
+      expect(montagens, 4, reason: 'a grade nova entra só na volta seguinte');
+      loop.dispose();
+    });
+  });
+
   test('item atual que saiu da grade: segue para o seguinte na ordem', () {
     fakeAsync((async) {
       grade = [item(0), item(1), item(2), item(3)];

@@ -289,3 +289,14 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   some quando o anúncio tem QR próprio.
 - [x] `Indoor:UrlPublica` e a API com HTTPS na internet (IMPLANTACAO.md).
 - [ ] Fase 2: contagem de acessos e cliques por anunciante, logo no cartão.
+
+### Carrossel com cursor na fila da TV ✅
+
+- [x] "Tamanho da volta" na playlist (`DuracaoMaximaVoltaSegundos`, 0 = todos
+  em toda volta) e na composição da sincronização
+  ([ADR-019](../api/docs/decisions/ADR-019-Carrossel-com-Cursor.md)).
+- [x] Player: `CarrosselAnuncios` — fixos em toda volta, os outros puxados de
+  uma lista circular a partir do cursor, reembaralhada no fim, sem repetir na
+  volta nem emendar o mesmo anúncio; grade nova reconciliada sem perder o lugar.
+- [x] A volta em andamento não é remontada a cada sincronização (gastaria o cursor).
+- [x] Painel: campo na playlist e "todos passam a cada N voltas" na grade.

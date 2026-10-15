@@ -19,20 +19,27 @@ import 'video_reproducao.dart';
 /// embaralhar — ver [ComposicaoFila]) e é montada de novo a cada volta.
 /// Anúncio que saiu da grade (ou perdeu o arquivo) no meio da volta é
 /// pulado. A grade nova não interrompe nada: entra no fim do item atual,
-/// seguindo a partir da posição dele.
+/// seguindo a partir da posição dele — ou, com [manterVolta] (carrossel),
+/// no fim da volta: remontar no meio gastaria o cursor do carrossel sem
+/// exibir os anúncios que ele já tinha separado.
 class ControladorReproducao extends ChangeNotifier {
   ControladorReproducao({
     required this.itensDeHoje,
     required this.arquivoDe,
     required this.criarVideo,
     List<EntradaFila> Function(List<ItemGrade> anuncios)? compor,
-  }) : compor = compor ?? ((anuncios) => [for (final a in anuncios) EntradaFila.anuncio(a)]);
+    bool Function()? manterVolta,
+  })  : compor = compor ?? ((anuncios) => [for (final a in anuncios) EntradaFila.anuncio(a)]),
+        manterVolta = manterVolta ?? (() => false);
 
   /// Anúncios que tocam agora, já filtrados pelo dia e com arquivo baixado.
   final List<ItemGrade> Function() itensDeHoje;
 
   /// Monta a fila de uma volta a partir dos anúncios de hoje.
   final List<EntradaFila> Function(List<ItemGrade> anuncios) compor;
+
+  /// Verdadeiro: grade nova só entra no fim da volta em andamento.
+  final bool Function() manterVolta;
 
   final File Function(ItemGrade item) arquivoDe;
   final VideoReproducao Function(File arquivo) criarVideo;
@@ -156,6 +163,12 @@ class ControladorReproducao extends ChangeNotifier {
     final disponiveis = itensDeHoje();
     final chaves = {for (final i in disponiveis) _chave(i)};
     bool valida(EntradaFila e) => e.anuncio == null || chaves.contains(_chave(e.anuncio!));
+
+    // Carrossel: a volta em andamento vai até o fim (os itens que saíram da
+    // grade são pulados abaixo); a grade nova entra na próxima volta.
+    if (_filaDesatualizada && manterVolta() && _fila.skip(_indice + 1).any(valida)) {
+      _filaDesatualizada = false;
+    }
 
     if (_filaDesatualizada || _fila.isEmpty) {
       _filaDesatualizada = false;
