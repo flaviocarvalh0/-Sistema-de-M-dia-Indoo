@@ -419,6 +419,39 @@ class Cotacao {
       };
 }
 
+/// Versão do app mais nova liberada para esta TV (ADR-021): o APK é baixado
+/// como as mídias (SHA-256 conferido) e instalado.
+class AtualizacaoApp implements ArquivoRemoto {
+  const AtualizacaoApp({
+    required this.codigo,
+    required this.nome,
+    required this.hash,
+    required this.tamanhoBytes,
+    this.url,
+  });
+
+  factory AtualizacaoApp.fromJson(Map<String, dynamic> json) => AtualizacaoApp(
+        codigo: (json['codigo'] as num).toInt(),
+        nome: json['nome'] as String,
+        url: json['url'] as String?,
+        hash: (json['hash'] as String).toLowerCase(),
+        tamanhoBytes: (json['tamanhoBytes'] as num).toInt(),
+      );
+
+  final int codigo;
+  final String nome;
+  final int tamanhoBytes;
+
+  @override
+  final String? url;
+
+  @override
+  final String hash;
+
+  @override
+  String get nomeArquivo => '$hash.apk';
+}
+
 /// QR code fixo do diretório de anunciantes da TV (ADR-018): a página
 /// pública com os contatos dos anunciantes que aceitaram aparecer.
 class DiretorioTv {
@@ -455,6 +488,7 @@ class RespostaSincronizacao {
     this.clima,
     this.cotacoes,
     this.diretorio,
+    this.atualizacao,
   });
 
   factory RespostaSincronizacao.fromJson(Map<String, dynamic> json) => RespostaSincronizacao(
@@ -480,6 +514,9 @@ class RespostaSincronizacao {
             .toList(),
         diretorio: json['diretorio'] is Map<String, dynamic>
             ? DiretorioTv.fromJson(json['diretorio'] as Map<String, dynamic>)
+            : null,
+        atualizacao: json['atualizacao'] is Map<String, dynamic>
+            ? AtualizacaoApp.fromJson(json['atualizacao'] as Map<String, dynamic>)
             : null,
       );
 
@@ -510,4 +547,7 @@ class RespostaSincronizacao {
 
   /// Nulo: diretório desligado na tela (ou API sem endereço público).
   final DiretorioTv? diretorio;
+
+  /// Nulo: o app já está na versão mais nova liberada para esta TV.
+  final AtualizacaoApp? atualizacao;
 }

@@ -5,6 +5,7 @@ import 'package:midia_indoor_player/dados/api_dispositivo.dart';
 import 'package:midia_indoor_player/dados/banco_local.dart';
 import 'package:midia_indoor_player/dados/credenciais.dart';
 import 'package:midia_indoor_player/dados/modelos.dart';
+import 'package:midia_indoor_player/sincronizacao/atualizador_app.dart';
 import 'package:midia_indoor_player/sincronizacao/baixador_midia.dart';
 import 'package:midia_indoor_player/sincronizacao/sincronizador.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -386,4 +387,54 @@ void main() {
     expect((await atualizado.lerEstado()).composicao.exibirRelogio, isTrue);
     await atualizado.fechar();
   });
+
+  test('manda o código da versão do app e entrega a atualização ao atualizador', () async {
+    servidor.arquivos['app.apk'] = [1, 2, 3, 4];
+    final base = servidor.sincronizacao!;
+    servidor.sincronizacao = (q) => {
+          ...base(q),
+          'atualizacao': {
+            'codigo': 8,
+            'nome': '1.2.0',
+            'url': servidor.urlArquivo('app.apk'),
+            'hash': ServidorFalso.sha(servidor.arquivos['app.apk']!),
+            'tamanhoBytes': 4,
+          },
+        };
+    final instalador = _InstaladorNada();
+    final atualizador = AtualizadorApp(
+      baixador: BaixadorMidia(Directory('${pasta.path}/app'), esperar: (_) async {}),
+      instalador: instalador,
+      codigoAtual: 7,
+    );
+    final s = Sincronizador(
+      api: ApiDispositivo(servidor.url),
+      banco: banco,
+      credenciais: Credenciais(cofre),
+      baixador: BaixadorMidia(Directory('${pasta.path}/midias'), esperar: (_) async {}),
+      versaoApp: '1.1.0',
+      versaoCodigoApp: 7,
+      atualizador: atualizador,
+    );
+
+    await s.sincronizar();
+    expect(servidor.ultimaQuery['versaoCodigoApp'], '7');
+    expect(instalador.chamadas, 1);
+    expect(atualizador.versaoAlvo?.nome, '1.2.0');
+  });
+
+  test('sem código de versão não manda versaoCodigoApp', () async {
+    await sync.sincronizar();
+    expect(servidor.ultimaQuery.containsKey('versaoCodigoApp'), isFalse);
+  });
+}
+
+class _InstaladorNada implements InstaladorApk {
+  var chamadas = 0;
+
+  @override
+  Future<void> instalar(File apk) async => chamadas++;
+
+  @override
+  Future<bool> instalaSemConfirmacao() async => false;
 }

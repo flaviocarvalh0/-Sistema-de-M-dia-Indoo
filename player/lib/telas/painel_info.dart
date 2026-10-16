@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../config/configuracao.dart';
+import '../config/versao_app.dart';
 import '../sincronizacao/sincronizador.dart';
 
 /// Informações da TV (botão OK do controle): conexão, grade, notícias, clima,
@@ -17,6 +17,7 @@ class PainelInfo extends StatelessWidget {
     required this.noticias,
     required this.aoParear,
     required this.aoFechar,
+    this.atualizacao,
   });
 
   final SituacaoPlayer? situacao;
@@ -25,6 +26,9 @@ class PainelInfo extends StatelessWidget {
   final int noticias;
   final VoidCallback aoParear;
   final VoidCallback aoFechar;
+
+  /// Estado da atualização automática do app (nulo = não mostra).
+  final String? atualizacao;
 
   static String _conexao(ResultadoCiclo? r) => switch (r) {
         ResultadoCiclo.gradeTrocada || ResultadoCiclo.semMudanca => 'Conectada',
@@ -60,7 +64,8 @@ class PainelInfo extends StatelessWidget {
       ('Clima', _clima(s)),
       ('Diretório', s?.diretorio?.url ?? 'desligado na tela'),
       ('Servidor', servidor),
-      ('Versão do app', Configuracao.versaoApp),
+      ('Versão do app', VersaoApp.codigo > 0 ? '${VersaoApp.nome} (${VersaoApp.codigo})' : VersaoApp.nome),
+      if (atualizacao != null) ('Atualização', atualizacao!),
     ];
 
     final tamanho = MediaQuery.sizeOf(context);

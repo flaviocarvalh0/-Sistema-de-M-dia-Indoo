@@ -90,6 +90,7 @@ class ApiDispositivo {
     String? versaoGrade,
     String? versaoNoticias,
     String? versaoApp,
+    int? versaoCodigoApp,
     int? itensProntos,
   }) async {
     final resposta = await _enviar(() => _dio.get<Map<String, dynamic>>(
@@ -98,6 +99,7 @@ class ApiDispositivo {
             if (versaoGrade != null) 'versaoGrade': versaoGrade,
             if (versaoNoticias != null) 'versaoNoticias': versaoNoticias,
             if (versaoApp != null) 'versaoApp': versaoApp,
+            if (versaoCodigoApp != null && versaoCodigoApp > 0) 'versaoCodigoApp': versaoCodigoApp,
             if (itensProntos != null) 'itensProntos': itensProntos,
           },
           options: Options(headers: {'Authorization': 'Bearer $token'}),

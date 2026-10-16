@@ -33,6 +33,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_secure_storage: ^11.2.0
+  package_info_plus: ^10.2.2
   path: ^1.9.1
   path_provider: ^2.1.6
   qr_flutter: ^4.1.0

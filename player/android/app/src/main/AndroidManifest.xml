@@ -5,6 +5,8 @@
     <!-- Android 10+ só deixa abrir a tela a partir do boot com "Sobrepor a
          outros apps" liberado (ver player/README.md). -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Atualização automática: instala a versão nova do próprio app (ADR-021). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Android TV: sem touch e com o launcher "leanback". -->
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -47,6 +49,22 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <!-- Resultado da instalação de uma versão nova (abre a confirmação, se preciso). -->
+        <receiver
+            android:name=".ReceptorInstalacao"
+            android:exported="false" />
+        <!-- Device owner: instalação das atualizações sem confirmação na TV. -->
+        <receiver
+            android:name=".AdministradorAparelho"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/administrador_aparelho" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
         <!-- Don't delete the meta-data below.

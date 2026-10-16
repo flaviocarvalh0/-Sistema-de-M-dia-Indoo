@@ -5,9 +5,11 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'config/configuracao.dart';
+import 'config/versao_app.dart';
 import 'dados/api_dispositivo.dart';
 import 'dados/banco_local.dart';
 import 'dados/credenciais.dart';
+import 'sincronizacao/atualizador_app.dart';
 import 'sincronizacao/baixador_midia.dart';
 import 'sincronizacao/sincronizador.dart';
 import 'telas/pareamento_page.dart';
@@ -15,11 +17,14 @@ import 'telas/reproducao_page.dart';
 
 /// Monta as dependências uma vez, na abertura do app.
 class Servicos {
-  Servicos._(this.credenciais, this.banco, this.baixador, this.urlServidor);
+  Servicos._(this.credenciais, this.banco, this.baixador, this.urlServidor, this.atualizador);
 
   final Credenciais credenciais;
   final BancoLocal banco;
   final BaixadorMidia baixador;
+
+  /// Atualização automática do app (ADR-021).
+  final AtualizadorApp atualizador;
   String urlServidor;
   late Sincronizador sincronizador = _novoSincronizador();
 
@@ -29,7 +34,14 @@ class Servicos {
     final banco = await BancoLocal.abrir(p.join(documentos.path, 'midia_indoor.db'));
     final baixador = BaixadorMidia(Directory(p.join(documentos.path, 'midias')));
     final url = await credenciais.urlServidor() ?? Configuracao.urlApiPadrao;
-    return Servicos._(credenciais, banco, baixador, url);
+    await VersaoApp.carregar();
+    final atualizador = AtualizadorApp(
+      baixador: BaixadorMidia(Directory(p.join(documentos.path, 'app'))),
+      instalador: InstaladorAndroid(),
+      codigoAtual: VersaoApp.codigo,
+    );
+    await atualizador.conferirModo();
+    return Servicos._(credenciais, banco, baixador, url, atualizador);
   }
 
   ApiDispositivo get api => ApiDispositivo(urlServidor);
@@ -46,7 +58,9 @@ class Servicos {
         banco: banco,
         credenciais: credenciais,
         baixador: baixador,
-        versaoApp: Configuracao.versaoApp,
+        versaoApp: VersaoApp.nome,
+        versaoCodigoApp: VersaoApp.codigo,
+        atualizador: atualizador,
       );
 }
 

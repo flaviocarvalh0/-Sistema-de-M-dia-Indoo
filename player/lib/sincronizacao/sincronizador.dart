@@ -7,6 +7,7 @@ import '../dados/api_dispositivo.dart';
 import '../dados/banco_local.dart';
 import '../dados/credenciais.dart';
 import '../dados/modelos.dart';
+import 'atualizador_app.dart';
 import 'baixador_midia.dart';
 
 /// Como terminou um ciclo de sincronização.
@@ -87,6 +88,8 @@ class Sincronizador {
     required this.credenciais,
     required this.baixador,
     required this.versaoApp,
+    this.versaoCodigoApp = 0,
+    this.atualizador,
     BaixadorMidia? baixadorNoticias,
   }) : baixadorNoticias = baixadorNoticias ?? BaixadorMidia(Directory(p.join(baixador.pasta.parent.path, 'noticias')));
 
@@ -95,6 +98,14 @@ class Sincronizador {
   final Credenciais credenciais;
   final BaixadorMidia baixador;
   final String versaoApp;
+
+  /// O versionCode do app (0 = desconhecido: não pede atualização).
+  final int versaoCodigoApp;
+
+  /// Atualização automática do app (ADR-021); nulo nos testes que não a usam.
+  final AtualizadorApp? atualizador;
+  AtualizacaoApp? _atualizacaoRecebida;
+  bool _respondeu = false;
 
   /// Imagens das notícias (`<documentos>/noticias`).
   final BaixadorMidia baixadorNoticias;
@@ -130,7 +141,10 @@ class Sincronizador {
     if (_rodando) return _ultimo ?? ResultadoCiclo.semMudanca;
     _rodando = true;
     try {
+      _respondeu = false;
       _ultimo = await _ciclo();
+      // Depois da grade: o APK não disputa a rede com as mídias.
+      if (_respondeu) await atualizador?.verificar(_atualizacaoRecebida);
       return _ultimo!;
     } finally {
       _rodando = false;
@@ -152,6 +166,7 @@ class Sincronizador {
         versaoGrade: estado.versaoGrade,
         versaoNoticias: estado.versaoNoticias,
         versaoApp: versaoApp,
+        versaoCodigoApp: versaoCodigoApp,
         itensProntos: atual.where(baixador.pronto).length,
       );
     } on CredencialRevogada {
@@ -165,6 +180,8 @@ class Sincronizador {
     }
 
     _ultimaSincronizacao = DateTime.now();
+    _respondeu = true;
+    _atualizacaoRecebida = resposta.atualizacao;
     if (resposta.novoToken != null) await credenciais.gravarToken(resposta.novoToken!);
     await banco.gravarEstado(
       fusoHorario: resposta.fusoHorario,

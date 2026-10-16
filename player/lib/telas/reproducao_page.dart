@@ -214,6 +214,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                   noticias: situacao == null ? 0 : _noticiasValidas(situacao).length,
                   aoParear: _parearDeNovo,
                   aoFechar: _fecharInfo,
+                  atualizacao: widget.servicos.atualizador.descricao,
                 ),
             ],
           ),

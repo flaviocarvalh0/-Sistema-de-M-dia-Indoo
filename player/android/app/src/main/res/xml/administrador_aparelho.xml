@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AdministradorAparelho: só existe para o app poder ser device owner (instalação sem confirmação). -->
+<device-admin>
+    <uses-policies />
+</device-admin>

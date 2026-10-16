@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
-import '../config/configuracao.dart';
+import '../config/versao_app.dart';
 import '../dados/api_dispositivo.dart';
 import 'reproducao_page.dart';
 
@@ -51,7 +51,7 @@ class _PareamentoPageState extends State<PareamentoPage> {
       final pareamento = await s.api.autenticar(
         codigo: codigo,
         dispositivoId: await s.credenciais.dispositivoId(),
-        versaoApp: Configuracao.versaoApp,
+        versaoApp: VersaoApp.nome,
       );
       await s.credenciais.gravarToken(pareamento.token);
       await s.banco.gravarEstado(
@@ -143,7 +143,7 @@ class _PareamentoPageState extends State<PareamentoPage> {
                           style: const TextStyle(color: Colors.white54)),
                     ),
                   const SizedBox(height: 8),
-                  Text('Versão ${Configuracao.versaoApp}',
+                  Text('Versão ${VersaoApp.nome}',
                       textAlign: TextAlign.center, style: const TextStyle(color: Colors.white38)),
                 ],
               ),
