@@ -462,9 +462,45 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("last_modified_by");
 
+                    b.Property<string>("MotivoRecusaTroca")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_recusa_troca");
+
                     b.Property<long>("ParceiroId")
                         .HasColumnType("bigint")
                         .HasColumnName("parceiro_id");
+
+                    b.Property<string>("PendenteChave")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("pendente_chave");
+
+                    b.Property<int?>("PendenteDuracaoSegundos")
+                        .HasColumnType("integer")
+                        .HasColumnName("pendente_duracao_segundos");
+
+                    b.Property<DateTimeOffset?>("PendenteEnviadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pendente_enviado_em");
+
+                    b.Property<string>("PendenteHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("pendente_hash");
+
+                    b.Property<long?>("PendenteTamanhoBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("pendente_tamanho_bytes");
+
+                    b.Property<int?>("PendenteTipo")
+                        .HasColumnType("integer")
+                        .HasColumnName("pendente_tipo");
+
+                    b.Property<string>("PendenteTipoConteudo")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("pendente_tipo_conteudo");
 
                     b.Property<string>("QrCidadeRecebedor")
                         .HasMaxLength(15)
@@ -562,6 +598,8 @@ namespace Atlas.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("ck_midia_qr_valor", "qr_valor IS NULL OR qr_valor > 0");
 
                             t.HasCheckConstraint("ck_midia_tamanho", "tamanho_bytes BETWEEN 1 AND 52428800");
+
+                            t.HasCheckConstraint("ck_midia_troca_pendente", "(pendente_chave IS NULL) = (pendente_tipo IS NULL) AND (pendente_chave IS NULL) = (pendente_tipo_conteudo IS NULL) AND (pendente_chave IS NULL) = (pendente_tamanho_bytes IS NULL) AND (pendente_chave IS NULL) = (pendente_hash IS NULL) AND (pendente_chave IS NULL) = (pendente_enviado_em IS NULL)");
                         });
                 });
 

@@ -28,6 +28,9 @@ public record GetMidiasRedeQuery : IRequest<PaginatedList<MidiaDto>>
     public long? ParceiroId { get; init; }
     public bool? Ativo { get; init; }
     public TipoMidia? Tipo { get; init; }
+
+    /// <summary>Só as que têm troca de arquivo aguardando aprovação (mais antigas primeiro).</summary>
+    public bool? TrocaPendente { get; init; }
 }
 
 public class GetMidiasRedeQueryHandler(IApplicationDbContext context, IIdentityService identityService)
@@ -52,14 +55,22 @@ public class GetMidiasRedeQueryHandler(IApplicationDbContext context, IIdentityS
             query = query.Where(m => m.Tipo == tipo);
         }
 
+        if (request.TrocaPendente is { } pendente)
+        {
+            query = query.Where(m => (m.PendenteChave != null) == pendente);
+        }
+
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var termo = request.SearchTerm.Trim().ToLower();
             query = query.Where(m => m.Titulo.ToLower().Contains(termo) || m.Parceiro.Nome.ToLower().Contains(termo));
         }
 
-        var pagina = await query
-            .OrderBy(m => m.Parceiro.Nome)
+        var ordenada = request.TrocaPendente == true
+            ? query.OrderBy(m => m.PendenteEnviadoEm)
+            : query.OrderBy(m => m.Parceiro.Nome);
+
+        var pagina = await ordenada
             .ThenBy(m => m.Titulo)
             .ThenBy(m => m.Id)
             .ParaDto(context)
@@ -84,13 +95,13 @@ public class GetMidiaRedeByIdQueryHandler(
 {
     public async Task<MidiaDto> Handle(GetMidiaRedeByIdQuery request, CancellationToken cancellationToken)
     {
-        var chave = await context.Midias
+        var chaves = await context.Midias
             .AsNoTracking()
             .Where(m => m.Id == request.Id)
-            .Select(m => m.ChaveArmazenamento)
+            .Select(m => new { m.ChaveArmazenamento, m.PendenteChave })
             .FirstOrDefaultAsync(cancellationToken);
 
-        Guard.Against.NotFound(request.Id, chave);
+        Guard.Against.NotFound(request.Id, chaves);
 
         var dto = await context.Midias
             .AsNoTracking()
@@ -102,7 +113,10 @@ public class GetMidiaRedeByIdQueryHandler(
 
         return dto with
         {
-            UrlVisualizacao = await armazenamento.GerarUrlLeituraAsync(chave, GetMidiaByIdQueryHandler.ValidadeVisualizacao, cancellationToken),
+            UrlVisualizacao = await armazenamento.GerarUrlLeituraAsync(chaves.ChaveArmazenamento, GetMidiaByIdQueryHandler.ValidadeVisualizacao, cancellationToken),
+            UrlVisualizacaoPendente = chaves.PendenteChave is { } pendente
+                ? await armazenamento.GerarUrlLeituraAsync(pendente, GetMidiaByIdQueryHandler.ValidadeVisualizacao, cancellationToken)
+                : null,
         };
     }
 }

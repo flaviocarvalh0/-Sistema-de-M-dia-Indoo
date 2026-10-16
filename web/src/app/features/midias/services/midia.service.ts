@@ -2,7 +2,7 @@ import { HttpBackend, HttpClient, HttpEvent, HttpHeaders } from '@angular/common
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { CrudService, Page, PaginatedResponse, QueryParams, comErroLocal } from '@atlas/framework';
-import { EnvioPreparado, LinhaMidia, MidiaDto, NovaMidia, SubstituicaoArquivo, TipoMidia, UsoArmazenamento } from '../models/midia.model';
+import { EnvioPreparado, LinhaMidia, MidiaDto, NovaMidia, SubstituicaoArquivo, TipoMidia, UsoArmazenamento, SubstituicaoResultado } from '../models/midia.model';
 import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util';
 import { paraNumero } from '../../../shared/utils/form.util';
 import { TIPO_QR_ROTULO } from '../configs/midia.config';
@@ -67,8 +67,8 @@ export class MidiaService extends CrudService<MidiaDto, number> {
   }
 
   /** Troca o arquivo (já enviado ao storage) de uma mídia existente; a TV baixa de novo pelo hash novo. */
-  substituirArquivo(corpo: SubstituicaoArquivo): Observable<number> {
-    return this.http.put<number>(`${this.baseUrl}/${corpo.id}/arquivo`, corpo, { context: comErroLocal() });
+  substituirArquivo(corpo: SubstituicaoArquivo): Observable<SubstituicaoResultado> {
+    return this.http.put<SubstituicaoResultado>(`${this.baseUrl}/${corpo.id}/arquivo`, corpo, { context: comErroLocal() });
   }
 
   /**
@@ -134,6 +134,7 @@ function paraLinha(m: MidiaDto): LinhaMidia {
   return {
     ...m,
     qrCode: m.qrTipo ? TIPO_QR_ROTULO[m.qrTipo] : '—',
+    troca: m.trocaPendente ? 'Aguardando aprovação' : m.motivoRecusaTroca ? `Recusada: ${m.motivoRecusaTroca}` : '—',
     tipoRotulo: TIPO_MIDIA_ROTULO[m.tipo] ?? m.tipo,
     tamanho: formatarBytes(m.tamanhoBytes),
     duracao: formatarDuracao(m.duracaoSegundos),

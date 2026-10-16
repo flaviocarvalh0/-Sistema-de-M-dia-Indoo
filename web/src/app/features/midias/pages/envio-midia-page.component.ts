@@ -48,7 +48,13 @@ type Etapa = 'escolha' | 'hash' | 'envio' | 'registro';
       <div class="alert alert-info small py-2" style="max-width: 760px">
         <i class="bi bi-arrow-repeat me-1"></i>
         Trocando o arquivo de <strong>{{ m.titulo }}</strong>. A mídia continua nas mesmas grades, com o mesmo
-        título e período; as TVs baixam o arquivo novo na próxima sincronização.
+        título e período.
+        @if (m.quantidadePlaylists > 0) {
+          Como ela já está no ar, o arquivo novo vai para a <strong>aprovação da operadora</strong>; até lá, as TVs
+          seguem com o atual.
+        } @else {
+          As TVs baixam o arquivo novo na próxima sincronização.
+        }
       </div>
     } @else if (planoCompleto()) {
       <div class="alert alert-warning small py-2" style="max-width: 760px" data-teste="aviso-plano">
@@ -285,8 +291,11 @@ export class EnvioMidiaPageComponent implements OnInit {
           })),
       )),
     ).subscribe({
-      next: () => {
-        if (atual) this.toast.success('Arquivo substituído. As TVs baixam o novo na próxima sincronização.');
+      next: (resultado: unknown) => {
+        const paraAprovar = !!(resultado as { aguardandoAprovacao?: boolean } | null)?.aguardandoAprovacao;
+        if (atual && paraAprovar) {
+          this.toast.success('Arquivo enviado para aprovação da operadora. Até lá, as TVs seguem com o arquivo atual.');
+        } else if (atual) this.toast.success('Arquivo substituído. As TVs baixam o novo na próxima sincronização.');
         else if (nasceInativa) this.toast.warning('Mídia enviada como inativa: o limite de mídias ativas do seu plano está completo.');
         else this.toast.success('Mídia enviada e ativa. A operadora inclui nas grades das TVs.');
         this.limparPrevia();

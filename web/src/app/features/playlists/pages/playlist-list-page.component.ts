@@ -8,6 +8,7 @@ import { PlaylistService } from '../services/playlist.service';
 import { LinhaPlaylist, PlaylistDto } from '../models/playlist.model';
 import { PLAYLIST_COLUNAS, criarCamposPlaylist } from '../configs/playlist.config';
 import { preencherCampos } from '../../../shared/utils/form.util';
+import { TrocasPendentesComponent } from '../components/trocas-pendentes.component';
 
 /** Nome físico da tabela — chave do RBAC no front. */
 const ENTIDADE = 'playlist';
@@ -19,8 +20,10 @@ const ENTIDADE = 'playlist';
 @Component({
   selector: 'app-playlist-list-page',
   standalone: true,
-  imports: [ListagemDinamicaComponent],
+  imports: [ListagemDinamicaComponent, TrocasPendentesComponent],
   template: `
+    <app-trocas-pendentes></app-trocas-pendentes>
+
     <atlas-listagem-dinamica
       titulo="Playlists"
       entityName="${ENTIDADE}"

@@ -2,7 +2,8 @@ namespace Atlas.Application.Business.Indoor.Midias.Common;
 
 /// <summary>
 /// Espaço que o parceiro ocupa no storage: soma das mídias gravadas, ativas
-/// ou não (inativar não libera espaço; excluir libera).
+/// ou não (inativar não libera espaço; excluir libera), mais os arquivos de
+/// troca que aguardam aprovação.
 /// </summary>
 internal static class CotaArmazenamento
 {
@@ -13,7 +14,7 @@ internal static class CotaArmazenamento
     {
         var usado = await context.Midias
             .Where(m => m.ParceiroId == parceiroId)
-            .SumAsync(m => (long?)m.TamanhoBytes, cancellationToken) ?? 0;
+            .SumAsync(m => (long?)m.TamanhoBytes + (m.PendenteTamanhoBytes ?? 0), cancellationToken) ?? 0;
 
         var cotaMb = await context.Parceiros
             .Where(p => p.Id == parceiroId)

@@ -1,4 +1,5 @@
 using Atlas.Application.Business.Indoor.Midias.Dtos;
+using Atlas.Application.Business.Rede.Midias.Commands;
 using Atlas.Application.Business.Rede.Midias.Queries;
 using Atlas.Application.Common.Models.Pagination;
 using Atlas.Domain.Business.Constants;
@@ -29,6 +30,12 @@ public class RedeMidias : IEndpointGroup
         groupBuilder.MapGet(GetMidiaDaRedeById, "{id:long}")
             .RequireAuthorization(BusinessPermissionKeys.Playlists.View)
             .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
+        groupBuilder.MapPost(AprovarTrocaArquivo, "{id:long}/aprovar-troca")
+            .RequireAuthorization(BusinessPermissionKeys.Playlists.Update)
+            .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
+        groupBuilder.MapPost(RecusarTrocaArquivo, "{id:long}/recusar-troca")
+            .RequireAuthorization(BusinessPermissionKeys.Playlists.Update)
+            .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
     }
 
     [EndpointSummary("Listar mídias da rede")]
@@ -41,6 +48,7 @@ public class RedeMidias : IEndpointGroup
         [FromQuery] long? parceiroId,
         [FromQuery] bool? ativo,
         [FromQuery] TipoMidia? tipo,
+        [FromQuery] bool? trocaPendente,
         CancellationToken cancellationToken)
     {
         return TypedResults.Ok(await sender.Send(new GetMidiasRedeQuery
@@ -50,6 +58,7 @@ public class RedeMidias : IEndpointGroup
             ParceiroId = parceiroId,
             Ativo = ativo,
             Tipo = tipo,
+            TrocaPendente = trocaPendente,
         }, cancellationToken));
     }
 
@@ -58,5 +67,22 @@ public class RedeMidias : IEndpointGroup
     public static async Task<Ok<MidiaDto>> GetMidiaDaRedeById(ISender sender, long id, CancellationToken cancellationToken)
     {
         return TypedResults.Ok(await sender.Send(new GetMidiaRedeByIdQuery(id), cancellationToken));
+    }
+
+    [EndpointSummary("Aprovar troca de arquivo")]
+    [EndpointDescription("O arquivo novo enviado pelo anunciante passa a valer; as TVs baixam na próxima sincronização. Devolve a nova versão.")]
+    public static async Task<Ok<uint>> AprovarTrocaArquivo(
+        ISender sender, long id, [FromQuery] uint version, CancellationToken cancellationToken)
+    {
+        return TypedResults.Ok(await sender.Send(new AprovarTrocaArquivoCommand(id, version), cancellationToken));
+    }
+
+    [EndpointSummary("Recusar troca de arquivo")]
+    [EndpointDescription("O arquivo atual segue no ar; o anunciante recebe o motivo. Devolve a nova versão.")]
+    public static async Task<Ok<uint>> RecusarTrocaArquivo(
+        ISender sender, long id, RecusarTrocaArquivoCommand command, CancellationToken cancellationToken)
+    {
+        RotaIndoor.GarantirMesmoId(id, command.Id);
+        return TypedResults.Ok(await sender.Send(command, cancellationToken));
     }
 }

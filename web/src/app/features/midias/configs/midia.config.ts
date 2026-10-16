@@ -15,6 +15,7 @@ export const MIDIA_COLUNAS: ColunaDef[] = [
   { campo: 'periodo', titulo: 'Período', tipo: 'texto' },
   { campo: 'quantidadePlaylists', titulo: 'Em grades', tipo: 'numero' },
   { campo: 'qrCode', titulo: 'QR code', tipo: 'texto' },
+  { campo: 'troca', titulo: 'Troca de arquivo', tipo: 'texto' },
   { campo: 'ativo', titulo: 'Situação', tipo: 'status' },
 ];
 

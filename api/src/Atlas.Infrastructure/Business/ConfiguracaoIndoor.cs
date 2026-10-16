@@ -15,6 +15,20 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfig
             ? url
             : null;
 
+    public IReadOnlyList<string> EmailsOperadora =>
+        (configuration.GetSection("Indoor:Alertas:Emails").Get<string[]>() ?? [])
+            .Select(e => e.Trim())
+            .Where(e => e.Contains('@'))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    public TimeSpan ToleranciaAlertaOffline =>
+        TimeSpan.FromMinutes(Inteiro("Indoor:Alertas:TvOfflineMinutos", padrao: 15, minimo: 5));
+
+    public (int Inicio, int Fim) HorarioAlertas =>
+        (Math.Clamp(Inteiro("Indoor:Alertas:HoraInicio", padrao: 7, minimo: 0), 0, 23),
+         Math.Clamp(Inteiro("Indoor:Alertas:HoraFim", padrao: 22, minimo: 1), 1, 24));
+
     public TimeSpan IntervaloSincronizacao =>
         TimeSpan.FromSeconds(Inteiro("Indoor:Dispositivo:IntervaloSincronizacaoSegundos", padrao: 60, minimo: 30));
 

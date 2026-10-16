@@ -13,6 +13,22 @@ public interface IConfiguracaoIndoor
     /// </summary>
     Uri? UrlPublica { get; }
 
+    /// <summary>
+    /// E-mails da operadora que recebem os avisos (troca de arquivo para
+    /// aprovar, TV fora do ar): <c>Indoor:Alertas:Emails</c>. Vazio = sem e-mail.
+    /// </summary>
+    IReadOnlyList<string> EmailsOperadora { get; }
+
+    /// <summary>Sem sincronizar há mais que isto, a TV gera alerta (<c>Indoor:Alertas:TvOfflineMinutos</c>, padrão 15).</summary>
+    TimeSpan ToleranciaAlertaOffline { get; }
+
+    /// <summary>
+    /// Hora do dia (no fuso do estabelecimento) em que os alertas de TV fora do
+    /// ar valem: <c>Indoor:Alertas:HoraInicio</c> (padrão 7) até
+    /// <c>Indoor:Alertas:HoraFim</c> (padrão 22). Fora disso a loja pode estar fechada.
+    /// </summary>
+    (int Inicio, int Fim) HorarioAlertas { get; }
+
     /// <summary>De quanto em quanto tempo a TV consulta a grade (<c>Indoor:Dispositivo:IntervaloSincronizacaoSegundos</c>, padrão 60).</summary>
     TimeSpan IntervaloSincronizacao { get; }
 

@@ -3,6 +3,9 @@ using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Parceiros.Common;
 using Atlas.Application.Common.Interfaces;
 using Atlas.Application.Common.Models;
+using Atlas.Application.Platform.EmailMessages.Common;
+using Atlas.Domain.Platform.Entities;
+using System.Runtime.CompilerServices;
 using Atlas.Domain.Business.Parceiros.Enums;
 
 namespace Atlas.Infrastructure.UnitTests.Business.Indoor;
@@ -111,6 +114,9 @@ internal sealed class ConfiguracaoIndoorFake : IConfiguracaoIndoor
 {
     public string UrlPainel => "https://painel.indoor.test/";
     public Uri? UrlPublica { get; set; } = new("https://tv.indoor.test");
+    public IReadOnlyList<string> EmailsOperadora { get; set; } = ["operadora@rede.test"];
+    public TimeSpan ToleranciaAlertaOffline => TimeSpan.FromMinutes(15);
+    public (int Inicio, int Fim) HorarioAlertas => (7, 22);
     public TimeSpan IntervaloSincronizacao => TimeSpan.FromMinutes(5);
     public TimeSpan ValidadeTokenDispositivo => TimeSpan.FromDays(30);
     public TimeSpan ValidadeUrlDownload => TimeSpan.FromHours(24);
@@ -121,4 +127,16 @@ internal sealed class ConfiguracaoIndoorFake : IConfiguracaoIndoor
     public Uri UrlPtax => new("https://bcb.test/odata");
     public Uri UrlPrevisaoClima => new("https://clima.test/v1/forecast");
     public Uri UrlGeocodificacao => new("https://geo.test/v1/search");
+}
+
+/// <summary>Fila de e-mails em memória: o teste confere o que seria enviado.</summary>
+internal sealed class EmailsFake : IEmailMessageService
+{
+    public List<EmailMessageRequest> Enfileirados { get; } = [];
+
+    public Task<EmailMessage> EnqueueAsync(EmailMessageRequest request, CancellationToken cancellationToken = default)
+    {
+        Enfileirados.Add(request);
+        return Task.FromResult((EmailMessage)RuntimeHelpers.GetUninitializedObject(typeof(EmailMessage)));
+    }
 }

@@ -6,6 +6,7 @@ using Atlas.Application.Business.Indoor.Midias.Commands.EstadoMidia;
 using Atlas.Application.Business.Indoor.Midias.Queries;
 using Atlas.Application.Business.Indoor.Midias.Commands.SubstituirArquivo;
 using Atlas.Application.Business.Indoor.Telas.Queries;
+using Atlas.Application.Business.Rede.Midias.Commands;
 using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
@@ -32,6 +33,7 @@ public class PainelIndoorTests : IDisposable
     private readonly ArmazenamentoFake _armazenamento = new();
     private readonly RelogioFixo _relogio = new(Agora);
     private readonly ParceiroAtualFake _parceiroAtual;
+    private readonly EmailsFake _emails = new();
     private readonly long _parceiroA;
     private readonly long _parceiroB;
 
@@ -300,7 +302,31 @@ public class PainelIndoorTests : IDisposable
     // ---------- Substituir arquivo ----------
 
     [Fact]
-    public async Task SubstituirArquivo_TrocaHashETamanho_MantemMidiaEPlaylists_ApagaOAntigo()
+    public async Task SubstituirArquivo_ForaDasGradesTrocaNaHoraEApagaOAntigo()
+    {
+        var id = await CriarMidia(NovaMidia(Arquivos.Mp4(), TiposArquivoMidia.Mp4));
+        var chaveAntiga = (await _context.Midias.SingleAsync(m => m.Id == id)).ChaveArmazenamento;
+
+        var novo = Arquivos.Png();
+        var chaveNova = Enviar(novo, TiposArquivoMidia.Png);
+        var resultado = await Substituir(new SubstituirArquivoMidiaCommand
+        {
+            Id = id, Chave = chaveNova, TipoConteudo = TiposArquivoMidia.Png, Hash = Sha256(novo), DuracaoSegundos = 12, Version = 0,
+        });
+
+        resultado.AguardandoAprovacao.Should().BeFalse();
+        var midia = await _context.Midias.AsNoTracking().SingleAsync(m => m.Id == id);
+        midia.ChaveArmazenamento.Should().Be(chaveNova);
+        midia.Hash.Should().Be(Sha256(novo));
+        midia.Tipo.Should().Be(TipoMidia.Imagem);
+        midia.DuracaoSegundos.Should().Be(12);
+        midia.PendenteChave.Should().BeNull();
+        _armazenamento.Removidos.Should().Equal(chaveAntiga);
+        _emails.Enfileirados.Should().BeEmpty("fora das grades não há o que aprovar");
+    }
+
+    [Fact]
+    public async Task SubstituirArquivo_EmGradeFicaPendente_AsTvsSeguemComOAtualAteAprovar()
     {
         var antigo = Arquivos.Mp4();
         var id = await CriarMidia(NovaMidia(antigo, TiposArquivoMidia.Mp4));
@@ -309,10 +335,24 @@ public class PainelIndoorTests : IDisposable
 
         var novo = Arquivos.Png();
         var chaveNova = Enviar(novo, TiposArquivoMidia.Png);
-        await Substituir(new SubstituirArquivoMidiaCommand
+        var resultado = await Substituir(new SubstituirArquivoMidiaCommand
         {
             Id = id, Chave = chaveNova, TipoConteudo = TiposArquivoMidia.Png, Hash = Sha256(novo), DuracaoSegundos = 12, Version = 0,
         });
+
+        resultado.AguardandoAprovacao.Should().BeTrue();
+        var pendente = await _context.Midias.AsNoTracking().SingleAsync(m => m.Id == id);
+        pendente.ChaveArmazenamento.Should().Be(chaveAntiga, "a TV segue com o arquivo aprovado");
+        pendente.Hash.Should().Be(Sha256(antigo));
+        pendente.PendenteChave.Should().Be(chaveNova);
+        pendente.PendenteEnviadoEm.Should().Be(Agora);
+        _armazenamento.Removidos.Should().BeEmpty();
+        _emails.Enfileirados.Single().Recipients.Single().Email.Should().Be("operadora@rede.test");
+
+        // A operadora aprova: o novo vale, o antigo sai, o anunciante é avisado.
+        await new AprovarTrocaArquivoCommandHandler(_context, _armazenamento, _emails, new ConfiguracaoIndoorFake(),
+                NullLogger<AprovarTrocaArquivoCommandHandler>.Instance)
+            .Handle(new AprovarTrocaArquivoCommand(id, 0), CancellationToken.None);
 
         var midia = await _context.Midias.AsNoTracking().SingleAsync(m => m.Id == id);
         midia.ChaveArmazenamento.Should().Be(chaveNova);
@@ -320,8 +360,54 @@ public class PainelIndoorTests : IDisposable
         midia.TamanhoBytes.Should().Be(novo.Length);
         midia.Tipo.Should().Be(TipoMidia.Imagem);
         midia.DuracaoSegundos.Should().Be(12);
+        midia.PendenteChave.Should().BeNull();
         (await _context.ItensPlaylist.CountAsync(i => i.PlaylistId == playlist.Id && i.MidiaId == id)).Should().Be(1, "continua na grade");
         _armazenamento.Removidos.Should().Equal(chaveAntiga);
+        _emails.Enfileirados.Last().Subject.Should().StartWith("Troca de arquivo aprovada");
+    }
+
+    [Fact]
+    public async Task SubstituirArquivo_RecusaMantemOAtualApagaOPendenteEGuardaOMotivo()
+    {
+        var id = await CriarMidia(NovaMidia(Arquivos.Mp4(), TiposArquivoMidia.Mp4));
+        await CriarPlaylistNoBancoAsync("Grade", id);
+        var chaveAntiga = (await _context.Midias.SingleAsync(m => m.Id == id)).ChaveArmazenamento;
+        var primeira = Enviar(Arquivos.Png(), TiposArquivoMidia.Png);
+        await Substituir(new SubstituirArquivoMidiaCommand { Id = id, Chave = primeira, TipoConteudo = TiposArquivoMidia.Png, Version = 0 });
+
+        // Uma segunda troca antes da aprovação substitui a primeira (que sai do storage).
+        var segunda = Enviar(Arquivos.Png(1500), TiposArquivoMidia.Png);
+        await Substituir(new SubstituirArquivoMidiaCommand { Id = id, Chave = segunda, TipoConteudo = TiposArquivoMidia.Png, Version = 0 });
+        _armazenamento.Removidos.Should().Equal(primeira);
+
+        await new RecusarTrocaArquivoCommandHandler(_context, _armazenamento, _emails, new ConfiguracaoIndoorFake(),
+                NullLogger<RecusarTrocaArquivoCommandHandler>.Instance)
+            .Handle(new RecusarTrocaArquivoCommand { Id = id, Motivo = "Imagem cortada.", Version = 0 }, CancellationToken.None);
+
+        var midia = await _context.Midias.AsNoTracking().SingleAsync(m => m.Id == id);
+        midia.ChaveArmazenamento.Should().Be(chaveAntiga);
+        midia.PendenteChave.Should().BeNull();
+        midia.MotivoRecusaTroca.Should().Be("Imagem cortada.");
+        _armazenamento.Removidos.Should().Equal(primeira, segunda);
+        _emails.Enfileirados.Last().HtmlBody.Should().Contain("Imagem cortada.");
+
+        var semPendente = () => new AprovarTrocaArquivoCommandHandler(_context, _armazenamento, _emails, new ConfiguracaoIndoorFake(),
+                NullLogger<AprovarTrocaArquivoCommandHandler>.Instance)
+            .Handle(new AprovarTrocaArquivoCommand(id, 0), CancellationToken.None);
+        (await semPendente.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("PendenteChave");
+    }
+
+    [Fact]
+    public async Task SubstituirArquivo_PendenteContaNaCota()
+    {
+        // Cota do parceiro A: 1 MB. Em grade, o atual (700 KB) segue no ar: outro de 700 KB não cabe.
+        var id = await CriarMidia(NovaMidia(Arquivos.Mp4(700 * 1024), TiposArquivoMidia.Mp4));
+        await CriarPlaylistNoBancoAsync("Grade", id);
+        var chave = Enviar(Arquivos.Mp4(700 * 1024), TiposArquivoMidia.Mp4);
+
+        var acao = () => Substituir(new SubstituirArquivoMidiaCommand { Id = id, Chave = chave, TipoConteudo = TiposArquivoMidia.Mp4, Version = 0 });
+
+        await acao.Should().ThrowAsync<ValidationException>();
     }
 
     [Fact]
@@ -425,8 +511,9 @@ public class PainelIndoorTests : IDisposable
         new CriarMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, NullLogger<CriarMidiaCommandHandler>.Instance)
             .Handle(comando, CancellationToken.None);
 
-    private Task<uint> Substituir(SubstituirArquivoMidiaCommand comando) =>
-        new SubstituirArquivoMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, NullLogger<SubstituirArquivoMidiaCommandHandler>.Instance)
+    private Task<SubstituicaoArquivoDto> Substituir(SubstituirArquivoMidiaCommand comando) =>
+        new SubstituirArquivoMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, _emails, new ConfiguracaoIndoorFake(), _relogio,
+                NullLogger<SubstituirArquivoMidiaCommandHandler>.Instance)
             .Handle(comando, CancellationToken.None);
 
     private CriarMidiaCommand NovaMidia(byte[] arquivo, string tipo) => new()

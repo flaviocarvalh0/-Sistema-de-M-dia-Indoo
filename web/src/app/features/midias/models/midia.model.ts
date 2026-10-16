@@ -37,6 +37,15 @@ export interface MidiaDto {
   qrTamanho?: TamanhoQrCode | null;
   /** O texto codificado (link, tel: ou Pix copia e cola). */
   qrConteudo?: string | null;
+  /** Arquivo novo aguardando a aprovação da operadora (as TVs seguem com o atual). */
+  trocaPendente?: boolean;
+  pendenteTipo?: TipoMidia | null;
+  pendenteTamanhoBytes?: number | null;
+  pendenteEnviadoEm?: string | null;
+  /** Por que a última troca foi recusada. */
+  motivoRecusaTroca?: string | null;
+  /** Só no detalhe da operadora: endereço temporário do arquivo pendente. */
+  urlVisualizacaoPendente?: string | null;
   /** Só no detalhe: endereço temporário para pré-visualizar. */
   urlVisualizacao?: string | null;
   created: string;
@@ -47,7 +56,13 @@ export interface MidiaDto {
 }
 
 /** Linha da grid: o DTO mais as colunas calculadas. */
-export type LinhaMidia = MidiaDto & { tipoRotulo: string; tamanho: string; duracao: string; periodo: string; qrCode: string };
+export type LinhaMidia = MidiaDto & { tipoRotulo: string; tamanho: string; duracao: string; periodo: string; qrCode: string; troca: string };
+
+/** Resposta da troca de arquivo: em grade, vai para a operadora aprovar. */
+export interface SubstituicaoResultado {
+  version: number;
+  aguardandoAprovacao: boolean;
+}
 
 export interface UsoArmazenamento {
   usadoBytes: number;

@@ -1,3 +1,5 @@
+using Atlas.Application.Business.Common;
+using Atlas.Application.Platform.EmailMessages.Common;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Application.Business.Indoor.Midias.Common;
@@ -14,8 +16,14 @@ namespace Atlas.Application.Business.Indoor.Midias.Commands.SubstituirArquivo;
 /// próxima sincronização. O envio é igual ao do cadastro (URL assinada e
 /// conferência do arquivo); o arquivo antigo sai do storage depois de gravar.
 /// </summary>
+/// <remarks>
+/// Mídia que está em alguma grade (ADR-020): o arquivo novo fica
+/// <b>aguardando aprovação</b> da operadora e as TVs seguem com o atual —
+/// conteúdo novo não entra no ar sem alguém da rede ver. Mídia fora das
+/// grades troca na hora (não toca em lugar nenhum).
+/// </remarks>
 [Authorize(Policy = BusinessPermissionKeys.Midias.Update)]
-public record SubstituirArquivoMidiaCommand : IRequest<uint>
+public record SubstituirArquivoMidiaCommand : IRequest<SubstituicaoArquivoDto>
 {
     public long Id { get; init; }
 
@@ -33,36 +41,59 @@ public record SubstituirArquivoMidiaCommand : IRequest<uint>
     public uint Version { get; init; }
 }
 
+/// <param name="Version">Nova versão da mídia.</param>
+/// <param name="AguardandoAprovacao">A troca foi para a operadora aprovar; as TVs seguem com o arquivo atual.</param>
+public sealed record SubstituicaoArquivoDto(uint Version, bool AguardandoAprovacao);
+
 public class SubstituirArquivoMidiaCommandHandler(
     IApplicationDbContext context,
     IParceiroAtual parceiroAtual,
     IArmazenamentoMidias armazenamento,
+    IEmailMessageService emails,
+    IConfiguracaoIndoor configuracao,
+    TimeProvider timeProvider,
     ILogger<SubstituirArquivoMidiaCommandHandler> logger)
-    : IRequestHandler<SubstituirArquivoMidiaCommand, uint>
+    : IRequestHandler<SubstituirArquivoMidiaCommand, SubstituicaoArquivoDto>
 {
-    public async Task<uint> Handle(SubstituirArquivoMidiaCommand request, CancellationToken cancellationToken)
+    public async Task<SubstituicaoArquivoDto> Handle(SubstituirArquivoMidiaCommand request, CancellationToken cancellationToken)
     {
         var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
         var midia = await RegistrosDoParceiro.CarregarAsync(context.Midias, parceiro.ParceiroId, request.Id, cancellationToken);
+        var emGrade = await context.ItensPlaylist.AnyAsync(i => i.MidiaId == midia.Id, cancellationToken);
 
-        // O arquivo antigo deixa de contar na cota: o novo ocupa o lugar dele.
+        // Troca direta: o arquivo atual (e um pendente esquecido) deixam de contar.
+        // Troca para aprovar: o atual continua no ar, só um pendente anterior sai.
         var arquivo = await RecebimentoArquivo.ConferirAsync(
             context, armazenamento, logger, parceiro.ParceiroId, request.Chave, request.TipoConteudo, request.Hash,
-            bytesQueSaem: midia.TamanhoBytes, cancellationToken);
+            bytesQueSaem: (emGrade ? 0 : midia.TamanhoBytes) + (midia.PendenteTamanhoBytes ?? 0), cancellationToken);
 
-        var chaveAntiga = midia.ChaveArmazenamento;
+        var tipo = TiposArquivoMidia.TipoDaMidia(request.TipoConteudo);
+        var chavesQueSaem = new List<string>();
 
         context.ConferirVersao(midia, request.Version);
-        midia.SubstituirArquivo(
-            request.Chave,
-            TiposArquivoMidia.TipoDaMidia(request.TipoConteudo),
-            request.TipoConteudo,
-            arquivo.TamanhoBytes,
-            arquivo.Hash!);
-
-        if (request.DuracaoSegundos is { } duracao)
+        if (emGrade)
         {
-            midia.DuracaoSegundos = duracao;
+            if (midia.ProporArquivo(request.Chave, tipo, request.TipoConteudo, arquivo.TamanhoBytes, arquivo.Hash!,
+                    request.DuracaoSegundos, timeProvider.GetUtcNow()) is { } pendenteAnterior)
+            {
+                chavesQueSaem.Add(pendenteAnterior);
+            }
+
+            await AvisarOperadoraAsync(midia, parceiro.ParceiroId, cancellationToken);
+        }
+        else
+        {
+            chavesQueSaem.Add(midia.ChaveArmazenamento);
+            if (midia.PendenteChave is not null)
+            {
+                chavesQueSaem.Add(midia.RecusarTroca("Substituída por outro arquivo antes da aprovação."));
+            }
+
+            midia.SubstituirArquivo(request.Chave, tipo, request.TipoConteudo, arquivo.TamanhoBytes, arquivo.Hash!);
+            if (request.DuracaoSegundos is { } duracao)
+            {
+                midia.DuracaoSegundos = duracao;
+            }
         }
 
         uint versao;
@@ -79,9 +110,41 @@ public class SubstituirArquivoMidiaCommandHandler(
 
         // Depois do banco: se o storage falhar, sobra o arquivo antigo órfão
         // (só espaço), nunca uma mídia apontando para arquivo que não existe.
-        await RecebimentoArquivo.ApagarAsync(armazenamento, logger, chaveAntiga, cancellationToken);
+        foreach (var chave in chavesQueSaem)
+        {
+            await RecebimentoArquivo.ApagarAsync(armazenamento, logger, chave, cancellationToken);
+        }
 
-        return versao;
+        return new SubstituicaoArquivoDto(versao, emGrade);
+    }
+
+    /// <summary>E-mail para a operadora (se configurado), na mesma gravação da troca.</summary>
+    private async Task AvisarOperadoraAsync(Domain.Business.Indoor.Entities.Midia midia, long parceiroId, CancellationToken cancellationToken)
+    {
+        if (configuracao.EmailsOperadora.Count == 0)
+        {
+            return;
+        }
+
+        var nomeParceiro = await context.Parceiros.Where(p => p.Id == parceiroId).Select(p => p.Nome).FirstAsync(cancellationToken);
+        var urlPainel = configuracao.UrlPainel.TrimEnd('/');
+
+        await emails.EnqueueAsync(new EmailMessageRequest
+        {
+            Subject = $"Troca de arquivo para aprovar — {nomeParceiro}",
+            HtmlBody = ModeloEmail.Montar(
+                previa: $"{nomeParceiro} enviou um arquivo novo para \"{midia.Titulo}\". As TVs seguem com o atual até você aprovar.",
+                titulo: "Troca de arquivo para aprovar",
+                motivo: "Você recebeu este e-mail porque está na lista de avisos da operadora (Indoor:Alertas:Emails).",
+                ModeloEmail.ParagrafoHtml($"<strong>{ModeloEmail.E(nomeParceiro)}</strong> enviou um arquivo novo para a mídia <strong>{ModeloEmail.E(midia.Titulo)}</strong>, que está em grades das TVs."),
+                ModeloEmail.Paragrafo("As TVs continuam com o arquivo atual até a troca ser aprovada."),
+                ModeloEmail.Botao("Ver e aprovar", $"{urlPainel}/rede/playlist")),
+            Recipients = configuracao.EmailsOperadora
+                .Select(e => new EmailRecipientRequest { Email = e, Type = EmailRecipientType.To })
+                .ToList(),
+            RelatedEntityType = "Midia",
+            RelatedEntityId = midia.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        }, cancellationToken);
     }
 }
 

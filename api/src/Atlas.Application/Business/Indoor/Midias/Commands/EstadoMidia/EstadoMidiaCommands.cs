@@ -90,13 +90,16 @@ public class ExcluirMidiaCommandHandler(
 
         // Depois do banco: se o storage falhar, sobra um arquivo órfão (só
         // espaço), nunca uma mídia apontando para arquivo que não existe.
-        try
+        foreach (var chave in new[] { midia.ChaveArmazenamento, midia.PendenteChave }.OfType<string>())
         {
-            await armazenamento.RemoverAsync(midia.ChaveArmazenamento, cancellationToken);
-        }
-        catch (ArmazenamentoIndisponivelException ex)
-        {
-            logger.LogWarning(ex, "Mídia {Id} excluída, mas o arquivo {Chave} ficou no storage.", midia.Id, midia.ChaveArmazenamento);
+            try
+            {
+                await armazenamento.RemoverAsync(chave, cancellationToken);
+            }
+            catch (ArmazenamentoIndisponivelException ex)
+            {
+                logger.LogWarning(ex, "Mídia {Id} excluída, mas o arquivo {Chave} ficou no storage.", midia.Id, chave);
+            }
         }
     }
 }

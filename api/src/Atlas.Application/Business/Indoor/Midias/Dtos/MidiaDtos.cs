@@ -46,6 +46,19 @@ public sealed record MidiaDto : IDtoAuditavel
     /// <summary>Endereço temporário para pré-visualizar no painel. Só no detalhe (<c>GET /{id}</c>).</summary>
     public Uri? UrlVisualizacao { get; init; }
 
+    /// <summary>Há um arquivo novo aguardando a aprovação da operadora (as TVs seguem com o atual).</summary>
+    public bool TrocaPendente { get; init; }
+
+    public TipoMidia? PendenteTipo { get; init; }
+    public long? PendenteTamanhoBytes { get; init; }
+    public DateTimeOffset? PendenteEnviadoEm { get; init; }
+
+    /// <summary>Por que a última troca foi recusada.</summary>
+    public string? MotivoRecusaTroca { get; init; }
+
+    /// <summary>Endereço temporário do arquivo pendente (só no detalhe da operadora).</summary>
+    public Uri? UrlVisualizacaoPendente { get; init; }
+
     public DateTimeOffset Created { get; init; }
     public long? CreatedBy { get; init; }
     public string? CreatedByName { get; set; }
@@ -103,6 +116,11 @@ public static class MidiaProjecao
             QrPosicao = m.QrPosicao,
             QrTamanho = m.QrTamanho,
             QrConteudo = m.QrConteudo,
+            TrocaPendente = m.PendenteChave != null,
+            PendenteTipo = m.PendenteTipo,
+            PendenteTamanhoBytes = m.PendenteTamanhoBytes,
+            PendenteEnviadoEm = m.PendenteEnviadoEm,
+            MotivoRecusaTroca = m.MotivoRecusaTroca,
             QuantidadePlaylists = context.ItensPlaylist.Where(i => i.MidiaId == m.Id).Select(i => i.PlaylistId).Distinct().Count(),
             Created = m.Created,
             CreatedBy = m.CreatedBy,

@@ -30,6 +30,13 @@ public class MidiaConfiguration : IEntityTypeConfiguration<Midia>
                 + "AND (qr_tipo IS NULL) = (qr_posicao IS NULL) AND (qr_tipo IS NULL) = (qr_tamanho IS NULL)");
 
             table.HasCheckConstraint("ck_midia_qr_valor", "qr_valor IS NULL OR qr_valor > 0");
+
+            // Troca pendente: o arquivo novo está todo descrito ou não existe.
+            table.HasCheckConstraint(
+                "ck_midia_troca_pendente",
+                "(pendente_chave IS NULL) = (pendente_tipo IS NULL) AND (pendente_chave IS NULL) = (pendente_tipo_conteudo IS NULL) "
+                + "AND (pendente_chave IS NULL) = (pendente_tamanho_bytes IS NULL) AND (pendente_chave IS NULL) = (pendente_hash IS NULL) "
+                + "AND (pendente_chave IS NULL) = (pendente_enviado_em IS NULL)");
         });
 
         builder.Property(m => m.QrDestino).HasMaxLength(500);
@@ -47,6 +54,11 @@ public class MidiaConfiguration : IEntityTypeConfiguration<Midia>
         // reconhece o tamanho de char(n) e recusaria a tabela histórica na
         // subida seguinte. O tamanho exato fica na ck_midia_hash.
         builder.Property(m => m.Hash).HasMaxLength(64).IsRequired();
+        builder.Property(m => m.PendenteChave).HasMaxLength(300);
+        builder.Property(m => m.PendenteTipoConteudo).HasMaxLength(50);
+        builder.Property(m => m.PendenteHash).HasMaxLength(64);
+        builder.Property(m => m.MotivoRecusaTroca).HasMaxLength(Midia.TamanhoMaximoMotivoRecusa);
+        builder.Ignore(m => m.TemTrocaPendente);
 
         builder.Property(m => m.DuracaoSegundos)
             .HasDefaultValue(Midia.DuracaoPadraoSegundos);

@@ -122,6 +122,100 @@ public class Midia : BaseAuditableEntity, IDoParceiro
         Hash = hash;
     }
 
+    // ── Troca de arquivo aguardando aprovação (ADR-020) ─────────────────
+
+    public const int TamanhoMaximoMotivoRecusa = 500;
+
+    /// <summary>
+    /// Arquivo novo enviado pelo anunciante para uma mídia que está em alguma
+    /// grade. As TVs seguem com o arquivo atual até a operadora aprovar.
+    /// Nulo = nenhuma troca pendente.
+    /// </summary>
+    public string? PendenteChave { get; private set; }
+
+    public TipoMidia? PendenteTipo { get; private set; }
+    public string? PendenteTipoConteudo { get; private set; }
+    public long? PendenteTamanhoBytes { get; private set; }
+    public string? PendenteHash { get; private set; }
+
+    /// <summary>Duração que passa a valer com o arquivo novo; nula = mantém a atual.</summary>
+    public int? PendenteDuracaoSegundos { get; private set; }
+
+    public DateTimeOffset? PendenteEnviadoEm { get; private set; }
+
+    /// <summary>Por que a última troca foi recusada (o anunciante vê); some na próxima troca.</summary>
+    public string? MotivoRecusaTroca { get; private set; }
+
+    public bool TemTrocaPendente => PendenteChave is not null;
+
+    /// <summary>
+    /// Guarda o arquivo novo como pendente. Devolve a chave do pendente
+    /// anterior (substituído por este), que quem chama apaga do storage.
+    /// </summary>
+    public string? ProporArquivo(
+        string chave, TipoMidia tipo, string tipoConteudo, long tamanhoBytes, string hash, int? duracaoSegundos, DateTimeOffset agora)
+    {
+        var anterior = PendenteChave;
+        PendenteChave = chave;
+        PendenteTipo = tipo;
+        PendenteTipoConteudo = tipoConteudo;
+        PendenteTamanhoBytes = tamanhoBytes;
+        PendenteHash = hash;
+        PendenteDuracaoSegundos = duracaoSegundos;
+        PendenteEnviadoEm = agora;
+        MotivoRecusaTroca = null;
+        return anterior;
+    }
+
+    /// <summary>A troca vale: o arquivo pendente vira o atual. Devolve a chave antiga, para apagar.</summary>
+    public string AprovarTroca()
+    {
+        if (PendenteChave is null)
+        {
+            throw new InvalidOperationException("A mídia não tem troca de arquivo pendente.");
+        }
+
+        var antiga = ChaveArmazenamento;
+        SubstituirArquivo(PendenteChave, PendenteTipo!.Value, PendenteTipoConteudo!, PendenteTamanhoBytes!.Value, PendenteHash!);
+        if (PendenteDuracaoSegundos is { } duracao)
+        {
+            DuracaoSegundos = duracao;
+        }
+
+        LimparPendente();
+        return antiga;
+    }
+
+    /// <summary>A troca não vale: o arquivo atual continua. Devolve a chave do pendente, para apagar.</summary>
+    public string RecusarTroca(string motivo)
+    {
+        if (PendenteChave is null)
+        {
+            throw new InvalidOperationException("A mídia não tem troca de arquivo pendente.");
+        }
+
+        if (string.IsNullOrWhiteSpace(motivo))
+        {
+            throw new InvalidOperationException("O motivo da recusa é obrigatório.");
+        }
+
+        var pendente = PendenteChave;
+        LimparPendente();
+        MotivoRecusaTroca = motivo.Trim();
+        return pendente;
+    }
+
+    private void LimparPendente()
+    {
+        PendenteChave = null;
+        PendenteTipo = null;
+        PendenteTipoConteudo = null;
+        PendenteTamanhoBytes = null;
+        PendenteHash = null;
+        PendenteDuracaoSegundos = null;
+        PendenteEnviadoEm = null;
+    }
+
     /// <summary>Se a mídia está ativa e dentro da validade no dia informado.</summary>
     public bool EstaVigente(DateOnly hoje) =>
         Ativo

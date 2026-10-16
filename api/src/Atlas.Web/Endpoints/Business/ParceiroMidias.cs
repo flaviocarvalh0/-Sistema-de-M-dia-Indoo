@@ -103,7 +103,7 @@ public class ParceiroMidias : IEndpointGroup
 
     [EndpointSummary("Substituir o arquivo")]
     [EndpointDescription("Troca o arquivo mantendo a mídia e o lugar dela nas playlists: as TVs baixam o novo na próxima sincronização. O envio é igual ao do cadastro (POST envio e PUT na URL assinada). Devolve a nova versão.")]
-    public static async Task<Ok<uint>> SubstituirArquivo(
+    public static async Task<Ok<SubstituicaoArquivoDto>> SubstituirArquivo(
         ISender sender, long id, SubstituirArquivoMidiaCommand command, CancellationToken cancellationToken)
     {
         RotaIndoor.GarantirMesmoId(id, command.Id);
