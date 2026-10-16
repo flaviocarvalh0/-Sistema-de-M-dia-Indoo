@@ -46,6 +46,7 @@ liberada no CORS da API.
 |---|---|---|
 | `/rede/parceiro` | Operadora | Parceiros: cadastro (cria o login do responsável), espaço em MB, plano de mídias ativas, bloquear/desbloquear |
 | `/rede/tela` | Operadora | TVs da rede (o hardware é dela): estabelecimento (host), playlist, identificação do aparelho, código de pareamento, conexão, desvincular |
+| `/rede/tela/versoes-app` | Operadora | Versões do app das TVs: envio do APK, liberação para TVs de teste ou todas, suspensão (ADR-021) |
 | `/rede/playlist` | Operadora | Playlists da rede (uma playlist toca em várias telas), com a composição da fila (informativo a cada N, cartões de tempo e cotações, embaralhar, relógio, clima); "Clonar" duplica com a grade |
 | `/rede/playlist/:id/grade` | Operadora | Mídias ativas de todos os parceiros (busca, filtro, "Já adicionado (N×)"), ordem do loop, 📌 posição fixa e dias da semana de cada item |
 | `/rede/fonte-noticia` | Operadora | Feeds de notícias (RSS/Atom): cadastro, "Coletar agora", situação da última leitura e as notícias guardadas |
@@ -62,7 +63,7 @@ src/app/
   app.config.ts        provideAtlasFramework + interceptors
   app.routes.ts        rotas; módulos de negócio por routePrefix/route_key do Studio
   app-shell.component  casca autenticada (layout + menus vindos da API)
-  features/<feature>/  models, services, configs, pages (rede, telas, midias, playlists, noticias)
+  features/<feature>/  models, services, configs, pages (rede, telas, midias, playlists, noticias, app-tv)
   shared/              utilitários (paginação, formulário, dias da semana, bytes, duração)
 public/assets/config.json   endereço da API, lido em tempo de execução
 ```

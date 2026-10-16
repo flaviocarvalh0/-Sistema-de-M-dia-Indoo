@@ -42,6 +42,7 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 | `versaoGrade` | A última `versaoGrade` recebida. Se nada mudou, vem `alterada: false` sem itens. |
 | `versaoNoticias` | A última `versaoNoticias` recebida. Se as notícias não mudaram, `noticias` vem nulo. |
 | `versaoApp` | Aparece no painel. |
+| `versaoCodigoApp` | O `versionCode` do app instalado (o `+N` do pubspec). Liga a atualização automática (ADR-021); sem ele, `atualizacao` vem sempre nulo. |
 | `itensProntos` | Quantas mídias estão baixadas e conferidas (aparece no painel). |
 
 `200`:
@@ -132,6 +133,13 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
   "diretorio": {
     "url": "https://tv.suaempresa.com.br/d/K7M2Q9XHAB",
     "legenda": "Contatos dos anunciantes"
+  },
+  "atualizacao": {
+    "codigo": 7,
+    "nome": "1.2.0",
+    "url": "https://<storage>/app/3f2a….apk?token=…",
+    "hash": "<sha-256 do APK>",
+    "tamanhoBytes": 21450112
   }
 }
 ```
@@ -144,6 +152,10 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 - `diretorio` vem em toda resposta `200` quando a operadora ligou o
   diretório na tela (nulo se desligado ou se a API não tem endereço público).
   Não entra na `versaoGrade`.
+- `atualizacao` vem em toda resposta `200` quando há uma versão do app
+  liberada para esta TV (Todas, ou Teste se a tela é TV de teste) com
+  `codigo` maior que o `versaoCodigoApp` enviado; nulo caso contrário. Não
+  entra na `versaoGrade`. A `url` vale 24 h, como a das mídias.
 - `qrCode` do item é nulo quando a mídia não tem QR code. `conteudo` é o
   texto a codificar, já pronto (link, `tel:` ou Pix copia e cola);
   `posicao` é `InferiorDireito`, `InferiorEsquerdo`, `SuperiorDireito` ou
@@ -241,3 +253,9 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
     de espera; some nos anúncios com QR (o do anúncio vale), nas notícias e
     nos cartões. Guardar o último recebido (funciona offline); nulo na
     resposta apaga.
+16. **Atualização do app** (ADR-021): com `atualizacao`, baixar o APK numa
+    pasta própria com as regras 2 e 4 e entregar ao instalador do Android
+    (`PackageInstaller`). Sem `atualizacao`, apagar APKs guardados. Falhou
+    (download, instalação, confirmação recusada)? Tentar a mesma versão de
+    novo só depois de 1 hora. A atualização não interrompe nada até o Android
+    instalar; depois o app reabre sozinho (`MY_PACKAGE_REPLACED`).

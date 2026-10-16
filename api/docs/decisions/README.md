@@ -34,6 +34,8 @@ Cada ADR registra uma decisão arquitetural relevante, seu contexto, as alternat
 | [ADR-017](ADR-017-QR-Code-nos-Anuncios.md) | QR Code nos Anúncios | Aceito |
 | [ADR-018](ADR-018-Diretorio-de-Anunciantes-da-TV.md) | Diretório de Anunciantes da TV | Aceito |
 | [ADR-019](ADR-019-Carrossel-com-Cursor.md) | Carrossel com Cursor na Fila da TV | Aceito |
+| [ADR-020](ADR-020-Aprovacao-de-Troca-e-Alerta-de-TV-Offline.md) | Aprovação da Troca de Arquivo e Alerta de TV Fora do Ar | Aceito |
+| [ADR-021](ADR-021-Atualizacao-Automatica-do-App-das-TVs.md) | Atualização Automática do App das TVs | Aceito |
 ## Como criar um ADR
 
 1. Copie o arquivo [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md).

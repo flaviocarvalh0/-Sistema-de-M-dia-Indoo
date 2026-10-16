@@ -300,3 +300,26 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   volta nem emendar o mesmo anúncio; grade nova reconciliada sem perder o lugar.
 - [x] A volta em andamento não é remontada a cada sincronização (gastaria o cursor).
 - [x] Painel: campo na playlist e "todos passam a cada N voltas" na grade.
+
+### Aprovação da troca de arquivo e alerta de TV fora do ar ✅
+
+- [x] Troca de arquivo de mídia em grade fica pendente até a operadora aprovar
+  ou recusar com motivo, com e-mail para os dois lados; fora de grade troca na
+  hora ([ADR-020](../api/docs/decisions/ADR-020-Aprovacao-de-Troca-e-Alerta-de-TV-Offline.md)).
+- [x] Painel: cartão "Trocas de arquivo para aprovar" em Rede → Playlists com
+  comparação lado a lado; situação da troca na lista de mídias do parceiro.
+- [x] `MonitorTelas`: e-mail-resumo das TVs que caíram e voltaram, com
+  tolerância e horário configuráveis (`Indoor:Alertas:*`) no fuso do
+  estabelecimento.
+
+### Atualização automática do app das TVs ✅
+
+- [x] `VersaoApp` com distribuição Suspensa / Teste / Todas e `Tela.TvDeTeste`
+  ([ADR-021](../api/docs/decisions/ADR-021-Atualizacao-Automatica-do-App-das-TVs.md)).
+- [x] Sincronização recebe `versaoCodigoApp` e devolve `atualizacao`.
+- [x] Player: `AtualizadorApp` (baixa com hash, espera 1 h após falha) e
+  instalador nativo (`PackageInstaller`, device owner sem confirmação).
+- [x] Painel: Rede → Telas → Versões do app; coluna App e "TV de teste".
+- [ ] Validar numa TV real: instalação com e sem device owner e reabertura
+  após atualizar (o código nativo não é compilado no ambiente de CI).
+

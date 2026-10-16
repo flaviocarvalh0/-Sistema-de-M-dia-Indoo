@@ -79,7 +79,8 @@ especial → Sobrepor a outros apps*), libere uma vez. Em TV box antiga
 lib/
   main.dart                       tela cheia, paisagem, tela sempre acesa
   app.dart                        dependências; decide entre pareamento e reprodução
-  config/configuracao.dart        API_URL e versão (--dart-define)
+  config/configuracao.dart        API_URL (--dart-define)
+  config/versao_app.dart          nome e código da versão, lidos do APK (package_info_plus)
   dados/
     api_dispositivo.dart          POST /autenticar e GET /sincronizacao (dio), erros tipados
     modelos.dart                  Pareamento, RespostaSincronizacao, ItemGrade, Composicao, Noticia, Clima
@@ -88,6 +89,7 @@ lib/
   sincronizacao/
     baixador_midia.dart           .part → SHA-256 em blocos → renomeia; 3 tentativas (mídias e imagens das notícias)
     sincronizador.dart            um ciclo: pergunta, baixa, troca grade e notícias de uma vez, limpa
+    atualizador_app.dart          baixa a versão nova do app e chama o instalador nativo (ADR-021)
   reproducao/filtro_do_dia.dart   "hoje" no fuso do parceiro, dias da semana e período
   reproducao/composicao_fila.dart          a fila de cada volta: embaralhar (fixos no lugar) e notícia a cada N
   reproducao/controlador_reproducao.dart   o loop sem tela: próximo passo da fila, fim, falha, espera
@@ -134,6 +136,14 @@ lib/
 - **Relógio e clima:** no canto, por cima de tudo. A hora é a do fuso do
   estabelecimento; o clima guardado vale até 6 h (com o crédito do
   Open-Meteo).
+- **Atualização automática:** a TV manda o código da versão (o `+N` do
+  pubspec) e, quando o servidor libera uma maior, baixa o APK em `app/`
+  (hash conferido) e entrega ao `PackageInstaller` (`android/.../Instalador.kt`,
+  canal `br.com.midiaindoor/atualizador`). Com o app como device owner
+  (`AdministradorAparelho`) instala sem perguntar; senão o
+  `ReceptorInstalacao` abre a confirmação do Android na TV. Depois o
+  `ReceptorInicializacao` reabre o app. Falhou? Tenta de novo em 1 h.
+  Configuração da TV e publicação: `docs/IMPLANTACAO.md`, 4.2 e 4.3.
 
 ## Testes
 

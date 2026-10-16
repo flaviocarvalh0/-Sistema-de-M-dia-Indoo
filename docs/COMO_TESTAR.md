@@ -244,6 +244,22 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
 7. Ligue o diretório na tela (passo 7, item 14): nos anúncios sem QR próprio
    aparece um QR pequeno no canto inferior direito, "Contatos dos
    anunciantes". O painel de informações (OK) mostra o endereço.
+8. **Atualização automática** (ADR-021), com um aparelho ou emulador onde o
+   app foi instalado por APK de release:
+   1. Torne o app device owner (`docs/IMPLANTACAO.md`, 4.2, passo 6). No
+      emulador sem conta Google o comando funciona direto.
+   2. Suba o `+N` do `pubspec.yaml` (ex.: `1.0.0+1` → `1.0.1+2`), gere o APK
+      e envie em **Rede → Telas → Versões do app**.
+   3. Marque a tela como **TV de teste** e libere **Só TVs de teste**. Em até
+      2 min a TV baixa, instala e reabre sozinha; a coluna **App** mostra
+      `1.0.1 (2)` e o painel de informações (OK) mostra "em dia".
+   4. Sem device owner: a TV mostra a confirmação do Android; aperte
+      **Instalar**. Recusou? Ela tenta de novo em 1 h.
+9. **Alerta de TV fora do ar** (ADR-020): com `Indoor:Alertas:Emails` e o
+   SMTP configurados (e, para testar rápido, `Indoor:Alertas:TvOfflineMinutos`
+   = 1), feche o app da TV: em até 5 min chega "1 TV(s) fora do ar"; abra de
+   novo e chega "de volta ao ar". Fora do horário (7 h–22 h no fuso do
+   estabelecimento) não há alerta.
 
 TV de verdade na rede: veja `player/README.md` (API ouvindo em `*` — não em `0.0.0.0`, que deixa o painel lento —,
 endereço `https://<IP do PC>:7216`).

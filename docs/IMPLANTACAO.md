@@ -89,6 +89,9 @@ Linux, use o `Environment=` do serviço systemd.
 | `Indoor__Coleta__NoticiasMinutos` | não | Padrão `60` (mínimo 15) |
 | `Indoor__Coleta__ClimaMinutos` | não | Padrão `30` (mínimo 15) |
 | `Indoor__Coleta__CotacoesMinutos` | não | Padrão `30` (mínimo 15). Cotações do dólar e do euro (PTAX) |
+| `Indoor__Alertas__Emails__0` (`__1`, …) | recomendado | E-mails da operadora: trocas de arquivo para aprovar e TVs fora do ar (ADR-020). Vazio: só registra no log |
+| `Indoor__Alertas__TvOfflineMinutos` | não | Padrão `15`. Minutos sem sincronizar até o alerta |
+| `Indoor__Alertas__HoraInicio` / `Indoor__Alertas__HoraFim` | não | Padrão `7` e `22`. Só alerta nesse horário, no fuso do estabelecimento |
 
 Sem a configuração do Supabase a API sobe, mas as rotas de mídia respondem
 503.
@@ -191,9 +194,16 @@ cadastrado.
 
 ```powershell
 cd player
-flutter build apk --release --dart-define=API_URL=https://api.suaempresa.com.br --dart-define=VERSAO_APP=1.0.0
+flutter build apk --release --dart-define=API_URL=https://api.suaempresa.com.br
 # build/app/outputs/flutter-apk/app-release.apk
 ```
+
+A versão vem do `version` do `pubspec.yaml` (ex.: `1.2.0+7`): `1.2.0` é o
+nome que aparece no painel e `7` é o **código**, usado pela atualização
+automática (4.3). **Aumente o número depois do `+` em toda versão nova.**
+O APK universal tem ~25 MB; se passar de 50 MB, gere um por arquitetura com
+`--split-per-abi` e envie o `app-armeabi-v7a-release.apk` (o das TV box
+comuns) ou o `arm64-v8a`, conforme o aparelho.
 
 O APK de release só aceita certificado válido. O endereço também pode ser
 trocado na própria TV, na tela de pareamento.
@@ -217,6 +227,39 @@ APK só instalam por cima se forem assinadas com a mesma chave.
    novo). Sem isso, o app não abre sozinho quando a TV liga.
 4. Abra o app, digite o código gerado em **Rede → Telas** e pareie.
 5. Desligue e ligue a TV para confirmar que o app abre sozinho.
+6. **Atualização sem confirmação (recomendado):** torne o app *dono do
+   aparelho* (device owner). Só funciona com a TV **sem nenhuma conta Google
+   cadastrada** (remova em *Configurações → Contas* antes, se houver):
+
+   ```bash
+   adb shell dpm set-device-owner br.com.midiaindoor.midia_indoor_player/.AdministradorAparelho
+   ```
+
+   Deve responder `Success: Device owner set to package …`. No painel de
+   informações da TV (botão OK do controle), a linha **Atualização** passa a
+   dizer "instalação automática". Atenção: um app device owner não pode ser
+   desinstalado pelo menu; para desfazer, restaure a TV de fábrica.
+   Sem device owner a atualização funciona, mas o
+   Android mostra "Deseja instalar esta atualização?" na TV e alguém precisa
+   apertar **Instalar** no controle (e liberar *Instalar apps desconhecidos*
+   para o Mídia Indoor na primeira vez).
+
+### 4.3 Atualizar as TVs (ADR-021)
+
+1. Aumente o código em `player/pubspec.yaml` (`1.2.0+7` → `1.2.1+8`) e gere o
+   APK (4.1), **assinado com a mesma chave** das versões anteriores.
+2. Em **Rede → Telas → Versões do app**, escolha o APK, confira código e nome
+   e envie. A versão entra **suspensa**.
+3. Marque uma ou mais telas como **TV de teste** (Editar tela) e mude a
+   distribuição para **Só TVs de teste**. Em até 1–2 minutos a TV baixa,
+   instala e reabre. Confira no painel de informações dela e na coluna
+   **App** da lista de telas.
+4. Funcionou? Mude para **Todas as TVs**. Cada TV instala na sincronização
+   seguinte. Deu problema? **Suspenda**: quem ainda não instalou não instala.
+   O Android não volta para uma versão menor; corrija e envie uma versão nova.
+
+TVs com o app de antes desta função (sem código na sincronização) aparecem no
+aviso da página: precisam de uma instalação manual (4.2), uma vez.
 
 ## 5. Checklist de produção
 
@@ -234,6 +277,10 @@ APK só instalam por cima se forem assinadas com a mesma chave.
 - [ ] Backup do PostgreSQL agendado. As mídias ficam no Supabase, fora do
       backup do banco.
 - [ ] APK assinado com chave própria e guardada em lugar seguro.
+- [ ] `Indoor:Alertas:Emails` com o e-mail da operadora; desligar uma TV de
+      teste e receber o alerta (15 min) e o "de volta ao ar".
+- [ ] TVs como device owner (4.2, passo 6) e uma versão de teste instalada
+      sozinha pela página **Versões do app** (4.3).
 - [ ] Uma TV de teste pareada, tocando, aparecendo **Online** no painel, e
       continuando a tocar com a rede desligada.
 

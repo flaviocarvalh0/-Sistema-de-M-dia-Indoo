@@ -35,7 +35,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Período de exibição | "Exibir a partir de" e "Exibir até" (opcionais) |
 | Ativar / inativar | Inativa sai do loop das TVs, mas continua nas grades. Mídia nova nasce ativa se o plano tiver vaga e inativa se estiver completo; ativar além do plano é recusado com a explicação |
 | Plano | "Mídias ativas: x de y" na lista, com aviso de plano completo também na página de envio |
-| Substituir arquivo | Troca o vídeo/imagem de uma mídia sem tirá-la das grades nem mudar a situação; as TVs baixam o novo pelo hash. O arquivo antigo sai do storage |
+| Substituir arquivo | Troca o vídeo/imagem de uma mídia sem mudar a situação. Fora das grades, troca na hora. **Em grade, vai para a aprovação da operadora** (ADR-020): as TVs seguem com o atual até aprovar; a lista mostra "Aguardando aprovação" ou o motivo da recusa, que também chega por e-mail. Aprovada, as TVs baixam o novo pelo hash e o antigo sai do storage |
 | QR code | Opcional, na aba "QR code" da edição. O formulário pede só o que o tipo precisa: **Link** (endereço), **WhatsApp** (telefone e mensagem inicial), **Instagram** (usuário), **Telefone** (número) ou **Pix** (chave, nome e cidade de quem recebe e valor opcional — vira um Pix copia e cola do Banco Central). Legenda, canto da tela e tamanho escolhidos pelo parceiro. "Ver QR code" mostra a prévia para testar com o celular |
 | Diretório das TVs | Cartão no topo de Mídias: **Aparecer no diretório** (aceite do dono, desligado por padrão) com categoria, descrição, WhatsApp, Instagram e site. A página mostra só esses contatos (os QR codes dos anúncios não entram) |
 | Pré-visualizar | Link temporário de 1 h |
@@ -57,6 +57,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Concorrência | Salvar com a versão: edição simultânea não sobrescreve a do outro (409) |
 | Informativos | "Um informativo a cada N anúncios" (0 = nenhum) e o tempo de cada um na tela (5 a 60 s). Rodízio: notícia, tempo, notícia, cotações |
 | Cartões | "Previsão do tempo" (agora e os próximos 3 dias, da cidade do estabelecimento) e "Cotações" (dólar e euro, PTAX do Banco Central, com a variação do dia) |
+| Trocas para aprovar | Cartão no topo de Rede → Playlists com as trocas de arquivo pendentes: **Comparar** (atual e novo lado a lado), **Aprovar** ou **Recusar** com motivo. Aviso por e-mail a cada troca enviada |
 | Embaralhar | Sorteia a ordem dos anúncios a cada volta, na TV; itens com 📌 (posição fixa) ficam no lugar |
 | Relógio e clima | Liga ou desliga o relógio e a temperatura na tela |
 | Tamanho da volta | Segundos de anúncios por volta (ex.: 180). Com mais anúncios do que cabem, a TV roda o carrossel com cursor; a grade mostra em quantas voltas todos passam. 0 = todos em toda volta |
@@ -90,6 +91,8 @@ escolhe a playlist.
 | Trocar estabelecimento ou playlist | Vale na próxima sincronização; a TV continua pareada |
 | Ativar / inativar | Inativa: a TV continua no que já baixou, sem receber grade nova |
 | Copiar | "Clonar" cria outra tela no mesmo estabelecimento e local |
+| Alerta de TV fora do ar | E-mail para a operadora quando uma TV ativa fica 15 min sem sincronizar, só entre 7 h e 22 h no fuso do estabelecimento, e outro quando ela volta. Um resumo por varredura (5 min), sem repetir a mesma queda (ADR-020) |
+| Versões do app | **Versões do app** (botão na lista): envio do APK, liberação **Só TVs de teste** → **Todas as TVs**, suspensão e exclusão; quantas TVs estão em cada versão. Coluna **App** na lista e **TV de teste** no cadastro (ADR-021) |
 | Diretório de anunciantes | Liga na edição da tela: a TV mostra um QR code fixo que abre uma página pública com os anunciantes da grade de hoje que aceitaram aparecer, o estabelecimento primeiro. **Diretório de anunciantes** na linha mostra o QR (para testar ou imprimir), abre a página e permite **Trocar endereço** (o anterior para de funcionar) |
 
 ## Onde meus anúncios passam (parceiro)
@@ -116,7 +119,8 @@ escolhe a playlist.
 | QR code | Por cima do anúncio, no canto escolhido, num cartão branco com a legenda; gerado na TV, funciona offline. O médio ocupa 30% da altura da tela |
 | QR do diretório | Com o diretório ligado na tela: QR pequeno no canto inferior direito, nos anúncios sem QR próprio e na tela de espera |
 | Tela de espera | Sem nada para hoje, mostra o nome da tela |
-| Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, notícias, clima, servidor e versão |
+| Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, notícias, clima, servidor, versão e estado da atualização |
+| Atualização automática | Baixa a versão nova liberada (hash conferido), instala e reabre sozinha. Sem confirmação com o app como device owner; senão pede "Instalar" no controle. Falhou, tenta de novo em 1 h |
 | Sempre no ar | Tela cheia, sempre acesa, abre sozinho ao ligar a TV |
 | Revogação | Desvinculada, continua tocando e pede novo pareamento |
 
