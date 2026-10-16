@@ -53,6 +53,9 @@ public class Tela : BaseAuditableEntity, IDoParceiro
 
     public bool Ativo { get; set; } = true;
 
+    /// <summary>Recebe as versões do app "em teste" antes das outras TVs (ADR-021).</summary>
+    public bool TvDeTeste { get; set; }
+
     // ── Diretório de anunciantes ────────────────────────────────────────
 
     /// <summary>

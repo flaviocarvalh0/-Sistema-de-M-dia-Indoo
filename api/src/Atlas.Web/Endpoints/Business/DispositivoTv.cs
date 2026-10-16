@@ -48,6 +48,7 @@ public class DispositivoTv : IEndpointGroup
         [FromQuery] string? versaoGrade,
         [FromQuery] string? versaoNoticias,
         [FromQuery] string? versaoApp,
+        [FromQuery] int? versaoCodigoApp,
         [FromQuery] int? itensProntos,
         CancellationToken cancellationToken)
     {
@@ -56,6 +57,7 @@ public class DispositivoTv : IEndpointGroup
             VersaoGrade = versaoGrade,
             VersaoNoticias = versaoNoticias,
             VersaoApp = versaoApp,
+            VersaoCodigoApp = versaoCodigoApp,
             ItensProntos = itensProntos,
         }, cancellationToken));
     }

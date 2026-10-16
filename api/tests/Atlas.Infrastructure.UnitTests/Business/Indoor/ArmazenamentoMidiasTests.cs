@@ -267,7 +267,7 @@ public class ArmazenamentoSupabaseTests
         corpo.GetProperty("public").GetBoolean().Should().BeFalse();
         corpo.GetProperty("file_size_limit").GetInt64().Should().Be(Midia.TamanhoMaximoBytes);
         corpo.GetProperty("allowed_mime_types").EnumerateArray().Select(t => t.GetString())
-            .Should().BeEquivalentTo("video/mp4", "image/jpeg", "image/png", "image/webp");
+            .Should().BeEquivalentTo("video/mp4", "image/jpeg", "image/png", "image/webp", "application/vnd.android.package-archive");
     }
 
     [Fact]
@@ -284,13 +284,13 @@ public class ArmazenamentoSupabaseTests
         var corpo = JsonDocument.Parse(atualizacao.Corpo!).RootElement;
         corpo.GetProperty("public").GetBoolean().Should().BeFalse();
         corpo.GetProperty("allowed_mime_types").EnumerateArray().Select(t => t.GetString())
-            .Should().BeEquivalentTo("video/mp4", "image/jpeg", "image/png", "image/webp");
+            .Should().BeEquivalentTo("video/mp4", "image/jpeg", "image/png", "image/webp", "application/vnd.android.package-archive");
     }
 
     [Fact]
     public async Task GarantirBucket_ComTodosOsTiposNaoAtualiza()
     {
-        _supabase.Responder(HttpStatusCode.OK, """{"id":"midias","allowed_mime_types":["video/mp4","image/jpeg","image/png","image/webp"]}""");
+        _supabase.Responder(HttpStatusCode.OK, """{"id":"midias","allowed_mime_types":["video/mp4","image/jpeg","image/png","image/webp","application/vnd.android.package-archive"]}""");
 
         await Armazenamento().GarantirBucketAsync(CancellationToken.None);
 

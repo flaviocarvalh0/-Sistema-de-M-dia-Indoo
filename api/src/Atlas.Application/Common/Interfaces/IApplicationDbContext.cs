@@ -40,6 +40,8 @@ public interface IApplicationDbContext
     DbSet<PrevisaoClima> PrevisoesClima { get; }
     DbSet<Cotacao> Cotacoes { get; }
 
+    DbSet<VersaoApp> VersoesApp { get; }
+
     /// <summary>
     /// Retorna a entrada de rastreamento do ChangeTracker para a entidade informada.
     /// Utilizado para manipular estados, propriedades de sombra (ex: xmin/Version) e concorrência.

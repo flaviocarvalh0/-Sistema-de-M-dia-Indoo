@@ -14,6 +14,9 @@ public class EstadoTela
     /// <summary>Versão do app player informada pela TV.</summary>
     public string? VersaoApp { get; set; }
 
+    /// <summary>O <c>versionCode</c> do app na TV (atualização automática, ADR-021); nulo em app antigo.</summary>
+    public int? VersaoCodigoApp { get; set; }
+
     /// <summary>Hash da grade entregue na última sincronização (ETag).</summary>
     public string? VersaoGrade { get; set; }
 

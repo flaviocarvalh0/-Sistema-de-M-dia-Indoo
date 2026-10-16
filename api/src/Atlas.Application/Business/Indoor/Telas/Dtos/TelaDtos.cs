@@ -31,6 +31,12 @@ public sealed record TelaDto : IDtoAuditavel
     public DateTimeOffset? UltimaSincronizacao { get; init; }
     public string? VersaoApp { get; init; }
 
+    /// <summary>O <c>versionCode</c> do app na TV; nulo em app sem atualização automática.</summary>
+    public int? VersaoCodigoApp { get; init; }
+
+    /// <summary>Recebe as versões do app em teste.</summary>
+    public bool TvDeTeste { get; init; }
+
     /// <summary>Código ainda válido para parear a TV (some ao parear ou ao expirar).</summary>
     public string? CodigoPareamento { get; init; }
 
@@ -101,6 +107,8 @@ public static class TelaProjecao
             PareadaEm = t.PareadaEm,
             UltimaSincronizacao = t.Estado != null ? t.Estado.UltimaSincronizacao : null,
             VersaoApp = t.Estado != null ? t.Estado.VersaoApp : null,
+            VersaoCodigoApp = t.Estado != null ? t.Estado.VersaoCodigoApp : null,
+            TvDeTeste = t.TvDeTeste,
             CodigoPareamento = comPareamento && t.CodigoPareamentoExpiraEm > agora ? t.CodigoPareamento : null,
             CodigoPareamentoExpiraEm = comPareamento && t.CodigoPareamentoExpiraEm > agora ? t.CodigoPareamentoExpiraEm : null,
             DiretorioAtivo = t.DiretorioAtivo,

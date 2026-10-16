@@ -631,6 +631,31 @@ public class DispositivoTests : IDisposable
         semUrlPublica.Diretorio.Should().BeNull("sem endereço público a TV não teria o que mostrar");
     }
 
+    [Fact]
+    public async Task Sincronizar_AtualizacaoDoAppSoParaQuemTemVersaoMaisAntigaELiberada()
+    {
+        var credencial = await ParearComGradeAsync((Midia("Promo"), DiasSemana.Todos));
+        _context.VersoesApp.AddRange(
+            new VersaoApp { Codigo = 2, Nome = "1.1.0", ChaveArmazenamento = "app/v2.apk", TamanhoBytes = 10, Hash = new string('2', 64), Distribuicao = DistribuicaoVersao.Todas },
+            new VersaoApp { Codigo = 3, Nome = "1.2.0", ChaveArmazenamento = "app/v3.apk", TamanhoBytes = 10, Hash = new string('3', 64), Distribuicao = DistribuicaoVersao.Teste },
+            new VersaoApp { Codigo = 4, Nome = "1.3.0", ChaveArmazenamento = "app/v4.apk", TamanhoBytes = 10, Hash = new string('4', 64), Distribuicao = DistribuicaoVersao.Suspensa });
+        await _context.SaveChangesAsync();
+
+        (await Sincronizar(credencial, new GetSincronizacaoQuery())).Atualizacao.Should().BeNull("app antigo não informa o código");
+
+        var v1 = await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoCodigoApp = 1 });
+        v1.Atualizacao!.Codigo.Should().Be(2, "a de teste e a suspensa não vão para TV comum");
+        v1.Atualizacao.Hash.Should().Be(new string('2', 64));
+        v1.Atualizacao.Url.Should().NotBeNull();
+        (await _context.EstadosTela.SingleAsync()).VersaoCodigoApp.Should().Be(1);
+
+        (await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoCodigoApp = 2 })).Atualizacao.Should().BeNull("já está na mais nova liberada");
+
+        _tela.TvDeTeste = true;
+        await _context.SaveChangesAsync();
+        (await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoCodigoApp = 2 })).Atualizacao!.Codigo.Should().Be(3, "TV de teste recebe a de teste");
+    }
+
     /// <summary>Pareia a TV e põe a playlist com os itens informados na tela.</summary>
     private async Task<CredencialFake> ParearComGradeAsync(params (Midia Midia, DiasSemana Dias)[] itens)
     {

@@ -345,6 +345,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("versao_app");
 
+                    b.Property<int?>("VersaoCodigoApp")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao_codigo_app");
+
                     b.Property<string>("VersaoGrade")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
@@ -784,6 +788,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("playlist_id");
 
+                    b.Property<bool>("TvDeTeste")
+                        .HasColumnType("boolean")
+                        .HasColumnName("tv_de_teste");
+
                     b.Property<int>("VersaoCredencial")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -825,6 +833,93 @@ namespace Atlas.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("ck_tela_diretorio", "NOT diretorio_ativo OR codigo_diretorio IS NOT NULL");
 
                             t.HasCheckConstraint("ck_tela_pareada_em", "(dispositivo_id IS NULL) = (pareada_em IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.VersaoApp", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ChaveArmazenamento")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("chave_armazenamento");
+
+                    b.Property<int>("Codigo")
+                        .HasColumnType("integer")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("Distribuicao")
+                        .HasColumnType("integer")
+                        .HasColumnName("distribuicao");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("hash");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_modified");
+
+                    b.Property<long?>("LastModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_modified_by");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("nome");
+
+                    b.Property<string>("Notas")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notas");
+
+                    b.Property<long>("TamanhoBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tamanho_bytes");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_versao_app");
+
+                    b.HasIndex("ChaveArmazenamento")
+                        .IsUnique()
+                        .HasDatabaseName("ix_versao_app_chave_armazenamento");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_versao_app_codigo");
+
+                    b.ToTable("versao_app", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_versao_app_codigo", "codigo > 0");
+
+                            t.HasCheckConstraint("ck_versao_app_hash", "hash ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_versao_app_tamanho", "tamanho_bytes BETWEEN 1 AND 52428800");
                         });
                 });
 

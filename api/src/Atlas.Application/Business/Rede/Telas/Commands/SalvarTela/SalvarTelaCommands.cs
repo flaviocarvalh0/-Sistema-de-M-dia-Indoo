@@ -19,6 +19,7 @@ public record CriarTelaCommand : IRequest<long>, IDadosTela
     public string? IdentificacaoAparelho { get; init; }
     public long? PlaylistId { get; init; }
     public bool DiretorioAtivo { get; init; }
+    public bool TvDeTeste { get; init; }
 }
 
 /// <summary>
@@ -35,6 +36,7 @@ public record AtualizarTelaCommand : IRequest<uint>, IDadosTela
     public string? IdentificacaoAparelho { get; init; }
     public long? PlaylistId { get; init; }
     public bool DiretorioAtivo { get; init; }
+    public bool TvDeTeste { get; init; }
     public uint Version { get; init; }
 }
 
@@ -48,6 +50,9 @@ public interface IDadosTela
 
     /// <summary>A TV mostra o QR code do diretório de anunciantes (ADR-018).</summary>
     bool DiretorioAtivo { get; }
+
+    /// <summary>Recebe as versões do app em teste antes das outras (ADR-021).</summary>
+    bool TvDeTeste { get; }
 }
 
 public class CriarTelaCommandHandler(IApplicationDbContext context)
@@ -68,6 +73,7 @@ public class CriarTelaCommandHandler(IApplicationDbContext context)
             Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao),
             IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho),
             PlaylistId = request.PlaylistId,
+            TvDeTeste = request.TvDeTeste,
         };
 
         await RegrasTela.DefinirDiretorioAsync(context, tela, request.DiretorioAtivo, cancellationToken);
@@ -100,6 +106,7 @@ public class AtualizarTelaCommandHandler(IApplicationDbContext context)
         tela.Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao);
         tela.IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho);
         tela.PlaylistId = request.PlaylistId;
+        tela.TvDeTeste = request.TvDeTeste;
         await RegrasTela.DefinirDiretorioAsync(context, tela, request.DiretorioAtivo, cancellationToken);
 
         return await context.SalvarAsync(tela, cancellationToken);

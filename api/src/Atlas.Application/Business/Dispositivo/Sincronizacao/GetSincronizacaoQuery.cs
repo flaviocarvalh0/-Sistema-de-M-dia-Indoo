@@ -39,6 +39,9 @@ public record GetSincronizacaoQuery : IRequest<SincronizacaoDto>
 
     public string? VersaoApp { get; init; }
 
+    /// <summary>O <c>versionCode</c> do app; com ele a TV recebe <see cref="SincronizacaoDto.Atualizacao"/>.</summary>
+    public int? VersaoCodigoApp { get; init; }
+
     /// <summary>Quantas mídias a TV tem baixadas e conferidas (aparece no painel).</summary>
     public int? ItensProntos { get; init; }
 }
@@ -93,6 +96,24 @@ public sealed record SincronizacaoDto
     /// desligado na tela ou sem endereço público configurado na API.
     /// </summary>
     public DiretorioSincronizacaoDto? Diretorio { get; init; }
+
+    /// <summary>
+    /// Versão do app mais nova que a da TV (ADR-021): a TV baixa, confere o
+    /// SHA-256 e instala. Nulo = já está na mais nova (ou o app é antigo).
+    /// </summary>
+    public AtualizacaoAppDto? Atualizacao { get; init; }
+}
+
+public sealed record AtualizacaoAppDto
+{
+    public int Codigo { get; init; }
+    public string Nome { get; init; } = null!;
+
+    /// <summary>Download temporário do APK (como as mídias).</summary>
+    public Uri Url { get; init; } = null!;
+
+    public string Hash { get; init; } = null!;
+    public long TamanhoBytes { get; init; }
 }
 
 public sealed record DiretorioSincronizacaoDto
@@ -274,6 +295,7 @@ public class GetSincronizacaoQueryHandler(
                 t.ParceiroId,
                 t.DiretorioAtivo,
                 t.CodigoDiretorio,
+                t.TvDeTeste,
                 PlaylistAtiva = t.Playlist != null && t.Playlist.Ativo,
                 t.Parceiro.FusoHorario,
                 Composicao = t.Playlist == null
@@ -357,6 +379,7 @@ public class GetSincronizacaoQueryHandler(
                 ? await ObterClimaAsync(tela.ParceiroId, agora, hoje, cancellationToken)
                 : null,
             Cotacoes = composicao.CartaoCotacoes ? await ListarCotacoesAsync(agora, cancellationToken) : null,
+            Atualizacao = await ObterAtualizacaoAsync(request.VersaoCodigoApp, tela.TvDeTeste, cancellationToken),
             Diretorio = tela.DiretorioAtivo && EnderecoDiretorio.Montar(configuracao, tela.CodigoDiretorio) is { } urlDiretorio
                 ? new DiretorioSincronizacaoDto { Url = urlDiretorio.AbsoluteUri }
                 : null,
@@ -529,6 +552,36 @@ public class GetSincronizacaoQueryHandler(
         return resultado;
     }
 
+    /// <summary>A versão mais nova liberada para esta TV, se for mais nova que a dela.</summary>
+    private async Task<AtualizacaoAppDto?> ObterAtualizacaoAsync(int? codigoAtual, bool tvDeTeste, CancellationToken cancellationToken)
+    {
+        if (codigoAtual is not { } atual)
+        {
+            return null;
+        }
+
+        var alvo = await context.VersoesApp
+            .AsNoTracking()
+            .Where(v => v.Distribuicao == DistribuicaoVersao.Todas || (tvDeTeste && v.Distribuicao == DistribuicaoVersao.Teste))
+            .OrderByDescending(v => v.Codigo)
+            .Select(v => new { v.Codigo, v.Nome, v.ChaveArmazenamento, v.Hash, v.TamanhoBytes })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (alvo is null || alvo.Codigo <= atual)
+        {
+            return null;
+        }
+
+        return new AtualizacaoAppDto
+        {
+            Codigo = alvo.Codigo,
+            Nome = alvo.Nome,
+            Url = await armazenamento.GerarUrlLeituraAsync(alvo.ChaveArmazenamento, configuracao.ValidadeUrlDownload, cancellationToken),
+            Hash = alvo.Hash,
+            TamanhoBytes = alvo.TamanhoBytes,
+        };
+    }
+
     private async Task RegistrarSincronizacaoAsync(
         long telaId,
         DateTimeOffset agora,
@@ -549,6 +602,10 @@ public class GetSincronizacaoQueryHandler(
             string.IsNullOrWhiteSpace(request.VersaoApp) ? estado.VersaoApp : request.VersaoApp.Trim(),
             versaoGrade,
             request.ItensProntos);
+        if (request.VersaoCodigoApp is { } codigoApp)
+        {
+            estado.VersaoCodigoApp = codigoApp;
+        }
 
         await context.SaveChangesAsync(cancellationToken);
     }
@@ -637,5 +694,6 @@ public class GetSincronizacaoQueryValidator : AbstractValidator<GetSincronizacao
         RuleFor(x => x.VersaoNoticias).MaximumLength(64).WithMessage("Versão das notícias inválida.");
         RuleFor(x => x.VersaoApp).MaximumLength(30).WithMessage("A versão do app deve ter no máximo 30 caracteres.");
         RuleFor(x => x.ItensProntos).GreaterThanOrEqualTo(0).When(x => x.ItensProntos is not null);
+        RuleFor(x => x.VersaoCodigoApp).GreaterThan(0).When(x => x.VersaoCodigoApp is not null);
     }
 }

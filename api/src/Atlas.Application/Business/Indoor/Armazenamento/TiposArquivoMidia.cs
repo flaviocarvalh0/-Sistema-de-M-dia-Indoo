@@ -28,8 +28,11 @@ public static class TiposArquivoMidia
 
     public static IReadOnlyCollection<string> Todos => Aceitos.Keys;
 
-    /// <summary>O que o bucket aceita: os tipos das mídias e o WebP das fotos de notícias.</summary>
-    public static IReadOnlyCollection<string> NoBucket => [.. Aceitos.Keys, Webp];
+    /// <summary>O APK do app das TVs (atualização automática, ADR-021).</summary>
+    public const string Apk = "application/vnd.android.package-archive";
+
+    /// <summary>O que o bucket aceita: os tipos das mídias, o WebP das fotos de notícias e o APK das TVs.</summary>
+    public static IReadOnlyCollection<string> NoBucket => [.. Aceitos.Keys, Webp, Apk];
 
     /// <summary>JPEG, PNG ou WebP pela assinatura (fotos das notícias); nulo para o resto.</summary>
     public static string? DetectarImagem(ReadOnlySpan<byte> inicio)
