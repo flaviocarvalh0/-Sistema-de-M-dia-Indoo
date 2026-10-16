@@ -23,6 +23,10 @@ export interface TelaDto {
   pareadaEm?: string | null;
   ultimaSincronizacao?: string | null;
   versaoApp?: string | null;
+  /** versionCode do app informado na última sincronização (nulo = app sem atualização automática). */
+  versaoCodigoApp?: number | null;
+  /** Recebe as versões do app liberadas só para teste (ADR-021). */
+  tvDeTeste?: boolean;
   /** Código ainda válido para parear (some ao parear ou ao expirar). Só na visão da operadora. */
   codigoPareamento?: string | null;
   codigoPareamentoExpiraEm?: string | null;
@@ -52,4 +56,4 @@ export interface CodigoDiretorio {
   version: number;
 }
 
-export type LinhaTela = TelaDto & { situacaoRotulo: string; playlist: string; vistaPorUltimo: string; diretorio: string };
+export type LinhaTela = TelaDto & { situacaoRotulo: string; playlist: string; vistaPorUltimo: string; diretorio: string; versaoAppRotulo: string };

@@ -52,5 +52,7 @@ export function paraLinhaTela(t: TelaDto): LinhaTela {
     // Sem TV pareada, a última sincronização é da TV anterior (desvinculada): não vale mostrar.
     vistaPorUltimo: t.situacao === 'AguardandoPareamento' ? '—' : tempoDesde(t.ultimaSincronizacao),
     diretorio: t.diretorioAtivo ? 'Ligado' : '—',
+    versaoAppRotulo: !t.versaoApp ? '—'
+      : `${t.versaoApp}${t.versaoCodigoApp ? ` (${t.versaoCodigoApp})` : ''}${t.tvDeTeste ? ' · teste' : ''}`,
   };
 }

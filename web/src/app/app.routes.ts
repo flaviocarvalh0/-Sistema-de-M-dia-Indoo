@@ -142,6 +142,15 @@ export const routes: Routes = [
                 .then(m => m.TelaRedeListPageComponent)
           },
           {
+            // Versões do app das TVs: envio do APK e liberação (ADR-021).
+            path: 'tela/versoes-app',
+            canActivate: [atlasPermissionGuard],
+            data: { entity: 'tela', action: 'Create' },
+            loadComponent: () =>
+              import('./features/app-tv/pages/versoes-app-page.component')
+                .then(m => m.VersoesAppPageComponent)
+          },
+          {
             // Grades da rede: a operadora monta com as mídias dos parceiros.
             path: 'playlist',
             canActivate: [atlasPermissionGuard],

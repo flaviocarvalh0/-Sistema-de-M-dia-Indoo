@@ -8,6 +8,7 @@ import { MidiaService } from '../services/midia.service';
 import { MidiaDto, UsoArmazenamento } from '../models/midia.model';
 import { DURACAO_MAXIMA_SEGUNDOS } from '../configs/midia.config';
 import { formatarBytes } from '../../../shared/models/indoor.util';
+import { calcularSha256 } from '../../../shared/utils/hash.util';
 
 /** Tipos aceitos pela API (TiposArquivoMidia). */
 const TIPOS_ACEITOS: Record<string, 'Video' | 'Imagem'> = {
@@ -325,10 +326,4 @@ export class EnvioMidiaPageComponent implements OnInit {
     if (url) URL.revokeObjectURL(url);
     this.previa.set(null);
   }
-}
-
-/** SHA-256 em hexadecimal minúsculo, como a API e o player calculam. */
-async function calcularSha256(arquivo: File): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', await arquivo.arrayBuffer());
-  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
 }

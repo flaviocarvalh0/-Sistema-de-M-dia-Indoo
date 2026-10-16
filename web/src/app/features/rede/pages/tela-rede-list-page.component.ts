@@ -1,6 +1,7 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { interval } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { QRCodeComponent } from 'angularx-qrcode';
@@ -35,7 +36,7 @@ interface CodigoExibido {
 @Component({
   selector: 'app-tela-rede-list-page',
   standalone: true,
-  imports: [ListagemDinamicaComponent, DatePipe, FormsModule, QRCodeComponent],
+  imports: [ListagemDinamicaComponent, DatePipe, FormsModule, QRCodeComponent, RouterLink],
   template: `
     @if (codigo(); as c) {
       <div class="card border-primary mb-3">
@@ -118,6 +119,9 @@ interface CodigoExibido {
                   (click)="filtrarAtivo(f.valor)">{{ f.rotulo }}</button>
         }
       </div>
+      <a routerLink="/rede/tela/versoes-app" class="btn btn-sm btn-outline-secondary ms-auto" data-teste="versoes-app">
+        <i class="bi bi-phone-vibrate me-1"></i>Versões do app
+      </a>
     </div>
 
     <atlas-listagem-dinamica

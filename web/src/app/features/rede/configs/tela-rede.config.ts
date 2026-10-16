@@ -10,6 +10,7 @@ export const TELA_REDE_COLUNAS: ColunaDef[] = [
   { campo: 'situacaoRotulo', titulo: 'Conexão', tipo: 'badge', badgeMap: SITUACAO_TELA_BADGE },
   { campo: 'vistaPorUltimo', titulo: 'Última sincronização', tipo: 'texto' },
   { campo: 'diretorio', titulo: 'Diretório', tipo: 'texto' },
+  { campo: 'versaoAppRotulo', titulo: 'App', tipo: 'texto' },
   { campo: 'ativo', titulo: 'Situação', tipo: 'status' },
 ];
 
@@ -35,6 +36,11 @@ export function criarCamposTelaRede(parceiros: CampoOption[], playlists: CampoOp
       type: 'checkbox', name: 'diretorioAtivo', label: 'Diretório de anunciantes', col: 'col-12', value: false,
       placeholder: 'Mostrar na TV o QR code com os contatos dos anunciantes',
       hint: 'A página lista só os anunciantes desta grade que aceitaram aparecer (no perfil deles). Vale na próxima sincronização.',
+    },
+      {
+      type: 'checkbox', name: 'tvDeTeste', label: 'TV de teste', col: 'col-12', value: false,
+      placeholder: 'Recebe primeiro as versões novas do app',
+      hint: 'Versões liberadas "Só TVs de teste" (Rede → Telas → Versões do app) instalam apenas nas telas marcadas.',
     },
   ];
 }

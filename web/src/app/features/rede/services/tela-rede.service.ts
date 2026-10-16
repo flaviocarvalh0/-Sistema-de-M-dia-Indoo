@@ -44,6 +44,7 @@ export class TelaRedeService extends CrudService<TelaDto, number> {
       identificacaoAparelho: valor.identificacaoAparelho || null,
       playlistId: valor.playlistId ? Number(valor.playlistId) : null,
       diretorioAtivo: !!valor.diretorioAtivo,
+      tvDeTeste: !!valor.tvDeTeste,
     };
     return id
       ? this.http.put(`${this.baseUrl}/${id}`, { id, ...corpo, version }, { context: comErroLocal() })
