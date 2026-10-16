@@ -328,6 +328,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("tela_id");
 
+                    b.Property<DateTimeOffset?>("AlertaOfflineEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alerta_offline_em");
+
                     b.Property<int?>("ItensProntos")
                         .HasColumnType("integer")
                         .HasColumnName("itens_prontos");

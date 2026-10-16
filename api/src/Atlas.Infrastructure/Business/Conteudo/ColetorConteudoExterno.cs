@@ -80,43 +80,6 @@ internal sealed class ColetorConteudoExterno(
         }
     }
 
-    private async Task ExecutarComTravaAsync(long trava, string nome, Func<IServiceProvider, Task> coleta, CancellationToken stoppingToken)
-    {
-        try
-        {
-            await using var escopo = scopes.CreateAsyncScope();
-            var context = escopo.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            await context.Database.OpenConnectionAsync(stoppingToken);
-            try
-            {
-                var obtida = await context.Database
-                    .SqlQuery<bool>($"SELECT pg_try_advisory_lock({trava}) AS \"Value\"")
-                    .SingleAsync(stoppingToken);
-
-                if (!obtida)
-                {
-                    logger.LogDebug("Coleta de {Nome} em andamento em outra instância.", nome);
-                    return;
-                }
-
-                try
-                {
-                    await coleta(escopo.ServiceProvider);
-                }
-                finally
-                {
-                    await context.Database.ExecuteSqlAsync($"SELECT pg_advisory_unlock({trava})", CancellationToken.None);
-                }
-            }
-            finally
-            {
-                await context.Database.CloseConnectionAsync();
-            }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
-        {
-            logger.LogError(ex, "Falha na coleta de {Nome}.", nome);
-        }
-    }
+    private Task ExecutarComTravaAsync(long trava, string nome, Func<IServiceProvider, Task> coleta, CancellationToken stoppingToken) =>
+        TarefaComTrava.ExecutarAsync(scopes, logger, trava, nome, coleta, stoppingToken);
 }

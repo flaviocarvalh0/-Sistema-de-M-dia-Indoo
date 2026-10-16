@@ -48,6 +48,8 @@ public static class DependencyInjection
         services.AddScoped<ColetorClima>();
         services.AddScoped<ColetorCotacoes>();
         services.AddHostedService<ColetorConteudoExterno>();
+        services.AddScoped<Atlas.Application.Business.Rede.Telas.Alertas.VerificadorTelasOffline>();
+        services.AddHostedService<MonitorTelas>();
     }
 
     /// <summary>

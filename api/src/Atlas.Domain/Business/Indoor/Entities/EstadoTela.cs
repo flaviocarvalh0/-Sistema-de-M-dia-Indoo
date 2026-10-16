@@ -20,6 +20,12 @@ public class EstadoTela
     /// <summary>Quantos itens a TV disse ter prontos no disco.</summary>
     public int? ItensProntos { get; set; }
 
+    /// <summary>
+    /// Quando a operadora foi avisada de que a TV parou de sincronizar; nulo =
+    /// sem alerta em aberto. Limpo (com aviso de volta) quando ela sincroniza de novo.
+    /// </summary>
+    public DateTimeOffset? AlertaOfflineEm { get; set; }
+
     public void RegistrarSincronizacao(DateTimeOffset agora, string? versaoApp, string versaoGrade, int? itensProntos)
     {
         UltimaSincronizacao = agora;
