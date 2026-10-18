@@ -1,5 +1,5 @@
 using Atlas.Application.Common.Exceptions;
-using Atlas.Domain.Business.Parceiros.Enums;
+using Atlas.Domain.Business.Clientes.Enums;
 
 namespace Atlas.Application.Business.Dispositivo.Common;
 
@@ -36,9 +36,9 @@ public sealed class DispositivoAtual(ICredencialDispositivo credencial, IApplica
             throw new UnauthorizedAccessException();
         }
 
-        // Só a tela inativa suspende a TV. Host bloqueado não: a TV é da
+        // Só a tela inativa suspende a TV. Cliente bloqueado não: a TV é da
         // operadora e segue tocando os outros anunciantes (as mídias de
-        // parceiros bloqueados saem da grade na sincronização).
+        // clientes bloqueados saem da grade na sincronização).
         if (!tela.Ativo)
         {
             throw new ForbiddenAccessException();

@@ -3,7 +3,7 @@ using Atlas.Application.Platform.EmailMessages.Common;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Application.Business.Indoor.Midias.Common;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Domain.Business.Constants;
 using Microsoft.Extensions.Logging;
 
@@ -47,7 +47,7 @@ public sealed record SubstituicaoArquivoDto(uint Version, bool AguardandoAprovac
 
 public class SubstituirArquivoMidiaCommandHandler(
     IApplicationDbContext context,
-    IParceiroAtual parceiroAtual,
+    IClienteAtual clienteAtual,
     IArmazenamentoMidias armazenamento,
     IEmailMessageService emails,
     IConfiguracaoIndoor configuracao,
@@ -57,14 +57,14 @@ public class SubstituirArquivoMidiaCommandHandler(
 {
     public async Task<SubstituicaoArquivoDto> Handle(SubstituirArquivoMidiaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var midia = await RegistrosDoParceiro.CarregarAsync(context.Midias, parceiro.ParceiroId, request.Id, cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
+        var midia = await RegistrosDoCliente.CarregarAsync(context.Midias, cliente.ClienteId, request.Id, cancellationToken);
         var emGrade = await context.ItensPlaylist.AnyAsync(i => i.MidiaId == midia.Id, cancellationToken);
 
         // Troca direta: o arquivo atual (e um pendente esquecido) deixam de contar.
         // Troca para aprovar: o atual continua no ar, só um pendente anterior sai.
         var arquivo = await RecebimentoArquivo.ConferirAsync(
-            context, armazenamento, logger, parceiro.ParceiroId, request.Chave, request.TipoConteudo, request.Hash,
+            context, armazenamento, logger, cliente.ClienteId, request.Chave, request.TipoConteudo, request.Hash,
             bytesQueSaem: (emGrade ? 0 : midia.TamanhoBytes) + (midia.PendenteTamanhoBytes ?? 0), cancellationToken);
 
         var tipo = TiposArquivoMidia.TipoDaMidia(request.TipoConteudo);
@@ -79,7 +79,7 @@ public class SubstituirArquivoMidiaCommandHandler(
                 chavesQueSaem.Add(pendenteAnterior);
             }
 
-            await AvisarOperadoraAsync(midia, parceiro.ParceiroId, cancellationToken);
+            await AvisarOperadoraAsync(midia, cliente.ClienteId, cancellationToken);
         }
         else
         {
@@ -119,24 +119,24 @@ public class SubstituirArquivoMidiaCommandHandler(
     }
 
     /// <summary>E-mail para a operadora (se configurado), na mesma gravação da troca.</summary>
-    private async Task AvisarOperadoraAsync(Domain.Business.Indoor.Entities.Midia midia, long parceiroId, CancellationToken cancellationToken)
+    private async Task AvisarOperadoraAsync(Domain.Business.Indoor.Entities.Midia midia, long clienteId, CancellationToken cancellationToken)
     {
         if (configuracao.EmailsOperadora.Count == 0)
         {
             return;
         }
 
-        var nomeParceiro = await context.Parceiros.Where(p => p.Id == parceiroId).Select(p => p.Nome).FirstAsync(cancellationToken);
+        var nomeCliente = await context.Clientes.Where(p => p.Id == clienteId).Select(p => p.Nome).FirstAsync(cancellationToken);
         var urlPainel = configuracao.UrlPainel.TrimEnd('/');
 
         await emails.EnqueueAsync(new EmailMessageRequest
         {
-            Subject = $"Troca de arquivo para aprovar — {nomeParceiro}",
+            Subject = $"Troca de arquivo para aprovar — {nomeCliente}",
             HtmlBody = ModeloEmail.Montar(
-                previa: $"{nomeParceiro} enviou um arquivo novo para \"{midia.Titulo}\". As TVs seguem com o atual até você aprovar.",
+                previa: $"{nomeCliente} enviou um arquivo novo para \"{midia.Titulo}\". As TVs seguem com o atual até você aprovar.",
                 titulo: "Troca de arquivo para aprovar",
                 motivo: "Você recebeu este e-mail porque está na lista de avisos da operadora (Indoor:Alertas:Emails).",
-                ModeloEmail.ParagrafoHtml($"<strong>{ModeloEmail.E(nomeParceiro)}</strong> enviou um arquivo novo para a mídia <strong>{ModeloEmail.E(midia.Titulo)}</strong>, que está em grades das TVs."),
+                ModeloEmail.ParagrafoHtml($"<strong>{ModeloEmail.E(nomeCliente)}</strong> enviou um arquivo novo para a mídia <strong>{ModeloEmail.E(midia.Titulo)}</strong>, que está em grades das TVs."),
                 ModeloEmail.Paragrafo("As TVs continuam com o arquivo atual até a troca ser aprovada."),
                 ModeloEmail.Botao("Ver e aprovar", $"{urlPainel}/rede/playlist")),
             Recipients = configuracao.EmailsOperadora

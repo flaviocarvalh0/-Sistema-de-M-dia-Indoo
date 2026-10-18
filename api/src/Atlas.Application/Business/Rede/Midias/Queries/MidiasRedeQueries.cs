@@ -10,22 +10,22 @@ using Atlas.Domain.Business.Indoor.Enums;
 namespace Atlas.Application.Business.Rede.Midias.Queries;
 
 /// <summary>
-/// As mídias de todos os parceiros, para a operadora montar as grades.
+/// As mídias de todos os clientes, para a operadora montar as grades.
 /// Somente leitura: o criativo é do anunciante.
 /// </summary>
 /// <remarks>
 /// A operadora lê as mídias para montar as grades: exige
-/// <c>Playlists.View</c> e <c>Parceiros.View</c>, que só ela tem. Não usa
+/// <c>Playlists.View</c> e <c>Clientes.View</c>, que só ela tem. Não usa
 /// <c>Midias.View</c> de propósito: essa permissão mostraria a ela o módulo
-/// do parceiro (Mídia Indoor), cujas telas dependem de um parceiro logado.
+/// do cliente (Mídia Indoor), cujas telas dependem de um cliente logado.
 /// </remarks>
 [Authorize(Policy = BusinessPermissionKeys.Playlists.View)]
-[Authorize(Policy = BusinessPermissionKeys.Parceiros.View)]
+[Authorize(Policy = BusinessPermissionKeys.Clientes.View)]
 public record GetMidiasRedeQuery : IRequest<PaginatedList<MidiaDto>>
 {
     public PaginationParams PaginationParams { get; init; } = new();
     public string? SearchTerm { get; init; }
-    public long? ParceiroId { get; init; }
+    public long? ClienteId { get; init; }
     public bool? Ativo { get; init; }
     public TipoMidia? Tipo { get; init; }
 
@@ -40,9 +40,9 @@ public class GetMidiasRedeQueryHandler(IApplicationDbContext context, IIdentityS
     {
         var query = context.Midias.AsNoTracking();
 
-        if (request.ParceiroId is { } parceiroId)
+        if (request.ClienteId is { } clienteId)
         {
-            query = query.Where(m => m.ParceiroId == parceiroId);
+            query = query.Where(m => m.ClienteId == clienteId);
         }
 
         if (request.Ativo is { } ativo)
@@ -63,12 +63,12 @@ public class GetMidiasRedeQueryHandler(IApplicationDbContext context, IIdentityS
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var termo = request.SearchTerm.Trim().ToLower();
-            query = query.Where(m => m.Titulo.ToLower().Contains(termo) || m.Parceiro.Nome.ToLower().Contains(termo));
+            query = query.Where(m => m.Titulo.ToLower().Contains(termo) || m.Cliente.Nome.ToLower().Contains(termo));
         }
 
         var ordenada = request.TrocaPendente == true
             ? query.OrderBy(m => m.PendenteEnviadoEm)
-            : query.OrderBy(m => m.Parceiro.Nome);
+            : query.OrderBy(m => m.Cliente.Nome);
 
         var pagina = await ordenada
             .ThenBy(m => m.Titulo)
@@ -84,7 +84,7 @@ public class GetMidiasRedeQueryHandler(IApplicationDbContext context, IIdentityS
 
 /// <summary>Detalhe com o endereço temporário para a operadora pré-visualizar.</summary>
 [Authorize(Policy = BusinessPermissionKeys.Playlists.View)]
-[Authorize(Policy = BusinessPermissionKeys.Parceiros.View)]
+[Authorize(Policy = BusinessPermissionKeys.Clientes.View)]
 public record GetMidiaRedeByIdQuery(long Id) : IRequest<MidiaDto>;
 
 public class GetMidiaRedeByIdQueryHandler(

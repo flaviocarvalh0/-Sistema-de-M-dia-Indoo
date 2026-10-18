@@ -66,12 +66,12 @@ public class MidiaConfiguration : IEntityTypeConfiguration<Midia>
         builder.HasIndex(m => m.ChaveArmazenamento)
             .IsUnique();
 
-        // Listagem do painel e soma da cota por parceiro.
-        builder.HasIndex(m => new { m.ParceiroId, m.Ativo });
+        // Listagem do painel e soma da cota por cliente.
+        builder.HasIndex(m => new { m.ClienteId, m.Ativo });
 
-        builder.HasOne(m => m.Parceiro)
+        builder.HasOne(m => m.Cliente)
             .WithMany()
-            .HasForeignKey(m => m.ParceiroId)
+            .HasForeignKey(m => m.ClienteId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

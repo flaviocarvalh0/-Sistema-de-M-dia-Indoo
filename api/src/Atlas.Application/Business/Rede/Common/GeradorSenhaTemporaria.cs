@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 namespace Atlas.Application.Business.Rede.Common;
 
 /// <summary>
-/// Senha temporária do responsável pelo parceiro, trocada obrigatoriamente no
+/// Senha temporária do responsável pelo cliente, trocada obrigatoriamente no
 /// primeiro acesso. Gerador criptográfico.
 /// </summary>
 public static class GeradorSenhaTemporaria

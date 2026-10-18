@@ -1,18 +1,18 @@
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros;
-using Atlas.Domain.Business.Parceiros.Entities;
+using Atlas.Domain.Business.Clientes;
+using Atlas.Domain.Business.Clientes.Entities;
 using Atlas.Domain.Platform.Attributes;
 
 namespace Atlas.Domain.Business.Indoor.Entities;
 
 /// <summary>
-/// Vídeo ou imagem do parceiro (o criativo do anunciante). O arquivo fica no
+/// Vídeo ou imagem do cliente (o criativo do anunciante). O arquivo fica no
 /// storage externo (Supabase); aqui ficam a chave do objeto e o hash que a TV
 /// confere depois de baixar. Substituir o arquivo mantém a mídia (e as
 /// playlists onde ela está): o hash novo faz as TVs baixarem de novo.
 /// </summary>
 [MetadataConfiguration("Mídias")]
-public class Midia : BaseAuditableEntity, IDoParceiro
+public class Midia : BaseAuditableEntity, IDoCliente
 {
     /// <summary>Limite por arquivo do plano gratuito do Supabase Storage.</summary>
     public const long TamanhoMaximoBytes = 50L * 1024 * 1024;
@@ -20,14 +20,14 @@ public class Midia : BaseAuditableEntity, IDoParceiro
     public const int DuracaoPadraoSegundos = 15;
     public const int DuracaoMaximaSegundos = 3600;
 
-    public long ParceiroId { get; set; }
-    public Parceiro Parceiro { get; set; } = null!;
+    public long ClienteId { get; set; }
+    public Cliente Cliente { get; set; } = null!;
 
     public string Titulo { get; set; } = null!;
 
     public TipoMidia Tipo { get; set; }
 
-    /// <summary>Caminho do objeto no bucket (<c>parceiros/{id}/midias/{guid}.mp4</c>). Único.</summary>
+    /// <summary>Caminho do objeto no bucket (<c>clientes/{id}/midias/{guid}.mp4</c>). Único.</summary>
     public string ChaveArmazenamento { get; set; } = null!;
 
     /// <summary>MIME conferido no envio (<c>video/mp4</c>, <c>image/jpeg</c>, <c>image/png</c>).</summary>
@@ -44,10 +44,10 @@ public class Midia : BaseAuditableEntity, IDoParceiro
     /// </summary>
     public int DuracaoSegundos { get; set; } = DuracaoPadraoSegundos;
 
-    /// <summary>Primeiro dia de exibição (no fuso do parceiro). Nulo = desde já.</summary>
+    /// <summary>Primeiro dia de exibição (no fuso do cliente). Nulo = desde já.</summary>
     public DateOnly? InicioExibicao { get; set; }
 
-    /// <summary>Último dia de exibição, inclusive (no fuso do parceiro). Nulo = sem fim.</summary>
+    /// <summary>Último dia de exibição, inclusive (no fuso do cliente). Nulo = sem fim.</summary>
     public DateOnly? FimExibicao { get; set; }
 
     /// <summary>Inativa sai de todas as grades sem perder o vínculo com as playlists.</summary>

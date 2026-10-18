@@ -13,7 +13,7 @@ namespace Atlas.Infrastructure.Business.Diretorio;
 /// Todo texto é codificado (<c>&amp; &lt; &gt; " '</c>, o bastante para texto
 /// e atributo entre aspas) e só entram endereços
 /// <c>https:</c>, <c>http:</c> e <c>tel:</c>: o conteúdo vem do cadastro dos
-/// parceiros. A política de conteúdo (CSP) só libera o CSS e o script desta
+/// clientes. A política de conteúdo (CSP) só libera o CSS e o script desta
 /// resposta, pelo <c>nonce</c>.
 /// </remarks>
 public static class PaginaDiretorio

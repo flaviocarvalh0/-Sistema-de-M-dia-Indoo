@@ -31,7 +31,7 @@ public class PlaylistConfiguration : IEntityTypeConfiguration<Playlist>
                 $"duracao_maxima_volta_segundos = 0 OR duracao_maxima_volta_segundos BETWEEN {Playlist.DuracaoVoltaMinimaSegundos} AND {Playlist.DuracaoVoltaMaximaSegundos}");
         });
 
-        // A playlist é da rede (da operadora), não de um parceiro.
+        // A playlist é da rede (da operadora), não de um cliente.
         builder.HasIndex(p => p.Nome)
             .IsUnique();
 

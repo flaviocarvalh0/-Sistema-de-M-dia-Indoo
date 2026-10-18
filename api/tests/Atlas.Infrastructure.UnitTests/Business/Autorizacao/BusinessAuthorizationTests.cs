@@ -73,10 +73,10 @@ public class BusinessAuthorizationTests
     /// existe, mas nega acesso a todo mundo.
     /// </summary>
     [Theory]
-    [InlineData("parceiro", BusinessPermissionKeys.Parceiros.View, "View")]
-    [InlineData("parceiro", BusinessPermissionKeys.Parceiros.Create, "Create")]
-    [InlineData("parceiro", BusinessPermissionKeys.Parceiros.Update, "Update")]
-    [InlineData("parceiro", BusinessPermissionKeys.Parceiros.Delete, "Delete")]
+    [InlineData("cliente", BusinessPermissionKeys.Clientes.View, "View")]
+    [InlineData("cliente", BusinessPermissionKeys.Clientes.Create, "Create")]
+    [InlineData("cliente", BusinessPermissionKeys.Clientes.Update, "Update")]
+    [InlineData("cliente", BusinessPermissionKeys.Clientes.Delete, "Delete")]
     [InlineData("tela", BusinessPermissionKeys.Telas.View, "View")]
     [InlineData("tela", BusinessPermissionKeys.Telas.Create, "Create")]
     [InlineData("tela", BusinessPermissionKeys.Telas.Update, "Update")]

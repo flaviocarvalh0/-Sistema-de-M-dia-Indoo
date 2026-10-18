@@ -1,23 +1,23 @@
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Indoor.Armazenamento;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Application.Common.Interfaces;
 using Atlas.Application.Common.Models;
 using Atlas.Application.Platform.EmailMessages.Common;
 using Atlas.Domain.Platform.Entities;
 using System.Runtime.CompilerServices;
-using Atlas.Domain.Business.Parceiros.Enums;
+using Atlas.Domain.Business.Clientes.Enums;
 
 namespace Atlas.Infrastructure.UnitTests.Business.Indoor;
 
-/// <summary>Parceiro do usuário logado, fixo no teste.</summary>
-internal sealed class ParceiroAtualFake(long parceiroId) : IParceiroAtual
+/// <summary>Cliente do usuário logado, fixo no teste.</summary>
+internal sealed class ClienteAtualFake(long clienteId) : IClienteAtual
 {
-    public long ParceiroId { get; set; } = parceiroId;
-    public PapelParceiro Papel { get; set; } = PapelParceiro.Proprietario;
+    public long ClienteId { get; set; } = clienteId;
+    public PapelCliente Papel { get; set; } = PapelCliente.Proprietario;
 
-    public Task<ParceiroDoUsuario> ObterAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(new ParceiroDoUsuario(ParceiroId, Papel, "America/Sao_Paulo"));
+    public Task<ClienteDoUsuario> ObterAsync(CancellationToken cancellationToken) =>
+        Task.FromResult(new ClienteDoUsuario(ClienteId, Papel, "America/Sao_Paulo"));
 }
 
 /// <summary>Storage em memória: o teste põe o arquivo como se o navegador tivesse enviado.</summary>

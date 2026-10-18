@@ -58,7 +58,7 @@ public class FusosHorariosTests
     [InlineData("America/Sao_Paulo", true)]
     [InlineData("America/Manaus", true)]
     [InlineData("America/Noronha", true)]
-    [InlineData("UTC", false)]                              // sem região: não é fuso de parceiro
+    [InlineData("UTC", false)]                              // sem região: não é fuso de cliente
     [InlineData("E. South America Standard Time", false)]   // id do Windows
     [InlineData("America/Atlantida", false)]
     [InlineData("", false)]
@@ -69,7 +69,7 @@ public class FusosHorariosTests
     }
 
     [Fact]
-    public void NoFuso_DeveDarODiaLocalDoParceiro()
+    public void NoFuso_DeveDarODiaLocalDoCliente()
     {
         // 02:30 UTC de segunda ainda é domingo em Manaus (UTC-4).
         var instante = new DateTimeOffset(2026, 10, 12, 2, 30, 0, TimeSpan.Zero);

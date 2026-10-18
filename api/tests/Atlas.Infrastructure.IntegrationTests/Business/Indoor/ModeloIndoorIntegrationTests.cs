@@ -1,7 +1,8 @@
+using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Application.Business.Diretorio;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros.Entities;
+using Atlas.Domain.Business.Clientes.Entities;
 using Npgsql;
 
 namespace Atlas.Infrastructure.IntegrationTests.Business.Indoor;
@@ -16,6 +17,7 @@ namespace Atlas.Infrastructure.IntegrationTests.Business.Indoor;
 public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifetime
 {
     private readonly string _sufixo = Guid.NewGuid().ToString("N")[..8];
+    private long _clienteId;
     private long _parceiroId;
 
     public async Task InitializeAsync()
@@ -23,7 +25,13 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
         await BancoDeTestes.AtualizarAsync(fixture);
 
         await using var context = fixture.CreateDbContext();
-        var parceiro = new Parceiro { Nome = $"Academia {_sufixo}", Email = $"{_sufixo}@teste.local" };
+        var cliente = new Cliente { Nome = $"Academia {_sufixo}", Email = $"{_sufixo}@teste.local" };
+        context.Clientes.Add(cliente);
+        await context.SaveChangesAsync();
+        _clienteId = cliente.Id;
+
+        // O local das TVs deste teste; o dono também anuncia (diretório: vai primeiro).
+        var parceiro = new Parceiro { Nome = $"Academia {_sufixo}", ClienteId = cliente.Id };
         context.Parceiros.Add(parceiro);
         await context.SaveChangesAsync();
         _parceiroId = parceiro.Id;
@@ -33,10 +41,11 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
     {
         await using var context = fixture.CreateDbContext();
         await context.Telas.Where(t => t.ParceiroId == _parceiroId).ExecuteDeleteAsync();
-        // Playlists são da rede (sem parceiro): as deste teste levam o sufixo no nome.
+        // Playlists são da rede (sem cliente): as deste teste levam o sufixo no nome.
         await context.Playlists.Where(p => p.Nome.EndsWith(_sufixo)).ExecuteDeleteAsync();
-        await context.Midias.Where(m => m.ParceiroId == _parceiroId).ExecuteDeleteAsync();
+        await context.Midias.Where(m => m.ClienteId == _clienteId).ExecuteDeleteAsync();
         await context.Parceiros.Where(p => p.Id == _parceiroId).ExecuteDeleteAsync();
+        await context.Clientes.Where(p => p.Id == _clienteId).ExecuteDeleteAsync();
     }
 
     [Fact]
@@ -257,7 +266,7 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
 
         await using (var context = fixture.CreateDbContext())
         {
-            var host = await context.Parceiros.SingleAsync(p => p.Id == _parceiroId);
+            var host = await context.Clientes.SingleAsync(p => p.Id == _clienteId);
             host.DefinirExibicaoNoDiretorio(true, DateTimeOffset.UtcNow);
             host.WhatsappPublico = "5592999990000";
             var playlist = new Playlist { Nome = $"Grade {_sufixo}" };
@@ -281,8 +290,8 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
 
     [Theory]
     [InlineData("ck_tela_diretorio")]
-    [InlineData("ck_parceiro_diretorio_aceite")]
-    [InlineData("ck_parceiro_whatsapp_publico")]
+    [InlineData("ck_cliente_diretorio_aceite")]
+    [InlineData("ck_cliente_whatsapp_publico")]
     public async Task Diretorio_DeveRecusarDadosInvalidosNoBanco(string restricao)
     {
         await using var context = fixture.CreateDbContext();
@@ -296,10 +305,10 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
                 return context.SaveChangesAsync();
             },
             // Aceite sem data.
-            "ck_parceiro_diretorio_aceite" => () => context.Database.ExecuteSqlAsync(
-                $"UPDATE business.parceiro SET exibir_no_diretorio_publico = true WHERE id = {_parceiroId}"),
+            "ck_cliente_diretorio_aceite" => () => context.Database.ExecuteSqlAsync(
+                $"UPDATE business.cliente SET exibir_no_diretorio_publico = true WHERE id = {_clienteId}"),
             _ => () => context.Database.ExecuteSqlAsync(
-                $"UPDATE business.parceiro SET whatsapp_publico = '92 9999' WHERE id = {_parceiroId}"),
+                $"UPDATE business.cliente SET whatsapp_publico = '92 9999' WHERE id = {_clienteId}"),
         };
 
         var excecao = await acao.Should().ThrowAsync<Exception>();
@@ -320,10 +329,10 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
 
     private Midia NovaMidia() => new()
     {
-        ParceiroId = _parceiroId,
+        ClienteId = _clienteId,
         Titulo = "Promoção de inverno",
         Tipo = TipoMidia.Video,
-        ChaveArmazenamento = $"parceiros/{_parceiroId}/midias/{Guid.NewGuid():N}.mp4",
+        ChaveArmazenamento = $"clientes/{_clienteId}/midias/{Guid.NewGuid():N}.mp4",
         TipoConteudo = "video/mp4",
         TamanhoBytes = 2_500_000,
         Hash = new string('a', 64),

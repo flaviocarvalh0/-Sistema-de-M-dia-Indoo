@@ -2,6 +2,7 @@
 using Atlas.Application.Common.Interfaces;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Conteudo.Entities;
+using Atlas.Domain.Business.Clientes.Entities;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Common;
 using Atlas.Domain.Platform.Entities;
@@ -42,9 +43,12 @@ public class ApplicationDbContext
     public DbSet<FileContent> FileContents => Set<FileContent>();
     public DbSet<EntityAttachment> EntityAttachments => Set<EntityAttachment>();
 
-    // Business — Parceiros (inquilino)
+    // Business — Clientes (anunciantes, com acesso ao painel)
+    public DbSet<Cliente> Clientes => Set<Cliente>();
+    public DbSet<UsuarioCliente> UsuariosCliente => Set<UsuarioCliente>();
+
+    // Business — Parceiros (locais das TVs, sem acesso)
     public DbSet<Parceiro> Parceiros => Set<Parceiro>();
-    public DbSet<UsuarioParceiro> UsuariosParceiro => Set<UsuarioParceiro>();
 
     // Business — Mídia Indoor
     public DbSet<Tela> Telas => Set<Tela>();

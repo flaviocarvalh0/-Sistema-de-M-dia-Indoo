@@ -15,7 +15,7 @@ internal static class RecebimentoArquivo
     /// <param name="context">Banco.</param>
     /// <param name="armazenamento">Storage das mídias.</param>
     /// <param name="logger">Log do handler que chama.</param>
-    /// <param name="parceiroId">Dono do envio.</param>
+    /// <param name="clienteId">Dono do envio.</param>
     /// <param name="chave">Chave devolvida pelo preparo do envio.</param>
     /// <param name="tipoConteudo">MIME informado.</param>
     /// <param name="hashInformado">SHA-256 do navegador (opcional).</param>
@@ -25,16 +25,16 @@ internal static class RecebimentoArquivo
         IApplicationDbContext context,
         IArmazenamentoMidias armazenamento,
         ILogger logger,
-        long parceiroId,
+        long clienteId,
         string chave,
         string tipoConteudo,
         string? hashInformado,
         long bytesQueSaem,
         CancellationToken cancellationToken)
     {
-        // A chave precisa ser uma gerada para este parceiro: sem isto, um
-        // parceiro poderia registrar como sua a mídia de outro.
-        if (!ChavesArmazenamento.Valida(chave, parceiroId, tipoConteudo))
+        // A chave precisa ser uma gerada para este cliente: sem isto, um
+        // cliente poderia registrar como sua a mídia de outro.
+        if (!ChavesArmazenamento.Valida(chave, clienteId, tipoConteudo))
         {
             throw new ValidationException("Chave", ["Envio inválido. Envie o arquivo de novo."]);
         }
@@ -73,7 +73,7 @@ internal static class RecebimentoArquivo
                 "O arquivo chegou diferente do enviado (corrompido no caminho). Envie de novo.", cancellationToken);
         }
 
-        var (usado, cota) = await CotaArmazenamento.ObterAsync(context, parceiroId, cancellationToken);
+        var (usado, cota) = await CotaArmazenamento.ObterAsync(context, clienteId, cancellationToken);
         if (usado - bytesQueSaem + arquivo.TamanhoBytes > cota)
         {
             await RecusarAsync(armazenamento, logger, chave, "Chave",

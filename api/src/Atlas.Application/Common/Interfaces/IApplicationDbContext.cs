@@ -1,5 +1,6 @@
 ﻿using Atlas.Domain.Business.Conteudo.Entities;
 using Atlas.Domain.Business.Indoor.Entities;
+using Atlas.Domain.Business.Clientes.Entities;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Platform.Entities;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -23,9 +24,12 @@ public interface IApplicationDbContext
     DbSet<FileContent> FileContents { get; }
     DbSet<EntityAttachment> EntityAttachments { get; }
 
-    // Business — Parceiros (inquilino)
+    // Business — Clientes (anunciantes, com acesso ao painel)
+    DbSet<Cliente> Clientes { get; }
+    DbSet<UsuarioCliente> UsuariosCliente { get; }
+
+    // Business — Parceiros (locais das TVs, sem acesso)
     DbSet<Parceiro> Parceiros { get; }
-    DbSet<UsuarioParceiro> UsuariosParceiro { get; }
 
     // Business — Mídia Indoor
     DbSet<Tela> Telas { get; }

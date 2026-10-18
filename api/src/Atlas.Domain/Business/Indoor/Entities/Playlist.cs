@@ -5,7 +5,7 @@ namespace Atlas.Domain.Business.Indoor.Entities;
 
 /// <summary>
 /// Grade de exibição da rede, montada pela operadora: mídias de vários
-/// parceiros (anunciantes) na ordem do loop. Reaproveitável: uma playlist
+/// clientes (anunciantes) na ordem do loop. Reaproveitável: uma playlist
 /// roda em várias telas. A tela aponta para a playlist; a playlist não
 /// conhece as telas.
 /// </summary>

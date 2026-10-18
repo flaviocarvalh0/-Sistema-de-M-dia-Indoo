@@ -13,13 +13,22 @@ namespace Atlas.Domain.Business.Constants;
 /// </remarks>
 public static class BusinessPermissionKeys
 {
-    /// <summary>Tabela <c>business.parceiro</c> (gestão da operadora).</summary>
+    /// <summary>Tabela <c>business.parceiro</c>: locais das TVs (só a operadora).</summary>
     public static class Parceiros
     {
         public const string View = "Parceiros.View";
         public const string Create = "Parceiros.Create";
         public const string Update = "Parceiros.Update";
         public const string Delete = "Parceiros.Delete";
+    }
+
+    /// <summary>Tabela <c>business.cliente</c>: anunciantes (gestão da operadora).</summary>
+    public static class Clientes
+    {
+        public const string View = "Clientes.View";
+        public const string Create = "Clientes.Create";
+        public const string Update = "Clientes.Update";
+        public const string Delete = "Clientes.Delete";
     }
 
     /// <summary>Tabela <c>indoor.tela</c> (pareamento incluso).</summary>
@@ -61,6 +70,7 @@ public static class BusinessPermissionKeys
     public static IReadOnlyList<string> All() =>
     [
         Parceiros.View, Parceiros.Create, Parceiros.Update, Parceiros.Delete,
+        Clientes.View, Clientes.Create, Clientes.Update, Clientes.Delete,
         Telas.View, Telas.Create, Telas.Update, Telas.Delete,
         Midias.View, Midias.Create, Midias.Update, Midias.Delete,
         Playlists.View, Playlists.Create, Playlists.Update, Playlists.Delete,

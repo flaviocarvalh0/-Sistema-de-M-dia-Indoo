@@ -1,8 +1,8 @@
 namespace Atlas.Application.Business.Indoor.Midias.Common;
 
 /// <summary>
-/// O plano do parceiro: quantas mídias ele pode ter ativas ao mesmo tempo
-/// (<c>Parceiro.LimiteMidiasAtivas</c>). Vale ao ativar e ao cadastrar; quem
+/// O plano do cliente: quantas mídias ele pode ter ativas ao mesmo tempo
+/// (<c>Cliente.LimiteMidiasAtivas</c>). Vale ao ativar e ao cadastrar; quem
 /// já estava acima quando o limite mudou continua como está (direito
 /// adquirido) até inativar alguma.
 /// </summary>
@@ -10,28 +10,28 @@ internal static class LimiteMidiasAtivas
 {
     public static async Task<(int Ativas, int Limite)> ObterAsync(
         IApplicationDbContext context,
-        long parceiroId,
+        long clienteId,
         CancellationToken cancellationToken)
     {
-        var ativas = await context.Midias.CountAsync(m => m.ParceiroId == parceiroId && m.Ativo, cancellationToken);
-        var limite = await context.Parceiros
-            .Where(p => p.Id == parceiroId)
+        var ativas = await context.Midias.CountAsync(m => m.ClienteId == clienteId && m.Ativo, cancellationToken);
+        var limite = await context.Clientes
+            .Where(p => p.Id == clienteId)
             .Select(p => p.LimiteMidiasAtivas)
             .FirstAsync(cancellationToken);
 
         return (ativas, limite);
     }
 
-    public static async Task<bool> TemVagaAsync(IApplicationDbContext context, long parceiroId, CancellationToken cancellationToken)
+    public static async Task<bool> TemVagaAsync(IApplicationDbContext context, long clienteId, CancellationToken cancellationToken)
     {
-        var (ativas, limite) = await ObterAsync(context, parceiroId, cancellationToken);
+        var (ativas, limite) = await ObterAsync(context, clienteId, cancellationToken);
         return ativas < limite;
     }
 
     /// <summary>400 quando ativar mais uma passa do plano.</summary>
-    public static async Task GarantirVagaAsync(IApplicationDbContext context, long parceiroId, CancellationToken cancellationToken)
+    public static async Task GarantirVagaAsync(IApplicationDbContext context, long clienteId, CancellationToken cancellationToken)
     {
-        var (ativas, limite) = await ObterAsync(context, parceiroId, cancellationToken);
+        var (ativas, limite) = await ObterAsync(context, clienteId, cancellationToken);
         if (ativas >= limite)
         {
             throw new ValidationException("Ativo", [Mensagem(ativas, limite)]);

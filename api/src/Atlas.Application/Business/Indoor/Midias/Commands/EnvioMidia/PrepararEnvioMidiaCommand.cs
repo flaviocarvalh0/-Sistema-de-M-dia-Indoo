@@ -1,7 +1,7 @@
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Midias.Common;
 using Atlas.Application.Business.Indoor.Midias.Dtos;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
 
@@ -24,21 +24,21 @@ public record PrepararEnvioMidiaCommand : IRequest<EnvioMidiaDto>
 
 public class PrepararEnvioMidiaCommandHandler(
     IApplicationDbContext context,
-    IParceiroAtual parceiroAtual,
+    IClienteAtual clienteAtual,
     IArmazenamentoMidias armazenamento)
     : IRequestHandler<PrepararEnvioMidiaCommand, EnvioMidiaDto>
 {
     public async Task<EnvioMidiaDto> Handle(PrepararEnvioMidiaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
 
-        var (usado, cota) = await CotaArmazenamento.ObterAsync(context, parceiro.ParceiroId, cancellationToken);
+        var (usado, cota) = await CotaArmazenamento.ObterAsync(context, cliente.ClienteId, cancellationToken);
         if (usado + request.TamanhoBytes > cota)
         {
             throw new ValidationException(nameof(request.TamanhoBytes), [CotaArmazenamento.Mensagem(usado, cota)]);
         }
 
-        var chave = ChavesArmazenamento.Gerar(parceiro.ParceiroId, request.TipoConteudo);
+        var chave = ChavesArmazenamento.Gerar(cliente.ClienteId, request.TipoConteudo);
         var envio = await armazenamento.PrepararEnvioAsync(chave, cancellationToken);
 
         return new EnvioMidiaDto(chave, envio.Url, envio.ExpiraEm);

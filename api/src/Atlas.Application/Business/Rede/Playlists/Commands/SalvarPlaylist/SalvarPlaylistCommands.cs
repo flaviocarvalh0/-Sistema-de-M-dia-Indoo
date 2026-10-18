@@ -73,7 +73,7 @@ public class CriarPlaylistCommandHandler(IApplicationDbContext context)
         var playlist = new Playlist
         {
             Nome = nome,
-            Descricao = RegistrosDoParceiro.Limpar(request.Descricao),
+            Descricao = RegistrosDoCliente.Limpar(request.Descricao),
         };
         RegrasPlaylist.AplicarComposicao(playlist, request);
 
@@ -96,7 +96,7 @@ public class AtualizarPlaylistCommandHandler(IApplicationDbContext context)
 
         context.ConferirVersao(playlist, request.Version);
         playlist.Nome = nome;
-        playlist.Descricao = RegistrosDoParceiro.Limpar(request.Descricao);
+        playlist.Descricao = RegistrosDoCliente.Limpar(request.Descricao);
         RegrasPlaylist.AplicarComposicao(playlist, request);
 
         return await context.SalvarAsync(playlist, cancellationToken);

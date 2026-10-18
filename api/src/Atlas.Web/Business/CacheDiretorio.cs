@@ -10,7 +10,7 @@ namespace Atlas.Web.Business;
 /// adivinhar códigos não chegar ao banco.
 /// </summary>
 /// <remarks>
-/// Desligar o diretório ou o aceite de um parceiro vale em até 60 s.
+/// Desligar o diretório ou o aceite de um cliente vale em até 60 s.
 /// </remarks>
 public sealed class CacheDiretorio(IMemoryCache cache)
 {

@@ -129,7 +129,7 @@ public class CriarVersaoAppCommandHandler(
         {
             Codigo = request.Codigo,
             Nome = request.Nome.Trim(),
-            Notas = RegistrosDoParceiro.Limpar(request.Notas),
+            Notas = RegistrosDoCliente.Limpar(request.Notas),
             ChaveArmazenamento = request.Chave,
             TamanhoBytes = tamanho,
             Hash = hash,

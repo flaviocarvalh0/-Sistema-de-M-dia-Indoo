@@ -1,7 +1,7 @@
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Application.Business.Indoor.Midias.Common;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
 using Microsoft.Extensions.Logging;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Atlas.Application.Business.Indoor.Midias.Commands.EstadoMidia;
 
 /// <summary>
-/// Volta a mídia às grades em que ela está. Respeita o plano do parceiro
+/// Volta a mídia às grades em que ela está. Respeita o plano do cliente
 /// (<c>LimiteMidiasAtivas</c>): passar do limite dá 400.
 /// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Midias.Update)]
@@ -26,17 +26,17 @@ public record InativarMidiaCommand(long Id, uint Version) : IRequest<uint>;
 [Authorize(Policy = BusinessPermissionKeys.Midias.Delete)]
 public record ExcluirMidiaCommand(long Id) : IRequest;
 
-public class AtivarMidiaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class AtivarMidiaCommandHandler(IApplicationDbContext context, IClienteAtual clienteAtual)
     : IRequestHandler<AtivarMidiaCommand, uint>
 {
     public async Task<uint> Handle(AtivarMidiaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var midia = await RegistrosDoParceiro.CarregarAsync(context.Midias, parceiro.ParceiroId, request.Id, cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
+        var midia = await RegistrosDoCliente.CarregarAsync(context.Midias, cliente.ClienteId, request.Id, cancellationToken);
 
         if (!midia.Ativo)
         {
-            await LimiteMidiasAtivas.GarantirVagaAsync(context, parceiro.ParceiroId, cancellationToken);
+            await LimiteMidiasAtivas.GarantirVagaAsync(context, cliente.ClienteId, cancellationToken);
         }
 
         context.ConferirVersao(midia, request.Version);
@@ -46,13 +46,13 @@ public class AtivarMidiaCommandHandler(IApplicationDbContext context, IParceiroA
     }
 }
 
-public class InativarMidiaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class InativarMidiaCommandHandler(IApplicationDbContext context, IClienteAtual clienteAtual)
     : IRequestHandler<InativarMidiaCommand, uint>
 {
     public async Task<uint> Handle(InativarMidiaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var midia = await RegistrosDoParceiro.CarregarAsync(context.Midias, parceiro.ParceiroId, request.Id, cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
+        var midia = await RegistrosDoCliente.CarregarAsync(context.Midias, cliente.ClienteId, request.Id, cancellationToken);
 
         context.ConferirVersao(midia, request.Version);
         midia.Ativo = false;
@@ -63,15 +63,15 @@ public class InativarMidiaCommandHandler(IApplicationDbContext context, IParceir
 
 public class ExcluirMidiaCommandHandler(
     IApplicationDbContext context,
-    IParceiroAtual parceiroAtual,
+    IClienteAtual clienteAtual,
     IArmazenamentoMidias armazenamento,
     ILogger<ExcluirMidiaCommandHandler> logger)
     : IRequestHandler<ExcluirMidiaCommand>
 {
     public async Task Handle(ExcluirMidiaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var midia = await RegistrosDoParceiro.CarregarAsync(context.Midias, parceiro.ParceiroId, request.Id, cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
+        var midia = await RegistrosDoCliente.CarregarAsync(context.Midias, cliente.ClienteId, request.Id, cancellationToken);
 
         var playlists = await context.ItensPlaylist
             .Where(i => i.MidiaId == midia.Id)

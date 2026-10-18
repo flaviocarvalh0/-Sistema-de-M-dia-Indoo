@@ -98,6 +98,6 @@ public class VersoesAppTests : IDisposable
     [Theory]
     [InlineData("app/0123456789abcdef0123456789abcdef.apk", true)]
     [InlineData("app/../midias/x.apk", false)]
-    [InlineData("parceiros/1/midias/0123456789abcdef0123456789abcdef.mp4", false)]
+    [InlineData("clientes/1/midias/0123456789abcdef0123456789abcdef.mp4", false)]
     public void ChaveDoApk(string chave, bool valida) => ArquivoApk.ChaveValida(chave).Should().Be(valida);
 }

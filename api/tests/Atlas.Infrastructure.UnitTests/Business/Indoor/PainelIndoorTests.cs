@@ -1,3 +1,4 @@
+using Atlas.Domain.Business.Parceiros.Entities;
 using System.Security.Cryptography;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Midias.Commands.CriarMidia;
@@ -10,7 +11,7 @@ using Atlas.Application.Business.Rede.Midias.Commands;
 using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros.Entities;
+using Atlas.Domain.Business.Clientes.Entities;
 using Atlas.Infrastructure.Data;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,7 @@ using NotFoundException = Ardalis.GuardClauses.NotFoundException;
 
 namespace Atlas.Infrastructure.UnitTests.Business.Indoor;
 
-/// <summary>Regras do painel do parceiro (mídias, plano, onde os anúncios passam) no banco em memória.</summary>
+/// <summary>Regras do painel do cliente (mídias, plano, onde os anúncios passam) no banco em memória.</summary>
 public class PainelIndoorTests : IDisposable
 {
     private static readonly DateTimeOffset Agora = new(2026, 10, 13, 15, 0, 0, TimeSpan.Zero);
@@ -32,20 +33,20 @@ public class PainelIndoorTests : IDisposable
 
     private readonly ArmazenamentoFake _armazenamento = new();
     private readonly RelogioFixo _relogio = new(Agora);
-    private readonly ParceiroAtualFake _parceiroAtual;
+    private readonly ClienteAtualFake _clienteAtual;
     private readonly EmailsFake _emails = new();
-    private readonly long _parceiroA;
-    private readonly long _parceiroB;
+    private readonly long _clienteA;
+    private readonly long _clienteB;
 
     public PainelIndoorTests()
     {
-        var a = new Parceiro { Nome = "Academia", Email = "a@teste.local", CotaArmazenamentoMb = 1 };
-        var b = new Parceiro { Nome = "Tapiocaria", Email = "b@teste.local" };
-        _context.Parceiros.AddRange(a, b);
+        var a = new Cliente { Nome = "Academia", Email = "a@teste.local", CotaArmazenamentoMb = 1 };
+        var b = new Cliente { Nome = "Tapiocaria", Email = "b@teste.local" };
+        _context.Clientes.AddRange(a, b);
         _context.SaveChanges();
-        _parceiroA = a.Id;
-        _parceiroB = b.Id;
-        _parceiroAtual = new ParceiroAtualFake(_parceiroA);
+        _clienteA = a.Id;
+        _clienteB = b.Id;
+        _clienteAtual = new ClienteAtualFake(_clienteA);
     }
 
     public void Dispose() => _context.Dispose();
@@ -53,12 +54,12 @@ public class PainelIndoorTests : IDisposable
     // ---------- Mídias: envio ----------
 
     [Fact]
-    public async Task PrepararEnvio_DeveGerarChaveDoParceiro()
+    public async Task PrepararEnvio_DeveGerarChaveDoCliente()
     {
-        var envio = await new PrepararEnvioMidiaCommandHandler(_context, _parceiroAtual, _armazenamento)
+        var envio = await new PrepararEnvioMidiaCommandHandler(_context, _clienteAtual, _armazenamento)
             .Handle(new PrepararEnvioMidiaCommand { TipoConteudo = TiposArquivoMidia.Mp4, TamanhoBytes = 1000 }, CancellationToken.None);
 
-        ChavesArmazenamento.Valida(envio.Chave, _parceiroA, TiposArquivoMidia.Mp4).Should().BeTrue();
+        ChavesArmazenamento.Valida(envio.Chave, _clienteA, TiposArquivoMidia.Mp4).Should().BeTrue();
         envio.UrlEnvio.ToString().Should().EndWith(envio.Chave);
     }
 
@@ -66,9 +67,9 @@ public class PainelIndoorTests : IDisposable
     public async Task PrepararEnvio_AcimaDaCotaDeveSerRecusado()
     {
         // Cota de 1 MB, com 600 KB já usados.
-        await CriarMidiaNoBancoAsync(_parceiroA, tamanho: 600 * 1024);
+        await CriarMidiaNoBancoAsync(_clienteA, tamanho: 600 * 1024);
 
-        var acao = () => new PrepararEnvioMidiaCommandHandler(_context, _parceiroAtual, _armazenamento)
+        var acao = () => new PrepararEnvioMidiaCommandHandler(_context, _clienteAtual, _armazenamento)
             .Handle(new PrepararEnvioMidiaCommand { TipoConteudo = TiposArquivoMidia.Mp4, TamanhoBytes = 500 * 1024 }, CancellationToken.None);
 
         (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("TamanhoBytes");
@@ -91,7 +92,7 @@ public class PainelIndoorTests : IDisposable
         });
 
         var midia = await _context.Midias.SingleAsync(m => m.Id == id);
-        midia.ParceiroId.Should().Be(_parceiroA);
+        midia.ClienteId.Should().Be(_clienteA);
         midia.Titulo.Should().Be("Promoção de inverno");
         midia.Tipo.Should().Be(TipoMidia.Video);
         midia.Hash.Should().Be(Sha256(arquivo));
@@ -101,15 +102,15 @@ public class PainelIndoorTests : IDisposable
     }
 
     [Fact]
-    public async Task CriarMidia_ChaveDeOutroParceiroDeveSerRecusadaSemTocarNoArquivo()
+    public async Task CriarMidia_ChaveDeOutroClienteDeveSerRecusadaSemTocarNoArquivo()
     {
-        var chave = ChavesArmazenamento.Gerar(_parceiroB, TiposArquivoMidia.Png);
+        var chave = ChavesArmazenamento.Gerar(_clienteB, TiposArquivoMidia.Png);
         _armazenamento.Arquivos[chave] = Arquivos.Png();
 
         var acao = () => CriarMidia(new CriarMidiaCommand { Titulo = "X", Chave = chave, TipoConteudo = TiposArquivoMidia.Png });
 
         (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("Chave");
-        _armazenamento.Arquivos.Should().ContainKey(chave, "o arquivo é do outro parceiro e não pode ser apagado por este");
+        _armazenamento.Arquivos.Should().ContainKey(chave, "o arquivo é do outro cliente e não pode ser apagado por este");
     }
 
     [Fact]
@@ -141,7 +142,7 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task CriarMidia_ArquivoQueNaoChegouDeveSerRecusado()
     {
-        var chave = ChavesArmazenamento.Gerar(_parceiroA, TiposArquivoMidia.Png);
+        var chave = ChavesArmazenamento.Gerar(_clienteA, TiposArquivoMidia.Png);
 
         var acao = () => CriarMidia(new CriarMidiaCommand { Titulo = "X", Chave = chave, TipoConteudo = TiposArquivoMidia.Png });
 
@@ -151,7 +152,7 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task CriarMidia_ArquivoQueEstouraACotaDeveSerApagado()
     {
-        await CriarMidiaNoBancoAsync(_parceiroA, tamanho: 1024 * 1024 - 100);
+        await CriarMidiaNoBancoAsync(_clienteA, tamanho: 1024 * 1024 - 100);
         var chave = Enviar(Arquivos.Png(500), TiposArquivoMidia.Png);
 
         var acao = () => CriarMidia(new CriarMidiaCommand { Titulo = "X", Chave = chave, TipoConteudo = TiposArquivoMidia.Png });
@@ -193,19 +194,19 @@ public class PainelIndoorTests : IDisposable
     // ---------- Mídias: consulta e exclusão ----------
 
     [Fact]
-    public async Task Midias_DeOutroParceiroNaoAparecemNemSeAlteram()
+    public async Task Midias_DeOutroClienteNaoAparecemNemSeAlteram()
     {
-        var midiaB = await CriarMidiaNoBancoAsync(_parceiroB);
+        var midiaB = await CriarMidiaNoBancoAsync(_clienteB);
 
-        var lista = await new GetMidiasQueryHandler(_context, _parceiroAtual, new IdentityNomesFake())
+        var lista = await new GetMidiasQueryHandler(_context, _clienteAtual, new IdentityNomesFake())
             .Handle(new GetMidiasQuery(), CancellationToken.None);
         lista.Items.Should().BeEmpty();
 
-        var obter = () => new GetMidiaByIdQueryHandler(_context, _parceiroAtual, new IdentityNomesFake(), _armazenamento)
+        var obter = () => new GetMidiaByIdQueryHandler(_context, _clienteAtual, new IdentityNomesFake(), _armazenamento)
             .Handle(new GetMidiaByIdQuery(midiaB.Id), CancellationToken.None);
         await obter.Should().ThrowAsync<NotFoundException>();
 
-        var inativar = () => new InativarMidiaCommandHandler(_context, _parceiroAtual)
+        var inativar = () => new InativarMidiaCommandHandler(_context, _clienteAtual)
             .Handle(new InativarMidiaCommand(midiaB.Id, 0), CancellationToken.None);
         await inativar.Should().ThrowAsync<NotFoundException>();
     }
@@ -213,9 +214,9 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task ObterMidia_DeveTrazerUrlDeVisualizacao()
     {
-        var midia = await CriarMidiaNoBancoAsync(_parceiroA);
+        var midia = await CriarMidiaNoBancoAsync(_clienteA);
 
-        var dto = await new GetMidiaByIdQueryHandler(_context, _parceiroAtual, new IdentityNomesFake(), _armazenamento)
+        var dto = await new GetMidiaByIdQueryHandler(_context, _clienteAtual, new IdentityNomesFake(), _armazenamento)
             .Handle(new GetMidiaByIdQuery(midia.Id), CancellationToken.None);
 
         dto.UrlVisualizacao!.ToString().Should().Contain(midia.ChaveArmazenamento).And.EndWith("s=3600");
@@ -224,10 +225,10 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task ExcluirMidia_EmUsoDeveSerRecusada_ForaDeUsoApagaArquivo()
     {
-        var emUso = await CriarMidiaNoBancoAsync(_parceiroA);
-        var solta = await CriarMidiaNoBancoAsync(_parceiroA);
+        var emUso = await CriarMidiaNoBancoAsync(_clienteA);
+        var solta = await CriarMidiaNoBancoAsync(_clienteA);
         await CriarPlaylistNoBancoAsync("Grade", emUso.Id);
-        var handler = new ExcluirMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, NullLogger<ExcluirMidiaCommandHandler>.Instance);
+        var handler = new ExcluirMidiaCommandHandler(_context, _clienteAtual, _armazenamento, NullLogger<ExcluirMidiaCommandHandler>.Instance);
 
         var acao = () => handler.Handle(new ExcluirMidiaCommand(emUso.Id), CancellationToken.None);
         (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors["Id"].Should().ContainMatch("*1 playlist*");
@@ -252,10 +253,10 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task AtivarMidia_AlemDoPlanoDeveDar400()
     {
-        await CriarMidiaNoBancoAsync(_parceiroA);
-        var outra = await CriarMidiaNoBancoAsync(_parceiroA, ativa: false);
+        await CriarMidiaNoBancoAsync(_clienteA);
+        var outra = await CriarMidiaNoBancoAsync(_clienteA, ativa: false);
 
-        var ativar = () => new AtivarMidiaCommandHandler(_context, _parceiroAtual)
+        var ativar = () => new AtivarMidiaCommandHandler(_context, _clienteAtual)
             .Handle(new AtivarMidiaCommand(outra.Id, 0), CancellationToken.None);
 
         (await ativar.Should().ThrowAsync<ValidationException>()).Which.Errors["Ativo"]
@@ -265,36 +266,36 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task AtivarMidia_ComPlanoMaiorOuDepoisDeInativarOutraPassa()
     {
-        var a = await CriarMidiaNoBancoAsync(_parceiroA);
-        var b = await CriarMidiaNoBancoAsync(_parceiroA, ativa: false);
+        var a = await CriarMidiaNoBancoAsync(_clienteA);
+        var b = await CriarMidiaNoBancoAsync(_clienteA, ativa: false);
 
-        await new InativarMidiaCommandHandler(_context, _parceiroAtual).Handle(new InativarMidiaCommand(a.Id, 0), CancellationToken.None);
-        await new AtivarMidiaCommandHandler(_context, _parceiroAtual).Handle(new AtivarMidiaCommand(b.Id, 0), CancellationToken.None);
+        await new InativarMidiaCommandHandler(_context, _clienteAtual).Handle(new InativarMidiaCommand(a.Id, 0), CancellationToken.None);
+        await new AtivarMidiaCommandHandler(_context, _clienteAtual).Handle(new AtivarMidiaCommand(b.Id, 0), CancellationToken.None);
 
-        (await _context.Parceiros.SingleAsync(p => p.Id == _parceiroA)).LimiteMidiasAtivas = 2;
+        (await _context.Clientes.SingleAsync(p => p.Id == _clienteA)).LimiteMidiasAtivas = 2;
         await _context.SaveChangesAsync();
-        await new AtivarMidiaCommandHandler(_context, _parceiroAtual).Handle(new AtivarMidiaCommand(a.Id, 0), CancellationToken.None);
+        await new AtivarMidiaCommandHandler(_context, _clienteAtual).Handle(new AtivarMidiaCommand(a.Id, 0), CancellationToken.None);
 
-        (await _context.Midias.CountAsync(m => m.ParceiroId == _parceiroA && m.Ativo)).Should().Be(2);
+        (await _context.Midias.CountAsync(m => m.ClienteId == _clienteA && m.Ativo)).Should().Be(2);
     }
 
     [Fact]
     public async Task Plano_DireitoAdquiridoNaoInativaNada_SoBarraANovaAtivacao()
     {
         // Três ativas de antes do limite existir.
-        await CriarMidiaNoBancoAsync(_parceiroA);
-        await CriarMidiaNoBancoAsync(_parceiroA);
-        var ativaDeAntes = await CriarMidiaNoBancoAsync(_parceiroA);
-        var nova = await CriarMidiaNoBancoAsync(_parceiroA, ativa: false);
+        await CriarMidiaNoBancoAsync(_clienteA);
+        await CriarMidiaNoBancoAsync(_clienteA);
+        var ativaDeAntes = await CriarMidiaNoBancoAsync(_clienteA);
+        var nova = await CriarMidiaNoBancoAsync(_clienteA, ativa: false);
 
         // Reativar uma que já está ativa não conta como mais uma.
-        await new AtivarMidiaCommandHandler(_context, _parceiroAtual).Handle(new AtivarMidiaCommand(ativaDeAntes.Id, 0), CancellationToken.None);
+        await new AtivarMidiaCommandHandler(_context, _clienteAtual).Handle(new AtivarMidiaCommand(ativaDeAntes.Id, 0), CancellationToken.None);
 
-        var ativar = () => new AtivarMidiaCommandHandler(_context, _parceiroAtual).Handle(new AtivarMidiaCommand(nova.Id, 0), CancellationToken.None);
+        var ativar = () => new AtivarMidiaCommandHandler(_context, _clienteAtual).Handle(new AtivarMidiaCommand(nova.Id, 0), CancellationToken.None);
         await ativar.Should().ThrowAsync<ValidationException>();
-        (await _context.Midias.CountAsync(m => m.ParceiroId == _parceiroA && m.Ativo)).Should().Be(3);
+        (await _context.Midias.CountAsync(m => m.ClienteId == _clienteA && m.Ativo)).Should().Be(3);
 
-        var uso = await new GetUsoArmazenamentoQueryHandler(_context, _parceiroAtual).Handle(new GetUsoArmazenamentoQuery(), CancellationToken.None);
+        var uso = await new GetUsoArmazenamentoQueryHandler(_context, _clienteAtual).Handle(new GetUsoArmazenamentoQuery(), CancellationToken.None);
         uso.MidiasAtivas.Should().Be(3);
         uso.LimiteMidiasAtivas.Should().Be(1);
     }
@@ -400,7 +401,7 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task SubstituirArquivo_PendenteContaNaCota()
     {
-        // Cota do parceiro A: 1 MB. Em grade, o atual (700 KB) segue no ar: outro de 700 KB não cabe.
+        // Cota do cliente A: 1 MB. Em grade, o atual (700 KB) segue no ar: outro de 700 KB não cabe.
         var id = await CriarMidia(NovaMidia(Arquivos.Mp4(700 * 1024), TiposArquivoMidia.Mp4));
         await CriarPlaylistNoBancoAsync("Grade", id);
         var chave = Enviar(Arquivos.Mp4(700 * 1024), TiposArquivoMidia.Mp4);
@@ -427,7 +428,7 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task SubstituirArquivo_CotaDescontaOArquivoQueSai()
     {
-        // Cota do parceiro A: 1 MB. Arquivo de 700 KB trocado por outro de 700 KB cabe.
+        // Cota do cliente A: 1 MB. Arquivo de 700 KB trocado por outro de 700 KB cabe.
         var grande = Arquivos.Mp4(700 * 1024);
         var id = await CriarMidia(NovaMidia(grande, TiposArquivoMidia.Mp4));
         var outro = Arquivos.Mp4(700 * 1024);
@@ -439,9 +440,9 @@ public class PainelIndoorTests : IDisposable
     }
 
     [Fact]
-    public async Task SubstituirArquivo_MidiaDeOutroParceiroDeveDar404()
+    public async Task SubstituirArquivo_MidiaDeOutroClienteDeveDar404()
     {
-        var midiaB = await CriarMidiaNoBancoAsync(_parceiroB);
+        var midiaB = await CriarMidiaNoBancoAsync(_clienteB);
         var chave = Enviar(Arquivos.Png(), TiposArquivoMidia.Png);
 
         var acao = () => Substituir(new SubstituirArquivoMidiaCommand { Id = midiaB.Id, Chave = chave, TipoConteudo = TiposArquivoMidia.Png, Version = 0 });
@@ -452,11 +453,11 @@ public class PainelIndoorTests : IDisposable
     // ---------- Onde meus anúncios passam ----------
 
     [Fact]
-    public async Task OndePassam_SoTelasAtivasComPlaylistAtivaQueTemMidiaAtivaDoParceiro()
+    public async Task OndePassam_SoTelasAtivasComPlaylistAtivaQueTemMidiaAtivaDoCliente()
     {
-        var minha = await CriarMidiaNoBancoAsync(_parceiroA);
-        var minhaInativa = await CriarMidiaNoBancoAsync(_parceiroA, ativa: false);
-        var deOutro = await CriarMidiaNoBancoAsync(_parceiroB);
+        var minha = await CriarMidiaNoBancoAsync(_clienteA);
+        var minhaInativa = await CriarMidiaNoBancoAsync(_clienteA, ativa: false);
+        var deOutro = await CriarMidiaNoBancoAsync(_clienteB);
 
         var comMinha = await CriarPlaylistNoBancoAsync("Com a minha", deOutro.Id, minha.Id);
         var soDeOutro = await CriarPlaylistNoBancoAsync("Só de outro", deOutro.Id);
@@ -464,20 +465,23 @@ public class PainelIndoorTests : IDisposable
         var inativa = await CriarPlaylistNoBancoAsync("Playlist inativa", minha.Id);
         inativa.Ativo = false;
 
+        var local = new Parceiro { Nome = "Tapiocaria" };
+        var outroLocal = new Parceiro { Nome = "Loja" };
+        _context.Parceiros.AddRange(local, outroLocal);
         _context.Telas.AddRange(
-            new Tela { ParceiroId = _parceiroB, Nome = "Padaria", Playlist = comMinha },
-            new Tela { ParceiroId = _parceiroB, Nome = "Farmácia", Playlist = soDeOutro },
-            new Tela { ParceiroId = _parceiroB, Nome = "Banca", Playlist = comInativa },
-            new Tela { ParceiroId = _parceiroB, Nome = "Bar", Playlist = inativa },
-            new Tela { ParceiroId = _parceiroB, Nome = "Desligada", Playlist = comMinha, Ativo = false },
-            new Tela { ParceiroId = _parceiroA, Nome = "Minha loja" });
+            new Tela { Parceiro = local, Nome = "Padaria", Playlist = comMinha },
+            new Tela { Parceiro = local, Nome = "Farmácia", Playlist = soDeOutro },
+            new Tela { Parceiro = local, Nome = "Banca", Playlist = comInativa },
+            new Tela { Parceiro = local, Nome = "Bar", Playlist = inativa },
+            new Tela { Parceiro = local, Nome = "Desligada", Playlist = comMinha, Ativo = false },
+            new Tela { Parceiro = outroLocal, Nome = "Minha loja" });
         await _context.SaveChangesAsync();
 
-        var lista = await new GetTelasQueryHandler(_context, _parceiroAtual, new IdentityNomesFake(), _relogio)
+        var lista = await new GetTelasQueryHandler(_context, _clienteAtual, new IdentityNomesFake(), _relogio)
             .Handle(new GetTelasQuery(), CancellationToken.None);
 
         lista.Items.Select(t => t.Nome).Should().Equal("Padaria");
-        lista.Items.Single().ParceiroNome.Should().Be("Tapiocaria", "o local é o host");
+        lista.Items.Single().ParceiroNome.Should().Be("Tapiocaria", "o local é o parceiro");
         lista.Items.Single().CodigoPareamento.Should().BeNull();
 
         var foraDaLista = _context.Telas.Single(t => t.Nome == "Farmácia").Id;
@@ -488,9 +492,9 @@ public class PainelIndoorTests : IDisposable
     [Fact]
     public async Task OndePassam_SituacaoSegueASincronizacao()
     {
-        var minha = await CriarMidiaNoBancoAsync(_parceiroA);
+        var minha = await CriarMidiaNoBancoAsync(_clienteA);
         var playlist = await CriarPlaylistNoBancoAsync("Grade", minha.Id);
-        var tela = new Tela { ParceiroId = _parceiroB, Nome = "Padaria", Playlist = playlist };
+        var tela = new Tela { Parceiro = new Parceiro { Nome = "Padaria" }, Nome = "Padaria", Playlist = playlist };
         tela.Parear("tv-1", Agora.AddHours(-2));
         tela.Estado = new EstadoTela();
         tela.Estado.RegistrarSincronizacao(Agora.AddMinutes(-2), "1.0.0", "v", 3);
@@ -505,14 +509,14 @@ public class PainelIndoorTests : IDisposable
 
     // ---------- Apoio ----------
 
-    private GetTelaByIdQueryHandler Telas() => new(_context, _parceiroAtual, new IdentityNomesFake(), _relogio);
+    private GetTelaByIdQueryHandler Telas() => new(_context, _clienteAtual, new IdentityNomesFake(), _relogio);
 
     private Task<long> CriarMidia(CriarMidiaCommand comando) =>
-        new CriarMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, NullLogger<CriarMidiaCommandHandler>.Instance)
+        new CriarMidiaCommandHandler(_context, _clienteAtual, _armazenamento, NullLogger<CriarMidiaCommandHandler>.Instance)
             .Handle(comando, CancellationToken.None);
 
     private Task<SubstituicaoArquivoDto> Substituir(SubstituirArquivoMidiaCommand comando) =>
-        new SubstituirArquivoMidiaCommandHandler(_context, _parceiroAtual, _armazenamento, _emails, new ConfiguracaoIndoorFake(), _relogio,
+        new SubstituirArquivoMidiaCommandHandler(_context, _clienteAtual, _armazenamento, _emails, new ConfiguracaoIndoorFake(), _relogio,
                 NullLogger<SubstituirArquivoMidiaCommandHandler>.Instance)
             .Handle(comando, CancellationToken.None);
 
@@ -526,20 +530,20 @@ public class PainelIndoorTests : IDisposable
 
     private string Enviar(byte[] arquivo, string tipo)
     {
-        var chave = ChavesArmazenamento.Gerar(_parceiroA, tipo);
+        var chave = ChavesArmazenamento.Gerar(_clienteA, tipo);
         _armazenamento.Arquivos[chave] = arquivo;
         return chave;
     }
 
-    private async Task<Midia> CriarMidiaNoBancoAsync(long parceiroId, long tamanho = 1000, int duracao = 15, bool ativa = true)
+    private async Task<Midia> CriarMidiaNoBancoAsync(long clienteId, long tamanho = 1000, int duracao = 15, bool ativa = true)
     {
         var midia = new Midia
         {
             Ativo = ativa,
-            ParceiroId = parceiroId,
+            ClienteId = clienteId,
             Titulo = "Mídia",
             Tipo = TipoMidia.Video,
-            ChaveArmazenamento = ChavesArmazenamento.Gerar(parceiroId, TiposArquivoMidia.Mp4),
+            ChaveArmazenamento = ChavesArmazenamento.Gerar(clienteId, TiposArquivoMidia.Mp4),
             TipoConteudo = TiposArquivoMidia.Mp4,
             TamanhoBytes = tamanho,
             Hash = new string('a', 64),

@@ -1,3 +1,4 @@
+using Atlas.Domain.Business.Parceiros.Entities;
 using Microsoft.Extensions.Configuration;
 using Atlas.Infrastructure.Business;
 using Atlas.Application.Business.Common;
@@ -10,20 +11,20 @@ using Atlas.Application.Business.Rede.Playlists.Queries;
 using Atlas.Application.Business.Rede.Telas.Commands.Pareamento;
 using Atlas.Application.Business.Rede.Telas.Queries;
 using Atlas.Application.Business.Indoor.Telas.Queries;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Application.Common.Interfaces;
 using Atlas.Application.Common.Models.Pagination;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros.Entities;
-using Atlas.Domain.Business.Parceiros.Enums;
+using Atlas.Domain.Business.Clientes.Entities;
+using Atlas.Domain.Business.Clientes.Enums;
 using Moq;
 using NotFoundException = Ardalis.GuardClauses.NotFoundException;
 
 namespace Atlas.Infrastructure.IntegrationTests.Business.Indoor;
 
 /// <summary>
-/// O painel do parceiro no PostgreSQL real: isolamento entre parceiros, as
+/// O painel do cliente no PostgreSQL real: isolamento entre clientes, as
 /// consultas com contagens, somas e a situação da tela traduzidas pelo Npgsql
 /// e a concorrência pelo <c>xmin</c> — inclusive quando só os itens da
 /// playlist mudam.
@@ -34,6 +35,8 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
     private static readonly IIdentityService Identity = IdentitySemNomes();
 
     private readonly string _sufixo = Guid.NewGuid().ToString("N")[..8];
+    private long _clienteA;
+    private long _clienteB;
     private long _parceiroA;
     private long _parceiroB;
 
@@ -42,30 +45,39 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
         await BancoDeTestes.AtualizarAsync(fixture);
 
         await using var context = fixture.CreateDbContext();
-        var a = new Parceiro { Nome = $"A {_sufixo}", Email = $"a{_sufixo}@teste.local" };
-        var b = new Parceiro { Nome = $"B {_sufixo}", Email = $"b{_sufixo}@teste.local" };
-        context.Parceiros.AddRange(a, b);
+        var a = new Cliente { Nome = $"A {_sufixo}", Email = $"a{_sufixo}@teste.local" };
+        var b = new Cliente { Nome = $"B {_sufixo}", Email = $"b{_sufixo}@teste.local" };
+        context.Clientes.AddRange(a, b);
         await context.SaveChangesAsync();
-        (_parceiroA, _parceiroB) = (a.Id, b.Id);
+        (_clienteA, _clienteB) = (a.Id, b.Id);
+
+        // Os locais das TVs (sem acesso), com os mesmos nomes para facilitar a leitura.
+        var localA = new Parceiro { Nome = $"A {_sufixo}" };
+        var localB = new Parceiro { Nome = $"B {_sufixo}" };
+        context.Parceiros.AddRange(localA, localB);
+        await context.SaveChangesAsync();
+        (_parceiroA, _parceiroB) = (localA.Id, localB.Id);
     }
 
     public async Task DisposeAsync()
     {
         await using var context = fixture.CreateDbContext();
-        long[] ids = [_parceiroA, _parceiroB];
-        await context.Telas.Where(t => ids.Contains(t.ParceiroId)).ExecuteDeleteAsync();
-        // Playlists são da rede (sem parceiro): as deste teste levam o sufixo no nome.
+        long[] ids = [_clienteA, _clienteB];
+        long[] locais = [_parceiroA, _parceiroB];
+        await context.Telas.Where(t => locais.Contains(t.ParceiroId)).ExecuteDeleteAsync();
+        await context.Parceiros.Where(p => locais.Contains(p.Id)).ExecuteDeleteAsync();
+        // Playlists são da rede (sem cliente): as deste teste levam o sufixo no nome.
         await context.Playlists.Where(p => p.Nome.EndsWith(_sufixo)).ExecuteDeleteAsync();
-        await context.Midias.Where(m => ids.Contains(m.ParceiroId)).ExecuteDeleteAsync();
-        await context.Parceiros.Where(p => ids.Contains(p.Id)).ExecuteDeleteAsync();
+        await context.Midias.Where(m => ids.Contains(m.ClienteId)).ExecuteDeleteAsync();
+        await context.Clientes.Where(p => ids.Contains(p.Id)).ExecuteDeleteAsync();
     }
 
     [Fact]
-    public async Task Consultas_DevemContarSomarEIsolarPorParceiro()
+    public async Task Consultas_DevemContarSomarEIsolarPorCliente()
     {
-        var (video, imagem) = (await CriarMidiaAsync(_parceiroA, 30), await CriarMidiaAsync(_parceiroA, 10));
-        await CriarMidiaAsync(_parceiroB, 99);
-        var deB = await CriarMidiaAsync(_parceiroB, 5);
+        var (video, imagem) = (await CriarMidiaAsync(_clienteA, 30), await CriarMidiaAsync(_clienteA, 10));
+        await CriarMidiaAsync(_clienteB, 99);
+        var deB = await CriarMidiaAsync(_clienteB, 5);
         var playlist = await CriarPlaylistAsync("Grade", video, imagem, video);
         var soDeB = await CriarPlaylistAsync("Só B", deB);
 
@@ -80,7 +92,7 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
 
         await using (var context = fixture.CreateDbContext())
         {
-            var midias = await new GetMidiasQueryHandler(context, Atual(_parceiroA), Identity)
+            var midias = await new GetMidiasQueryHandler(context, Atual(_clienteA), Identity)
                 .Handle(new GetMidiasQuery { PaginationParams = new PaginationParams { PageSize = 50 } }, CancellationToken.None);
             midias.Items.Should().HaveCount(2);
             midias.Items.Single(m => m.Id == video).QuantidadePlaylists.Should().Be(1, "aparece duas vezes, mas numa playlist só");
@@ -92,14 +104,14 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
             grade.DuracaoTotalSegundos.Should().Be(70);
             grade.Itens!.Select(i => i.MidiaId).Should().Equal(video, imagem, video);
 
-            grade.Itens!.Should().OnlyContain(i => i.ParceiroNome == $"A {_sufixo}");
+            grade.Itens!.Should().OnlyContain(i => i.ClienteNome == $"A {_sufixo}");
 
             // Onde meus anúncios passam: A está nas duas telas da "Grade", em qualquer host.
-            var ondeA = await new GetTelasQueryHandler(context, Atual(_parceiroA), Identity, TimeProvider.System)
+            var ondeA = await new GetTelasQueryHandler(context, Atual(_clienteA), Identity, TimeProvider.System)
                 .Handle(new GetTelasQuery(), CancellationToken.None);
             ondeA.Items.Select(t => t.Nome).Should().BeEquivalentTo("Recepção", "Musculação");
 
-            var ondeB = await new GetTelasQueryHandler(context, Atual(_parceiroB), Identity, TimeProvider.System)
+            var ondeB = await new GetTelasQueryHandler(context, Atual(_clienteB), Identity, TimeProvider.System)
                 .Handle(new GetTelasQuery(), CancellationToken.None);
             ondeB.Items.Select(t => t.Nome).Should().Equal("Balcão");
         }
@@ -108,7 +120,7 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
     [Fact]
     public async Task DefinirItens_DeveGerarNovaVersaoERecusarVersaoAntiga()
     {
-        var midia = await CriarMidiaAsync(_parceiroA, 15);
+        var midia = await CriarMidiaAsync(_clienteA, 15);
         var playlist = await CriarPlaylistAsync("Grade");
 
         uint versaoInicial;
@@ -227,15 +239,15 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
         }
     }
 
-    private async Task<long> CriarMidiaAsync(long parceiroId, int duracao)
+    private async Task<long> CriarMidiaAsync(long clienteId, int duracao)
     {
         await using var context = fixture.CreateDbContext();
         var midia = new Midia
         {
-            ParceiroId = parceiroId,
+            ClienteId = clienteId,
             Titulo = "Mídia",
             Tipo = TipoMidia.Video,
-            ChaveArmazenamento = ChavesArmazenamento.Gerar(parceiroId, TiposArquivoMidia.Mp4),
+            ChaveArmazenamento = ChavesArmazenamento.Gerar(clienteId, TiposArquivoMidia.Mp4),
             TipoConteudo = TiposArquivoMidia.Mp4,
             TamanhoBytes = 1000,
             Hash = new string('b', 64),
@@ -256,11 +268,11 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
         return playlist.Id;
     }
 
-    private static IParceiroAtual Atual(long parceiroId)
+    private static IClienteAtual Atual(long clienteId)
     {
-        var atual = new Mock<IParceiroAtual>();
+        var atual = new Mock<IClienteAtual>();
         atual.Setup(a => a.ObterAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ParceiroDoUsuario(parceiroId, PapelParceiro.Proprietario, "America/Sao_Paulo"));
+            .ReturnsAsync(new ClienteDoUsuario(clienteId, PapelCliente.Proprietario, "America/Sao_Paulo"));
         return atual.Object;
     }
 

@@ -70,8 +70,8 @@ public class CriarTelaCommandHandler(IApplicationDbContext context)
         {
             ParceiroId = request.ParceiroId,
             Nome = nome,
-            Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao),
-            IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho),
+            Localizacao = RegistrosDoCliente.Limpar(request.Localizacao),
+            IdentificacaoAparelho = RegistrosDoCliente.Limpar(request.IdentificacaoAparelho),
             PlaylistId = request.PlaylistId,
             TvDeTeste = request.TvDeTeste,
         };
@@ -103,8 +103,8 @@ public class AtualizarTelaCommandHandler(IApplicationDbContext context)
         context.ConferirVersao(tela, request.Version);
         tela.ParceiroId = request.ParceiroId;
         tela.Nome = nome;
-        tela.Localizacao = RegistrosDoParceiro.Limpar(request.Localizacao);
-        tela.IdentificacaoAparelho = RegistrosDoParceiro.Limpar(request.IdentificacaoAparelho);
+        tela.Localizacao = RegistrosDoCliente.Limpar(request.Localizacao);
+        tela.IdentificacaoAparelho = RegistrosDoCliente.Limpar(request.IdentificacaoAparelho);
         tela.PlaylistId = request.PlaylistId;
         tela.TvDeTeste = request.TvDeTeste;
         await RegrasTela.DefinirDiretorioAsync(context, tela, request.DiretorioAtivo, cancellationToken);

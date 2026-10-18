@@ -12,7 +12,7 @@ namespace Atlas.Web.Endpoints.Business;
 
 /// <summary>
 /// Playlists (grades) da rede, montadas pela operadora com as mídias dos
-/// parceiros (anunciantes). O parceiro não decide onde o anúncio dele passa.
+/// clientes (anunciantes). O cliente não decide onde o anúncio dele passa.
 /// </summary>
 public class RedePlaylists : IEndpointGroup
 {

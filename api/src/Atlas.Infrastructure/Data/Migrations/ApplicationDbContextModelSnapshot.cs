@@ -22,6 +22,223 @@ namespace Atlas.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Atlas.Domain.Business.Clientes.Entities.Cliente", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Categoria")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("categoria");
+
+                    b.Property<string>("Cidade")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("cidade");
+
+                    b.Property<int>("CotaArmazenamentoMb")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(200)
+                        .HasColumnName("cota_armazenamento_mb");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DescricaoPublica")
+                        .HasMaxLength(140)
+                        .HasColumnType("character varying(140)")
+                        .HasColumnName("descricao_publica");
+
+                    b.Property<DateTimeOffset?>("DiretorioAceitoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("diretorio_aceito_em");
+
+                    b.Property<string>("Documento")
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("documento");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("ExibirNoDiretorioPublico")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exibir_no_diretorio_publico");
+
+                    b.Property<string>("FusoHorario")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("America/Sao_Paulo")
+                        .HasColumnName("fuso_horario");
+
+                    b.Property<string>("InstagramPublico")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("instagram_publico");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_modified");
+
+                    b.Property<long?>("LastModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_modified_by");
+
+                    b.Property<int>("LimiteMidiasAtivas")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("limite_midias_ativas");
+
+                    b.Property<string>("MotivoBloqueio")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_bloqueio");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("nome");
+
+                    b.Property<string>("NomeResponsavel")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("nome_responsavel");
+
+                    b.Property<string>("ObservacaoInterna")
+                        .HasColumnType("text")
+                        .HasColumnName("observacao_interna");
+
+                    b.Property<string>("SitePublico")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("site_publico");
+
+                    b.Property<int>("Situacao")
+                        .HasColumnType("integer")
+                        .HasColumnName("situacao");
+
+                    b.Property<string>("Telefone")
+                        .HasMaxLength(11)
+                        .HasColumnType("character varying(11)")
+                        .HasColumnName("telefone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("WhatsappPublico")
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("whatsapp_publico");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cliente");
+
+                    b.HasIndex("Situacao")
+                        .HasDatabaseName("ix_cliente_situacao");
+
+                    b.ToTable("cliente", "business", t =>
+                        {
+                            t.HasCheckConstraint("ck_cliente_cota", "cota_armazenamento_mb BETWEEN 1 AND 1048576");
+
+                            t.HasCheckConstraint("ck_cliente_diretorio_aceite", "(exibir_no_diretorio_publico) = (diretorio_aceito_em IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_cliente_documento", "documento IS NULL OR documento ~ '^[0-9]{11}$' OR documento ~ '^[0-9A-Z]{12}[0-9]{2}$'");
+
+                            t.HasCheckConstraint("ck_cliente_instagram_publico", "instagram_publico IS NULL OR instagram_publico ~ '^[A-Za-z0-9._]{1,30}$'");
+
+                            t.HasCheckConstraint("ck_cliente_limite_midias_ativas", "limite_midias_ativas BETWEEN 1 AND 1000");
+
+                            t.HasCheckConstraint("ck_cliente_motivo_bloqueio", "situacao <> 2 OR motivo_bloqueio IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_cliente_site_publico", "site_publico IS NULL OR site_publico ~ '^https?://'");
+
+                            t.HasCheckConstraint("ck_cliente_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{10,11}$'");
+
+                            t.HasCheckConstraint("ck_cliente_whatsapp_publico", "whatsapp_publico IS NULL OR whatsapp_publico ~ '^[0-9]{12,15}$'");
+                        });
+                });
+
+            modelBuilder.Entity("Atlas.Domain.Business.Clientes.Entities.UsuarioCliente", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ativo");
+
+                    b.Property<long>("ClienteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cliente_id");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_modified");
+
+                    b.Property<long?>("LastModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_modified_by");
+
+                    b.Property<int>("Papel")
+                        .HasColumnType("integer")
+                        .HasColumnName("papel");
+
+                    b.Property<long>("UsuarioId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_usuario_cliente");
+
+                    b.HasIndex("ClienteId")
+                        .HasDatabaseName("ix_usuario_cliente_cliente_id");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_usuario_cliente_usuario_id");
+
+                    b.ToTable("usuario_cliente", "business");
+                });
+
             modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.Cotacao", b =>
                 {
                     b.Property<long>("Id")
@@ -434,6 +651,10 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("chave_armazenamento");
 
+                    b.Property<long>("ClienteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cliente_id");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created");
@@ -474,10 +695,6 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("motivo_recusa_troca");
-
-                    b.Property<long>("ParceiroId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("parceiro_id");
 
                     b.Property<string>("PendenteChave")
                         .HasMaxLength(300)
@@ -590,8 +807,8 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_midia_chave_armazenamento");
 
-                    b.HasIndex("ParceiroId", "Ativo")
-                        .HasDatabaseName("ix_midia_parceiro_id_ativo");
+                    b.HasIndex("ClienteId", "Ativo")
+                        .HasDatabaseName("ix_midia_cliente_id_ativo");
 
                     b.ToTable("midia", "indoor", t =>
                         {
@@ -932,21 +1149,18 @@ namespace Atlas.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("Categoria")
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("categoria");
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ativo");
 
                     b.Property<string>("Cidade")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("cidade");
 
-                    b.Property<int>("CotaArmazenamentoMb")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(200)
-                        .HasColumnName("cota_armazenamento_mb");
+                    b.Property<long?>("ClienteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cliente_id");
 
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone")
@@ -956,29 +1170,20 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DescricaoPublica")
-                        .HasMaxLength(140)
-                        .HasColumnType("character varying(140)")
-                        .HasColumnName("descricao_publica");
-
-                    b.Property<DateTimeOffset?>("DiretorioAceitoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("diretorio_aceito_em");
-
                     b.Property<string>("Documento")
                         .HasMaxLength(14)
                         .HasColumnType("character varying(14)")
                         .HasColumnName("documento");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
                         .HasColumnName("email");
 
-                    b.Property<bool>("ExibirNoDiretorioPublico")
-                        .HasColumnType("boolean")
-                        .HasColumnName("exibir_no_diretorio_publico");
+                    b.Property<string>("Endereco")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)")
+                        .HasColumnName("endereco");
 
                     b.Property<string>("FusoHorario")
                         .IsRequired()
@@ -988,11 +1193,6 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasDefaultValue("America/Sao_Paulo")
                         .HasColumnName("fuso_horario");
 
-                    b.Property<string>("InstagramPublico")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("instagram_publico");
-
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified");
@@ -1000,17 +1200,6 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.Property<long?>("LastModifiedBy")
                         .HasColumnType("bigint")
                         .HasColumnName("last_modified_by");
-
-                    b.Property<int>("LimiteMidiasAtivas")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1)
-                        .HasColumnName("limite_midias_ativas");
-
-                    b.Property<string>("MotivoBloqueio")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("motivo_bloqueio");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -1023,18 +1212,9 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(150)")
                         .HasColumnName("nome_responsavel");
 
-                    b.Property<string>("ObservacaoInterna")
+                    b.Property<string>("Observacao")
                         .HasColumnType("text")
-                        .HasColumnName("observacao_interna");
-
-                    b.Property<string>("SitePublico")
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("site_publico");
-
-                    b.Property<int>("Situacao")
-                        .HasColumnType("integer")
-                        .HasColumnName("situacao");
+                        .HasColumnName("observacao");
 
                     b.Property<string>("Telefone")
                         .HasMaxLength(11)
@@ -1047,97 +1227,21 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
-                    b.Property<string>("WhatsappPublico")
-                        .HasMaxLength(15)
-                        .HasColumnType("character varying(15)")
-                        .HasColumnName("whatsapp_publico");
-
                     b.HasKey("Id")
                         .HasName("pk_parceiro");
 
-                    b.HasIndex("Situacao")
-                        .HasDatabaseName("ix_parceiro_situacao");
+                    b.HasIndex("ClienteId")
+                        .HasDatabaseName("ix_parceiro_cliente_id");
+
+                    b.HasIndex("Nome")
+                        .HasDatabaseName("ix_parceiro_nome");
 
                     b.ToTable("parceiro", "business", t =>
                         {
-                            t.HasCheckConstraint("ck_parceiro_cota", "cota_armazenamento_mb BETWEEN 1 AND 1048576");
-
-                            t.HasCheckConstraint("ck_parceiro_diretorio_aceite", "(exibir_no_diretorio_publico) = (diretorio_aceito_em IS NOT NULL)");
-
                             t.HasCheckConstraint("ck_parceiro_documento", "documento IS NULL OR documento ~ '^[0-9]{11}$' OR documento ~ '^[0-9A-Z]{12}[0-9]{2}$'");
 
-                            t.HasCheckConstraint("ck_parceiro_instagram_publico", "instagram_publico IS NULL OR instagram_publico ~ '^[A-Za-z0-9._]{1,30}$'");
-
-                            t.HasCheckConstraint("ck_parceiro_limite_midias_ativas", "limite_midias_ativas BETWEEN 1 AND 1000");
-
-                            t.HasCheckConstraint("ck_parceiro_motivo_bloqueio", "situacao <> 2 OR motivo_bloqueio IS NOT NULL");
-
-                            t.HasCheckConstraint("ck_parceiro_site_publico", "site_publico IS NULL OR site_publico ~ '^https?://'");
-
                             t.HasCheckConstraint("ck_parceiro_telefone", "telefone IS NULL OR telefone ~ '^[0-9]{10,11}$'");
-
-                            t.HasCheckConstraint("ck_parceiro_whatsapp_publico", "whatsapp_publico IS NULL OR whatsapp_publico ~ '^[0-9]{12,15}$'");
                         });
-                });
-
-            modelBuilder.Entity("Atlas.Domain.Business.Parceiros.Entities.UsuarioParceiro", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<bool>("Ativo")
-                        .HasColumnType("boolean")
-                        .HasColumnName("ativo");
-
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created");
-
-                    b.Property<long?>("CreatedBy")
-                        .HasColumnType("bigint")
-                        .HasColumnName("created_by");
-
-                    b.Property<DateTimeOffset>("LastModified")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_modified");
-
-                    b.Property<long?>("LastModifiedBy")
-                        .HasColumnType("bigint")
-                        .HasColumnName("last_modified_by");
-
-                    b.Property<int>("Papel")
-                        .HasColumnType("integer")
-                        .HasColumnName("papel");
-
-                    b.Property<long>("ParceiroId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("parceiro_id");
-
-                    b.Property<long>("UsuarioId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("usuario_id");
-
-                    b.Property<uint>("Version")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id")
-                        .HasName("pk_usuario_parceiro");
-
-                    b.HasIndex("ParceiroId")
-                        .HasDatabaseName("ix_usuario_parceiro_parceiro_id");
-
-                    b.HasIndex("UsuarioId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_usuario_parceiro_usuario_id");
-
-                    b.ToTable("usuario_parceiro", "business");
                 });
 
             modelBuilder.Entity("Atlas.Domain.Platform.Entities.EmailMessage", b =>
@@ -2391,6 +2495,25 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.ToTable("user_token", "platform");
                 });
 
+            modelBuilder.Entity("Atlas.Domain.Business.Clientes.Entities.UsuarioCliente", b =>
+                {
+                    b.HasOne("Atlas.Domain.Business.Clientes.Entities.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_usuario_cliente_cliente_cliente_id");
+
+                    b.HasOne("Atlas.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_usuario_cliente_user_usuario_id");
+
+                    b.Navigation("Cliente");
+                });
+
             modelBuilder.Entity("Atlas.Domain.Business.Conteudo.Entities.Noticia", b =>
                 {
                     b.HasOne("Atlas.Domain.Business.Conteudo.Entities.FonteNoticia", "Fonte")
@@ -2444,14 +2567,14 @@ namespace Atlas.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.Midia", b =>
                 {
-                    b.HasOne("Atlas.Domain.Business.Parceiros.Entities.Parceiro", "Parceiro")
+                    b.HasOne("Atlas.Domain.Business.Clientes.Entities.Cliente", "Cliente")
                         .WithMany()
-                        .HasForeignKey("ParceiroId")
+                        .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_midia_parceiros_parceiro_id");
+                        .HasConstraintName("fk_midia_cliente_cliente_id");
 
-                    b.Navigation("Parceiro");
+                    b.Navigation("Cliente");
                 });
 
             modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.Tela", b =>
@@ -2474,23 +2597,15 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.Navigation("Playlist");
                 });
 
-            modelBuilder.Entity("Atlas.Domain.Business.Parceiros.Entities.UsuarioParceiro", b =>
+            modelBuilder.Entity("Atlas.Domain.Business.Parceiros.Entities.Parceiro", b =>
                 {
-                    b.HasOne("Atlas.Domain.Business.Parceiros.Entities.Parceiro", "Parceiro")
+                    b.HasOne("Atlas.Domain.Business.Clientes.Entities.Cliente", "Cliente")
                         .WithMany()
-                        .HasForeignKey("ParceiroId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_usuario_parceiro_parceiro_parceiro_id");
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_parceiro_cliente_cliente_id");
 
-                    b.HasOne("Atlas.Infrastructure.Identity.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UsuarioId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_usuario_parceiro_user_usuario_id");
-
-                    b.Navigation("Parceiro");
+                    b.Navigation("Cliente");
                 });
 
             modelBuilder.Entity("Atlas.Domain.Platform.Entities.EmailMessageAttachment", b =>

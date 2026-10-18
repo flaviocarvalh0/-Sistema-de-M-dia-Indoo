@@ -41,7 +41,7 @@ public class AprovarTrocaArquivoCommandHandler(
 
         context.ConferirVersao(midia, request.Version);
         var antiga = midia.AprovarTroca();
-        await TrocaArquivo.AvisarParceiroAsync(context, emails, configuracao, midia,
+        await TrocaArquivo.AvisarClienteAsync(context, emails, configuracao, midia,
             "Troca de arquivo aprovada",
             $"O arquivo novo de \"{midia.Titulo}\" foi aprovado. As TVs passam a exibi-lo em alguns minutos.",
             cancellationToken);
@@ -67,7 +67,7 @@ public class RecusarTrocaArquivoCommandHandler(
 
         context.ConferirVersao(midia, request.Version);
         var pendente = midia.RecusarTroca(request.Motivo);
-        await TrocaArquivo.AvisarParceiroAsync(context, emails, configuracao, midia,
+        await TrocaArquivo.AvisarClienteAsync(context, emails, configuracao, midia,
             "Troca de arquivo recusada",
             $"O arquivo novo de \"{midia.Titulo}\" não foi aprovado. Motivo: {midia.MotivoRecusaTroca} As TVs seguem com o arquivo anterior.",
             cancellationToken);
@@ -99,7 +99,7 @@ public class AprovarTrocaArquivoCommandValidator : AbstractValidator<AprovarTroc
 
 internal static class TrocaArquivo
 {
-    /// <summary>A mídia (de qualquer parceiro: é a operadora), rastreada; sem troca pendente é 400.</summary>
+    /// <summary>A mídia (de qualquer cliente: é a operadora), rastreada; sem troca pendente é 400.</summary>
     public static async Task<Midia> CarregarComPendenteAsync(IApplicationDbContext context, long id, CancellationToken cancellationToken)
     {
         var midia = await context.Midias.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
@@ -113,8 +113,8 @@ internal static class TrocaArquivo
         return midia;
     }
 
-    /// <summary>E-mail para o responsável pelo parceiro, na mesma gravação.</summary>
-    public static async Task AvisarParceiroAsync(
+    /// <summary>E-mail para o responsável pelo cliente, na mesma gravação.</summary>
+    public static async Task AvisarClienteAsync(
         IApplicationDbContext context,
         IEmailMessageService emails,
         IConfiguracaoIndoor configuracao,
@@ -123,8 +123,8 @@ internal static class TrocaArquivo
         string texto,
         CancellationToken cancellationToken)
     {
-        var parceiro = await context.Parceiros
-            .Where(p => p.Id == midia.ParceiroId)
+        var cliente = await context.Clientes
+            .Where(p => p.Id == midia.ClienteId)
             .Select(p => new { p.Nome, p.NomeResponsavel, p.Email })
             .FirstAsync(cancellationToken);
 
@@ -134,11 +134,11 @@ internal static class TrocaArquivo
             HtmlBody = ModeloEmail.Montar(
                 previa: texto,
                 titulo: titulo,
-                motivo: $"Você recebeu este e-mail porque o {parceiro.Nome} trocou o arquivo de uma mídia na Mídia Indoor.",
-                ModeloEmail.Paragrafo($"Olá, {parceiro.NomeResponsavel ?? parceiro.Nome}!"),
+                motivo: $"Você recebeu este e-mail porque o {cliente.Nome} trocou o arquivo de uma mídia na Mídia Indoor.",
+                ModeloEmail.Paragrafo($"Olá, {cliente.NomeResponsavel ?? cliente.Nome}!"),
                 ModeloEmail.Paragrafo(texto),
                 ModeloEmail.Botao("Abrir minhas mídias", $"{configuracao.UrlPainel.TrimEnd('/')}/indoor/midia")),
-            Recipients = [new EmailRecipientRequest { Name = parceiro.NomeResponsavel, Email = parceiro.Email, Type = EmailRecipientType.To }],
+            Recipients = [new EmailRecipientRequest { Name = cliente.NomeResponsavel, Email = cliente.Email, Type = EmailRecipientType.To }],
             RelatedEntityType = "Midia",
             RelatedEntityId = midia.Id.ToString(CultureInfo.InvariantCulture),
         }, cancellationToken);

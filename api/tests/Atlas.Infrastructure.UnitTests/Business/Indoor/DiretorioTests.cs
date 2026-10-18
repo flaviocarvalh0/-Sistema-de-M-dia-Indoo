@@ -1,14 +1,15 @@
+using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Application.Business.Diretorio;
 using Atlas.Application.Business.Indoor.Armazenamento;
-using Atlas.Application.Business.Parceiros.Perfil;
+using Atlas.Application.Business.Clientes.Perfil;
 using Atlas.Application.Business.Rede.Telas.Commands.Pareamento;
 using Atlas.Application.Business.Rede.Telas.Commands.SalvarTela;
 using Atlas.Application.Business.Rede.Telas.Queries;
 using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros.Entities;
-using Atlas.Domain.Business.Parceiros.Enums;
+using Atlas.Domain.Business.Clientes.Entities;
+using Atlas.Domain.Business.Clientes.Enums;
 using Atlas.Infrastructure.Data;
 using Atlas.Infrastructure.Business.Diretorio;
 using FluentAssertions;
@@ -32,17 +33,21 @@ public class DiretorioTests : IDisposable
             .Options);
 
     private readonly RelogioFixo _relogio = new(Agora);
-    private readonly Parceiro _host;
+    private readonly Cliente _host;
+    private readonly Parceiro _local;
     private readonly Tela _tela;
     private readonly Playlist _playlist;
 
     public DiretorioTests()
     {
-        _host = new Parceiro { Nome = "Café Central", Email = "cafe@teste.local", FusoHorario = "America/Manaus", Categoria = "Cafeteria" };
-        _context.Parceiros.Add(_host);
+        _host = new Cliente { Nome = "Café Central", Email = "cafe@teste.local", FusoHorario = "America/Manaus", Categoria = "Cafeteria" };
+        _context.Clientes.Add(_host);
+        // O dono do local também anuncia: o parceiro aponta para o cadastro de cliente dele.
+        _local = new Parceiro { Nome = "Café Central", FusoHorario = "America/Manaus", Cliente = _host };
+        _context.Parceiros.Add(_local);
         _playlist = new Playlist { Nome = "Grade" };
         _context.Playlists.Add(_playlist);
-        _tela = new Tela { Parceiro = _host, Nome = "Balcão", Playlist = _playlist, DiretorioAtivo = true };
+        _tela = new Tela { Parceiro = _local, Nome = "Balcão", Playlist = _playlist, DiretorioAtivo = true };
         _tela.DefinirCodigoDiretorio(Codigo);
         _context.Telas.Add(_tela);
         _context.SaveChanges();
@@ -78,8 +83,22 @@ public class DiretorioTests : IDisposable
 
         var diretorio = await Consultar();
 
-        diretorio.Estabelecimento.Should().BeNull();
+        diretorio.Estabelecimento.Should().Be("Café Central", "o título é o nome do parceiro, sem depender do aceite");
         diretorio.Anunciantes.Select(a => a.Nome).Should().Equal("Loja");
+    }
+
+    [Fact]
+    public async Task Diretorio_ParceiroQueNaoAnunciaNaoTemCartaoDeAnfitriao()
+    {
+        Aceitar(_host);
+        _local.ClienteId = null;
+        _local.Cliente = null;
+        var loja = Anunciante("Loja", aceitou: true);
+        await Grade(Midia(loja));
+
+        var diretorio = await Consultar();
+
+        diretorio.Anunciantes.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Nome = "Loja", Anfitriao = false });
     }
 
     [Fact]
@@ -190,14 +209,14 @@ public class DiretorioTests : IDisposable
         await inativa.Should().ThrowAsync<NotFoundException>();
     }
 
-    // ---------- Perfil público (aceite do parceiro) ----------
+    // ---------- Perfil público (aceite do cliente) ----------
 
     [Fact]
     public async Task Perfil_DonoAceitaENormalizaOsContatos()
     {
-        var parceiroAtual = new ParceiroAtualFake(_host.Id);
+        var clienteAtual = new ClienteAtualFake(_host.Id);
 
-        await new AtualizarPerfilPublicoCommandHandler(_context, parceiroAtual, _relogio).Handle(new AtualizarPerfilPublicoCommand
+        await new AtualizarPerfilPublicoCommandHandler(_context, clienteAtual, _relogio).Handle(new AtualizarPerfilPublicoCommand
         {
             ExibirNoDiretorioPublico = true,
             Categoria = " Cafeteria ",
@@ -207,7 +226,7 @@ public class DiretorioTests : IDisposable
             SitePublico = "https://cafe.test",
         }, CancellationToken.None);
 
-        var perfil = await new GetPerfilPublicoQueryHandler(_context, parceiroAtual).Handle(new GetPerfilPublicoQuery(), CancellationToken.None);
+        var perfil = await new GetPerfilPublicoQueryHandler(_context, clienteAtual).Handle(new GetPerfilPublicoQuery(), CancellationToken.None);
         perfil.ExibirNoDiretorioPublico.Should().BeTrue();
         perfil.DiretorioAceitoEm.Should().Be(Agora);
         perfil.Categoria.Should().Be("Cafeteria");
@@ -218,9 +237,9 @@ public class DiretorioTests : IDisposable
 
         // Salvar de novo não muda a data do aceite; desligar apaga.
         _relogio.Agora = Agora.AddDays(1);
-        await Salvar(parceiroAtual, exibir: true);
+        await Salvar(clienteAtual, exibir: true);
         _host.DiretorioAceitoEm.Should().Be(Agora);
-        await Salvar(parceiroAtual, exibir: false);
+        await Salvar(clienteAtual, exibir: false);
         _host.ExibirNoDiretorioPublico.Should().BeFalse();
         _host.DiretorioAceitoEm.Should().BeNull();
     }
@@ -228,7 +247,7 @@ public class DiretorioTests : IDisposable
     [Fact]
     public async Task Perfil_SoODonoMudaOAceite()
     {
-        var equipe = new ParceiroAtualFake(_host.Id) { Papel = PapelParceiro.Equipe };
+        var equipe = new ClienteAtualFake(_host.Id) { Papel = PapelCliente.Equipe };
 
         var acao = () => Salvar(equipe, exibir: true);
 
@@ -241,7 +260,7 @@ public class DiretorioTests : IDisposable
     [Fact]
     public async Task Perfil_ContatosInvalidosVoltamPorCampoSemGravar()
     {
-        var acao = () => new AtualizarPerfilPublicoCommandHandler(_context, new ParceiroAtualFake(_host.Id), _relogio)
+        var acao = () => new AtualizarPerfilPublicoCommandHandler(_context, new ClienteAtualFake(_host.Id), _relogio)
             .Handle(new AtualizarPerfilPublicoCommand
             {
                 ExibirNoDiretorioPublico = true,
@@ -262,7 +281,7 @@ public class DiretorioTests : IDisposable
     {
         var configuracao = new ConfiguracaoIndoorFake();
         var id = await new CriarTelaCommandHandler(_context).Handle(
-            new CriarTelaCommand { ParceiroId = _host.Id, Nome = "Salão" }, CancellationToken.None);
+            new CriarTelaCommand { ParceiroId = _local.Id, Nome = "Salão" }, CancellationToken.None);
         (await _context.Telas.SingleAsync(t => t.Id == id)).CodigoDiretorio.Should().BeNull();
 
         await Atualizar(id, diretorio: true);
@@ -369,39 +388,39 @@ public class DiretorioTests : IDisposable
     private Task<DiretorioPublicoDto> Consultar(string codigo = Codigo) =>
         new GetDiretorioPublicoQueryHandler(_context, _relogio).Handle(new GetDiretorioPublicoQuery(codigo), CancellationToken.None);
 
-    private Task<uint> Salvar(ParceiroAtualFake parceiroAtual, bool exibir) =>
-        new AtualizarPerfilPublicoCommandHandler(_context, parceiroAtual, _relogio)
+    private Task<uint> Salvar(ClienteAtualFake clienteAtual, bool exibir) =>
+        new AtualizarPerfilPublicoCommandHandler(_context, clienteAtual, _relogio)
             .Handle(new AtualizarPerfilPublicoCommand { ExibirNoDiretorioPublico = exibir }, CancellationToken.None);
 
     private Task<uint> Atualizar(long id, bool diretorio) =>
         new AtualizarTelaCommandHandler(_context).Handle(
-            new AtualizarTelaCommand { Id = id, ParceiroId = _host.Id, Nome = "Salão", DiretorioAtivo = diretorio }, CancellationToken.None);
+            new AtualizarTelaCommand { Id = id, ParceiroId = _local.Id, Nome = "Salão", DiretorioAtivo = diretorio }, CancellationToken.None);
 
-    private void Aceitar(Parceiro parceiro)
+    private void Aceitar(Cliente cliente)
     {
-        parceiro.DefinirExibicaoNoDiretorio(true, Agora);
+        cliente.DefinirExibicaoNoDiretorio(true, Agora);
         _context.SaveChanges();
     }
 
-    private Parceiro Anunciante(string nome, bool aceitou)
+    private Cliente Anunciante(string nome, bool aceitou)
     {
-        var parceiro = new Parceiro { Nome = nome, Email = $"{Guid.NewGuid():N}@teste.local" };
+        var cliente = new Cliente { Nome = nome, Email = $"{Guid.NewGuid():N}@teste.local" };
         if (aceitou)
         {
-            parceiro.DefinirExibicaoNoDiretorio(true, Agora);
+            cliente.DefinirExibicaoNoDiretorio(true, Agora);
         }
 
-        _context.Parceiros.Add(parceiro);
+        _context.Clientes.Add(cliente);
         _context.SaveChanges();
-        return parceiro;
+        return cliente;
     }
 
-    private static Midia Midia(Parceiro parceiro, DateOnly? inicio = null, DateOnly? fim = null, bool ativa = true) => new()
+    private static Midia Midia(Cliente cliente, DateOnly? inicio = null, DateOnly? fim = null, bool ativa = true) => new()
     {
-        ParceiroId = parceiro.Id,
+        ClienteId = cliente.Id,
         Titulo = "Anúncio",
         Tipo = TipoMidia.Imagem,
-        ChaveArmazenamento = ChavesArmazenamento.Gerar(parceiro.Id, TiposArquivoMidia.Png),
+        ChaveArmazenamento = ChavesArmazenamento.Gerar(cliente.Id, TiposArquivoMidia.Png),
         TipoConteudo = TiposArquivoMidia.Png,
         TamanhoBytes = 1000,
         Hash = new string('c', 64),

@@ -1,7 +1,7 @@
 using Atlas.Domain.Business.Indoor.Enums;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Application.Business.Indoor.Midias.Common;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Domain.Business.Constants;
 
 namespace Atlas.Application.Business.Indoor.Midias.Commands.AtualizarMidia;
@@ -32,13 +32,13 @@ public record AtualizarMidiaCommand : IRequest<uint>, IQrCodeInformado
     public uint Version { get; init; }
 }
 
-public class AtualizarMidiaCommandHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class AtualizarMidiaCommandHandler(IApplicationDbContext context, IClienteAtual clienteAtual)
     : IRequestHandler<AtualizarMidiaCommand, uint>
 {
     public async Task<uint> Handle(AtualizarMidiaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var midia = await RegistrosDoParceiro.CarregarAsync(context.Midias, parceiro.ParceiroId, request.Id, cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
+        var midia = await RegistrosDoCliente.CarregarAsync(context.Midias, cliente.ClienteId, request.Id, cancellationToken);
 
         // Valida e monta antes de mexer na mídia: erro de QR code não grava nada.
         var qrCode = MontadorQrCode.Montar(request);

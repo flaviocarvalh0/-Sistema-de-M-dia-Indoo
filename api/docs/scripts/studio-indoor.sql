@@ -4,22 +4,24 @@
 -- Deixa o Studio no estado que o painel (web/) espera:
 --
 --   1. Módulos "Rede" (/rede, da operadora) e "Mídia Indoor" (/indoor, do
---      parceiro), com ícone, cor e ordem no launcher.
---   2. Entidades parceiro, tela, midia, playlist e fonte_noticia: rótulo, route_key (o
+--      cliente), com ícone, cor e ordem no launcher.
+--   2. Entidades parceiro, cliente, tela, midia, playlist e fonte_noticia: rótulo, route_key (o
 --      segmento da URL no web/app.routes.ts), ícone, histórico e módulo.
 --   3. Menus de cada módulo, com ícone e ordem.
---   4. Grupos "Operadora" e "Proprietário de Parceiro".
+--   4. Grupos "Operadora" e "Cliente" (o antigo "Proprietário de Parceiro"
+--      é renomeado).
 --   5. RBAC: as permissões de cada grupo, por módulo e entidade.
 --
 -- Rotas resultantes no painel:
---   /rede/parceiro   /rede/tela   /rede/playlist   /rede/fonte-noticia   (operadora)
---   /indoor/midia    /indoor/tela                  (parceiro)
+--   /rede/parceiro   /rede/cliente   /rede/tela   /rede/playlist   /rede/fonte-noticia   (operadora)
+--   /indoor/midia    /indoor/tela                                 (cliente)
 --
--- Papéis (ADR-014 e ADR-015): a operadora é dona das TVs e monta as grades
--- (playlists) com as mídias dos parceiros. O parceiro é anunciante: cuida da
+-- Papéis (ADR-014, ADR-015 e ADR-022): a operadora é dona das TVs, instaladas
+-- nos parceiros (os locais, que não acessam o sistema), e monta as grades
+-- (playlists) com as mídias dos clientes. O cliente é o anunciante: cuida da
 -- biblioteca de mídias dele (dentro do plano) e vê "onde meus anúncios
 -- passam" (/indoor/tela, somente leitura). A entidade "tela" fica no módulo
--- Rede, com menu também no módulo do parceiro.
+-- Rede, com menu também no módulo do cliente.
 --
 -- Idempotente e convergente: pode rodar quantas vezes quiser; cria o que
 -- falta e corrige o que divergir (rótulo, ícone, módulo, ordem). Não apaga
@@ -37,8 +39,8 @@
 --
 -- Os nomes dos grupos são a chave usada pelo código
 -- (Atlas.Domain.Business.Constants.BusinessRoles). Não renomeie só aqui.
--- O dono de cada parceiro entra no grupo "Proprietário de Parceiro"
--- automaticamente quando a operadora cadastra o parceiro; usuários da
+-- O responsável de cada cliente entra no grupo "Cliente" automaticamente
+-- quando a operadora cadastra o cliente; usuários da
 -- operadora são colocados no grupo "Operadora" pelo Studio (Usuários).
 -- =========================================================================
 
@@ -51,12 +53,12 @@ DECLARE
     v_rede_id         bigint;
     v_indoor_id       bigint;
     v_operadora_id    bigint;
-    v_proprietario_id bigint;
+    v_cliente_id bigint;
     v_faltando        text;
 BEGIN
     -- 0. Pré-requisitos ---------------------------------------------------
     SELECT string_agg(t, ', ') INTO v_faltando
-      FROM unnest(ARRAY['parceiro', 'tela', 'midia', 'playlist', 'fonte_noticia']) AS t
+      FROM unnest(ARRAY['parceiro', 'cliente', 'tela', 'midia', 'playlist', 'fonte_noticia']) AS t
      WHERE NOT EXISTS (SELECT 1 FROM platform.entity_metadata em WHERE em.table_name = t);
 
     IF v_faltando IS NOT NULL THEN
@@ -64,7 +66,7 @@ BEGIN
     END IF;
 
     SELECT string_agg(i, ', ') INTO v_faltando
-      FROM unnest(ARRAY['broadcast', 'tv', 'people', 'display', 'collection-play', 'list-ol', 'newspaper']) AS i
+      FROM unnest(ARRAY['broadcast', 'tv', 'people', 'shop', 'display', 'collection-play', 'list-ol', 'newspaper']) AS i
      WHERE NOT EXISTS (SELECT 1 FROM platform.system_icon si WHERE si.name = i);
 
     IF v_faltando IS NOT NULL THEN
@@ -86,7 +88,7 @@ BEGIN
 
     UPDATE platform.system_module
        SET name           = 'Rede',
-           description    = 'Cadastro e gestão dos parceiros',
+           description    = 'Parceiros (locais das TVs), clientes, telas e playlists',
            sort_order     = 10,
            system_icon_id = (SELECT id FROM platform.system_icon WHERE name = 'people'),
            hex_color      = '#1B4256',
@@ -106,7 +108,7 @@ BEGIN
 
     UPDATE platform.system_module
        SET name           = 'Mídia Indoor',
-           description    = 'Telas, mídias e playlists do parceiro',
+           description    = 'Mídias do cliente e onde os anúncios passam',
            sort_order     = 20,
            system_icon_id = (SELECT id FROM platform.system_icon WHERE name = 'broadcast'),
            hex_color      = '#0F766E',
@@ -123,7 +125,8 @@ BEGIN
            enable_history   = true,
            last_modified    = now()
       FROM (VALUES
-            ('parceiro', 'Parceiros', 'parceiro', 'people',          v_rede_id),
+            ('parceiro', 'Parceiros', 'parceiro', 'shop',            v_rede_id),
+            ('cliente',  'Clientes',  'cliente',  'people',          v_rede_id),
             ('tela',     'Telas',     'tela',     'tv',              v_rede_id),
             ('midia',    'Mídias',    'midia',    'collection-play', v_indoor_id),
             ('playlist', 'Playlists', 'playlist', 'list-ol',         v_rede_id),
@@ -142,9 +145,10 @@ BEGIN
            now(), NULL, now(), NULL
       FROM (VALUES
             ('parceiro', 'Parceiros',                 1, v_rede_id),
-            ('tela',     'Telas',                     2, v_rede_id),
-            ('playlist', 'Playlists',                 3, v_rede_id),
-            ('fonte_noticia', 'Fontes de notícias',   4, v_rede_id),
+            ('cliente',  'Clientes',                  2, v_rede_id),
+            ('tela',     'Telas',                     3, v_rede_id),
+            ('playlist', 'Playlists',                 4, v_rede_id),
+            ('fonte_noticia', 'Fontes de notícias',   5, v_rede_id),
             ('midia',    'Mídias',                    1, v_indoor_id),
             ('tela',     'Onde meus anúncios passam', 2, v_indoor_id)
            ) AS m(table_name, rotulo, ordem, modulo_id)
@@ -162,10 +166,11 @@ BEGIN
            icon_hex_color = NULL,
            last_modified  = now()
       FROM (VALUES
-            ('parceiro', 'Parceiros',                 1, 'people',          v_rede_id),
-            ('tela',     'Telas',                     2, 'tv',              v_rede_id),
-            ('playlist', 'Playlists',                 3, 'list-ol',         v_rede_id),
-            ('fonte_noticia', 'Fontes de notícias',   4, 'newspaper',       v_rede_id),
+            ('parceiro', 'Parceiros',                 1, 'shop',            v_rede_id),
+            ('cliente',  'Clientes',                  2, 'people',          v_rede_id),
+            ('tela',     'Telas',                     3, 'tv',              v_rede_id),
+            ('playlist', 'Playlists',                 4, 'list-ol',         v_rede_id),
+            ('fonte_noticia', 'Fontes de notícias',   5, 'newspaper',       v_rede_id),
             ('midia',    'Mídias',                    1, 'collection-play', v_indoor_id),
             ('tela',     'Onde meus anúncios passam', 2, 'broadcast',       v_indoor_id)
            ) AS m(table_name, rotulo, ordem, icone, modulo_id)
@@ -175,29 +180,37 @@ BEGIN
 
     -- 4. Grupos ------------------------------------------------------------
     -- normalized_name segue o UpperInvariant do Identity.
+    -- O grupo do anunciante se chamava "Proprietário de Parceiro": renomeia
+    -- (mantém as permissões já concedidas).
+    UPDATE platform.role
+       SET name = 'Cliente', normalized_name = 'CLIENTE'
+     WHERE normalized_name = 'PROPRIETÁRIO DE PARCEIRO'
+       AND NOT EXISTS (SELECT 1 FROM platform.role r WHERE r.normalized_name = 'CLIENTE');
+
     INSERT INTO platform.role (name, normalized_name, concurrency_stamp, is_active, created_at, created_by)
     SELECT g.name, g.normalized_name, gen_random_uuid()::text, true, now(), NULL
       FROM (VALUES
-            ('Operadora',               'OPERADORA'),
-            ('Proprietário de Parceiro', 'PROPRIETÁRIO DE PARCEIRO')
+            ('Operadora', 'OPERADORA'),
+            ('Cliente',   'CLIENTE')
            ) AS g(name, normalized_name)
      WHERE NOT EXISTS (SELECT 1 FROM platform.role r WHERE r.normalized_name = g.normalized_name);
 
     UPDATE platform.role SET is_active = true
-     WHERE normalized_name IN ('OPERADORA', 'PROPRIETÁRIO DE PARCEIRO')
+     WHERE normalized_name IN ('OPERADORA', 'CLIENTE')
        AND is_active IS DISTINCT FROM true;
 
     SELECT id INTO v_operadora_id    FROM platform.role WHERE normalized_name = 'OPERADORA';
-    SELECT id INTO v_proprietario_id FROM platform.role WHERE normalized_name = 'PROPRIETÁRIO DE PARCEIRO';
+    SELECT id INTO v_cliente_id FROM platform.role WHERE normalized_name = 'CLIENTE';
 
     -- 5. RBAC --------------------------------------------------------------
-    -- Operadora: parceiros (sem Delete: o parceiro é bloqueado, nunca
-    -- apagado), telas (o hardware é dela), playlists (as grades da rede;
-    -- Playlists.View também libera a leitura das mídias de todos os
-    -- parceiros, para montar as grades) e fontes de notícias.
-    -- Proprietário de Parceiro (anunciante): tudo nas próprias mídias e
-    -- leitura de "onde meus anúncios passam" (Telas.View). O isolamento por
-    -- parceiro é feito pela API, não pela permissão.
+    -- Operadora: parceiros (os locais das TVs; Delete só sem telas),
+    -- clientes (sem Delete: o cliente é bloqueado, nunca apagado), telas (o
+    -- hardware é dela), playlists (as grades da rede; Playlists.View também
+    -- libera a leitura das mídias de todos os clientes, para montar as
+    -- grades) e fontes de notícias.
+    -- Cliente (anunciante): tudo nas próprias mídias e leitura de "onde meus
+    -- anúncios passam" (Telas.View). O isolamento por cliente é feito pela
+    -- API, não pela permissão.
     -- module_id/entity_name ligam a permissão ao módulo no launcher e ao
     -- RBAC do front (canView/canCreate/... por nome da tabela).
     UPDATE platform.role_claim rc
@@ -207,6 +220,10 @@ BEGIN
             (v_operadora_id,    'Parceiros.View',   v_rede_id,   'parceiro'),
             (v_operadora_id,    'Parceiros.Create', v_rede_id,   'parceiro'),
             (v_operadora_id,    'Parceiros.Update', v_rede_id,   'parceiro'),
+            (v_operadora_id,    'Parceiros.Delete', v_rede_id,   'parceiro'),
+            (v_operadora_id,    'Clientes.View',    v_rede_id,   'cliente'),
+            (v_operadora_id,    'Clientes.Create',  v_rede_id,   'cliente'),
+            (v_operadora_id,    'Clientes.Update',  v_rede_id,   'cliente'),
             (v_operadora_id,    'Telas.View',       v_rede_id,   'tela'),
             (v_operadora_id,    'Telas.Create',     v_rede_id,   'tela'),
             (v_operadora_id,    'Telas.Update',     v_rede_id,   'tela'),
@@ -219,11 +236,11 @@ BEGIN
             (v_operadora_id,    'FonteNoticias.Create', v_rede_id, 'fonte_noticia'),
             (v_operadora_id,    'FonteNoticias.Update', v_rede_id, 'fonte_noticia'),
             (v_operadora_id,    'FonteNoticias.Delete', v_rede_id, 'fonte_noticia'),
-            (v_proprietario_id, 'Telas.View',       v_indoor_id, 'tela'),
-            (v_proprietario_id, 'Midias.View',      v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Midias.Create',    v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Midias.Update',    v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Midias.Delete',    v_indoor_id, 'midia')
+            (v_cliente_id, 'Telas.View',       v_indoor_id, 'tela'),
+            (v_cliente_id, 'Midias.View',      v_indoor_id, 'midia'),
+            (v_cliente_id, 'Midias.Create',    v_indoor_id, 'midia'),
+            (v_cliente_id, 'Midias.Update',    v_indoor_id, 'midia'),
+            (v_cliente_id, 'Midias.Delete',    v_indoor_id, 'midia')
            ) AS p(role_id, claim_value, module_id, entity_name)
      WHERE rc.role_id = p.role_id
        AND rc.claim_type = 'permission'
@@ -236,6 +253,10 @@ BEGIN
             (v_operadora_id,    'Parceiros.View',   v_rede_id,   'parceiro'),
             (v_operadora_id,    'Parceiros.Create', v_rede_id,   'parceiro'),
             (v_operadora_id,    'Parceiros.Update', v_rede_id,   'parceiro'),
+            (v_operadora_id,    'Parceiros.Delete', v_rede_id,   'parceiro'),
+            (v_operadora_id,    'Clientes.View',    v_rede_id,   'cliente'),
+            (v_operadora_id,    'Clientes.Create',  v_rede_id,   'cliente'),
+            (v_operadora_id,    'Clientes.Update',  v_rede_id,   'cliente'),
             (v_operadora_id,    'Telas.View',       v_rede_id,   'tela'),
             (v_operadora_id,    'Telas.Create',     v_rede_id,   'tela'),
             (v_operadora_id,    'Telas.Update',     v_rede_id,   'tela'),
@@ -248,11 +269,11 @@ BEGIN
             (v_operadora_id,    'FonteNoticias.Create', v_rede_id, 'fonte_noticia'),
             (v_operadora_id,    'FonteNoticias.Update', v_rede_id, 'fonte_noticia'),
             (v_operadora_id,    'FonteNoticias.Delete', v_rede_id, 'fonte_noticia'),
-            (v_proprietario_id, 'Telas.View',       v_indoor_id, 'tela'),
-            (v_proprietario_id, 'Midias.View',      v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Midias.Create',    v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Midias.Update',    v_indoor_id, 'midia'),
-            (v_proprietario_id, 'Midias.Delete',    v_indoor_id, 'midia')
+            (v_cliente_id, 'Telas.View',       v_indoor_id, 'tela'),
+            (v_cliente_id, 'Midias.View',      v_indoor_id, 'midia'),
+            (v_cliente_id, 'Midias.Create',    v_indoor_id, 'midia'),
+            (v_cliente_id, 'Midias.Update',    v_indoor_id, 'midia'),
+            (v_cliente_id, 'Midias.Delete',    v_indoor_id, 'midia')
            ) AS p(role_id, claim_value, module_id, entity_name)
      WHERE NOT EXISTS (
            SELECT 1 FROM platform.role_claim rc
@@ -260,23 +281,23 @@ BEGIN
               AND rc.claim_type = 'permission'
               AND rc.claim_value = p.claim_value);
 
-    -- O parceiro não altera telas nem playlists (versões anteriores deste
+    -- O cliente não altera telas nem playlists (versões anteriores deste
     -- script davam).
     DELETE FROM platform.role_claim
-     WHERE role_id = v_proprietario_id
+     WHERE role_id = v_cliente_id
        AND claim_type = 'permission'
        AND claim_value IN ('Telas.Create', 'Telas.Update', 'Telas.Delete',
                            'Playlists.View', 'Playlists.Create', 'Playlists.Update', 'Playlists.Delete');
 
-    -- O menu de playlists saiu do módulo do parceiro.
+    -- O menu de playlists saiu do módulo do cliente.
     DELETE FROM platform.system_menu_item mi
      USING platform.entity_metadata em
      WHERE mi.entity_metadata_id = em.id
        AND em.table_name = 'playlist'
        AND mi.system_module_id = v_indoor_id;
 
-    RAISE NOTICE 'Módulos: Rede (%) e Mídia Indoor (%). Grupos: Operadora (%) e Proprietário de Parceiro (%).',
-        v_rede_id, v_indoor_id, v_operadora_id, v_proprietario_id;
+    RAISE NOTICE 'Módulos: Rede (%) e Mídia Indoor (%). Grupos: Operadora (%) e Cliente (%).',
+        v_rede_id, v_indoor_id, v_operadora_id, v_cliente_id;
 END
 $$;
 
@@ -295,6 +316,6 @@ SELECT m.name AS modulo, m.route_prefix || '/' || em.route_key AS rota,
 SELECT r.name AS grupo, string_agg(rc.claim_value, ', ' ORDER BY rc.claim_value) AS permissoes
   FROM platform.role r
   JOIN platform.role_claim rc ON rc.role_id = r.id AND rc.claim_type = 'permission'
- WHERE r.normalized_name IN ('OPERADORA', 'PROPRIETÁRIO DE PARCEIRO')
+ WHERE r.normalized_name IN ('OPERADORA', 'CLIENTE')
  GROUP BY r.name
  ORDER BY r.name;

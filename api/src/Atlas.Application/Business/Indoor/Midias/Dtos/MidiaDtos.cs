@@ -1,4 +1,4 @@
-using Atlas.Domain.Business.Parceiros.Enums;
+using Atlas.Domain.Business.Clientes.Enums;
 using Atlas.Application.Business.Common;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
@@ -10,11 +10,11 @@ public sealed record MidiaDto : IDtoAuditavel
     public long Id { get; init; }
 
     /// <summary>Anunciante dono da mídia (a operadora vê as de todos).</summary>
-    public long ParceiroId { get; init; }
-    public string ParceiroNome { get; init; } = null!;
+    public long ClienteId { get; init; }
+    public string ClienteNome { get; init; } = null!;
 
-    /// <summary>Mídia de parceiro bloqueado não toca em nenhuma TV.</summary>
-    public bool ParceiroBloqueado { get; init; }
+    /// <summary>Mídia de cliente bloqueado não toca em nenhuma TV.</summary>
+    public bool ClienteBloqueado { get; init; }
 
     public string Titulo { get; init; } = null!;
     public TipoMidia Tipo { get; init; }
@@ -74,8 +74,8 @@ public sealed record MidiaDto : IDtoAuditavel
 /// <param name="ExpiraEm">Até quando a URL aceita o envio (2 h no Supabase).</param>
 public sealed record EnvioMidiaDto(string Chave, Uri UrlEnvio, DateTimeOffset ExpiraEm);
 
-/// <summary>Uso do storage pelo parceiro, para o painel mostrar antes do envio.</summary>
-/// <summary>Espaço e plano do parceiro, para o painel avisar antes de enviar ou ativar.</summary>
+/// <summary>Uso do storage pelo cliente, para o painel mostrar antes do envio.</summary>
+/// <summary>Espaço e plano do cliente, para o painel avisar antes de enviar ou ativar.</summary>
 /// <param name="UsadoBytes">Soma das mídias gravadas (ativas ou não).</param>
 /// <param name="CotaBytes">Espaço contratado.</param>
 /// <param name="TamanhoMaximoArquivoBytes">Limite por arquivo.</param>
@@ -94,9 +94,9 @@ public static class MidiaProjecao
         query.Select(m => new MidiaDto
         {
             Id = m.Id,
-            ParceiroId = m.ParceiroId,
-            ParceiroNome = m.Parceiro.Nome,
-            ParceiroBloqueado = m.Parceiro.Situacao == SituacaoParceiro.Bloqueado,
+            ClienteId = m.ClienteId,
+            ClienteNome = m.Cliente.Nome,
+            ClienteBloqueado = m.Cliente.Situacao == SituacaoCliente.Bloqueado,
             Titulo = m.Titulo,
             Tipo = m.Tipo,
             TipoConteudo = m.TipoConteudo,

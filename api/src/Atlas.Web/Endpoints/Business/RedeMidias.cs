@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Web.Endpoints.Business;
 
 /// <summary>
-/// As mídias de todos os parceiros, somente leitura, para a operadora montar
+/// As mídias de todos os clientes, somente leitura, para a operadora montar
 /// as grades (o criativo é do anunciante: ele envia, edita e ativa).
 /// </summary>
 public class RedeMidias : IEndpointGroup
@@ -21,31 +21,31 @@ public class RedeMidias : IEndpointGroup
     {
         groupBuilder
             .WithTags("Mídia Indoor — Rede: Mídias")
-            .WithDescription("Mídias de todos os parceiros, como a operadora as vê.");
+            .WithDescription("Mídias de todos os clientes, como a operadora as vê.");
 
-        // Para montar grades: Playlists.View e Parceiros.View, que só a operadora tem.
+        // Para montar grades: Playlists.View e Clientes.View, que só a operadora tem.
         groupBuilder.MapGet(GetMidiasDaRede)
             .RequireAuthorization(BusinessPermissionKeys.Playlists.View)
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
+            .RequireAuthorization(BusinessPermissionKeys.Clientes.View);
         groupBuilder.MapGet(GetMidiaDaRedeById, "{id:long}")
             .RequireAuthorization(BusinessPermissionKeys.Playlists.View)
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
+            .RequireAuthorization(BusinessPermissionKeys.Clientes.View);
         groupBuilder.MapPost(AprovarTrocaArquivo, "{id:long}/aprovar-troca")
             .RequireAuthorization(BusinessPermissionKeys.Playlists.Update)
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
+            .RequireAuthorization(BusinessPermissionKeys.Clientes.View);
         groupBuilder.MapPost(RecusarTrocaArquivo, "{id:long}/recusar-troca")
             .RequireAuthorization(BusinessPermissionKeys.Playlists.Update)
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
+            .RequireAuthorization(BusinessPermissionKeys.Clientes.View);
     }
 
     [EndpointSummary("Listar mídias da rede")]
-    [EndpointDescription("Todas as mídias, com o parceiro. Filtros por parceiro, situação e tipo; busca por título ou parceiro.")]
+    [EndpointDescription("Todas as mídias, com o cliente. Filtros por cliente, situação e tipo; busca por título ou cliente.")]
     public static async Task<Ok<PaginatedList<MidiaDto>>> GetMidiasDaRede(
         ISender sender,
         [FromQuery] int? pageNumber,
         [FromQuery] int? pageSize,
         [FromQuery] string? searchTerm,
-        [FromQuery] long? parceiroId,
+        [FromQuery] long? clienteId,
         [FromQuery] bool? ativo,
         [FromQuery] TipoMidia? tipo,
         [FromQuery] bool? trocaPendente,
@@ -55,7 +55,7 @@ public class RedeMidias : IEndpointGroup
         {
             PaginationParams = new PaginationParams { PageNumber = pageNumber ?? 1, PageSize = pageSize ?? 0 },
             SearchTerm = searchTerm,
-            ParceiroId = parceiroId,
+            ClienteId = clienteId,
             Ativo = ativo,
             Tipo = tipo,
             TrocaPendente = trocaPendente,

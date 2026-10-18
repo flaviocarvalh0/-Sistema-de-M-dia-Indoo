@@ -1,7 +1,7 @@
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Application.Business.Indoor.Midias.Common;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Business.Indoor.Entities;
 using Microsoft.Extensions.Logging;
@@ -39,26 +39,26 @@ public record CriarMidiaCommand : IRequest<long>
 
 public class CriarMidiaCommandHandler(
     IApplicationDbContext context,
-    IParceiroAtual parceiroAtual,
+    IClienteAtual clienteAtual,
     IArmazenamentoMidias armazenamento,
     ILogger<CriarMidiaCommandHandler> logger)
     : IRequestHandler<CriarMidiaCommand, long>
 {
     public async Task<long> Handle(CriarMidiaCommand request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
 
         var arquivo = await RecebimentoArquivo.ConferirAsync(
-            context, armazenamento, logger, parceiro.ParceiroId, request.Chave, request.TipoConteudo, request.Hash,
+            context, armazenamento, logger, cliente.ClienteId, request.Chave, request.TipoConteudo, request.Hash,
             bytesQueSaem: 0, cancellationToken);
 
         // Dentro do plano, nasce ativa; com o limite atingido, nasce inativa
-        // (o parceiro troca qual delas está no ar).
-        var ativa = await LimiteMidiasAtivas.TemVagaAsync(context, parceiro.ParceiroId, cancellationToken);
+        // (o cliente troca qual delas está no ar).
+        var ativa = await LimiteMidiasAtivas.TemVagaAsync(context, cliente.ClienteId, cancellationToken);
 
         var midia = new Midia
         {
-            ParceiroId = parceiro.ParceiroId,
+            ClienteId = cliente.ClienteId,
             Titulo = request.Titulo.Trim(),
             Tipo = TiposArquivoMidia.TipoDaMidia(request.TipoConteudo),
             ChaveArmazenamento = request.Chave,

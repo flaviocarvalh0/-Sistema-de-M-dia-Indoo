@@ -4,7 +4,7 @@ using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros.Entities;
+using Atlas.Domain.Business.Clientes.Entities;
 using Atlas.Infrastructure.Data;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -128,16 +128,16 @@ public class QrCodeMidiaTests : IDisposable
     [Fact]
     public async Task Atualizar_GravaETiraOQrCode()
     {
-        var parceiro = new Parceiro { Nome = "Academia", Email = "a@teste.local" };
-        _context.Parceiros.Add(parceiro);
+        var cliente = new Cliente { Nome = "Academia", Email = "a@teste.local" };
+        _context.Clientes.Add(cliente);
         var midia = new Midia
         {
-            Parceiro = parceiro, Titulo = "Promo", Tipo = TipoMidia.Imagem, ChaveArmazenamento = "c", TipoConteudo = TiposArquivoMidia.Png,
+            Cliente = cliente, Titulo = "Promo", Tipo = TipoMidia.Imagem, ChaveArmazenamento = "c", TipoConteudo = TiposArquivoMidia.Png,
             TamanhoBytes = 1, Hash = new string('a', 64),
         };
         _context.Midias.Add(midia);
         await _context.SaveChangesAsync();
-        var handler = new AtualizarMidiaCommandHandler(_context, new ParceiroAtualFake(parceiro.Id));
+        var handler = new AtualizarMidiaCommandHandler(_context, new ClienteAtualFake(cliente.Id));
 
         await handler.Handle(Qr(TipoQrCode.WhatsApp, "92999990000", legenda: "Peça já") with
         {
@@ -158,17 +158,17 @@ public class QrCodeMidiaTests : IDisposable
     [Fact]
     public async Task Atualizar_QrInvalidoNaoGravaNada()
     {
-        var parceiro = new Parceiro { Nome = "Academia", Email = "a@teste.local" };
-        _context.Parceiros.Add(parceiro);
+        var cliente = new Cliente { Nome = "Academia", Email = "a@teste.local" };
+        _context.Clientes.Add(cliente);
         var midia = new Midia
         {
-            Parceiro = parceiro, Titulo = "Promo", Tipo = TipoMidia.Imagem, ChaveArmazenamento = "c", TipoConteudo = TiposArquivoMidia.Png,
+            Cliente = cliente, Titulo = "Promo", Tipo = TipoMidia.Imagem, ChaveArmazenamento = "c", TipoConteudo = TiposArquivoMidia.Png,
             TamanhoBytes = 1, Hash = new string('a', 64),
         };
         _context.Midias.Add(midia);
         await _context.SaveChangesAsync();
 
-        var acao = () => new AtualizarMidiaCommandHandler(_context, new ParceiroAtualFake(parceiro.Id))
+        var acao = () => new AtualizarMidiaCommandHandler(_context, new ClienteAtualFake(cliente.Id))
             .Handle(Qr(TipoQrCode.Link, "sem-https") with { Id = midia.Id, Titulo = "Outro título", DuracaoSegundos = 15 }, CancellationToken.None);
 
         await acao.Should().ThrowAsync<ValidationException>();

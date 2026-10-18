@@ -35,7 +35,7 @@ public class ArmazenamentoSupabaseContratoTests
         var arquivo = new byte[64_000];
         Random.Shared.NextBytes(arquivo);
         new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }.CopyTo(arquivo, 0);
-        var chave = ChavesArmazenamento.Gerar(parceiroId: 999_999, TiposArquivoMidia.Png);
+        var chave = ChavesArmazenamento.Gerar(clienteId: 999_999, TiposArquivoMidia.Png);
 
         try
         {

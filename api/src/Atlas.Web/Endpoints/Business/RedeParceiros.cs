@@ -1,17 +1,12 @@
-using Atlas.Application.Business.Rede.Parceiros.Commands.AtualizarParceiro;
-using Atlas.Application.Business.Rede.Parceiros.Commands.BloqueioParceiro;
-using Atlas.Application.Business.Rede.Parceiros.Commands.CriarParceiro;
-using Atlas.Application.Business.Rede.Parceiros.Dtos;
-using Atlas.Application.Business.Rede.Parceiros.Queries;
+using Atlas.Application.Business.Rede.Parceiros;
 using Atlas.Application.Common.Models.Pagination;
 using Atlas.Domain.Business.Constants;
-using Atlas.Domain.Business.Parceiros.Enums;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Web.Endpoints.Business;
 
-/// <summary>Parceiros da rede, geridos pela operadora: cadastro, edição, bloqueio e consulta.</summary>
+/// <summary>Parceiros: os locais onde a operadora instala as TVs (não acessam o sistema).</summary>
 public class RedeParceiros : IEndpointGroup
 {
     public static string? RoutePrefix => "/api/v1/business/rede/parceiros";
@@ -20,72 +15,42 @@ public class RedeParceiros : IEndpointGroup
     {
         groupBuilder
             .WithTags("Mídia Indoor — Rede: Parceiros")
-            .WithDescription("Parceiros atendidos pela rede, como a operadora os vê.");
+            .WithDescription("Estabelecimentos onde as TVs ficam. Quem anuncia é cliente.");
 
-        groupBuilder
-            .MapGet(GetParceiros)
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
-
-        groupBuilder
-            .MapGet(GetParceiroById, "{id:long}")
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
-
-        groupBuilder
-            .MapPost(CriarParceiro)
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.Create);
-
-        groupBuilder
-            .MapPut(AtualizarParceiro, "{id:long}")
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.Update);
-
-        groupBuilder
-            .MapPost(BloquearParceiro, "{id:long}/bloquear")
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.Update);
-
-        groupBuilder
-            .MapPost(DesbloquearParceiro, "{id:long}/desbloquear")
-            .RequireAuthorization(BusinessPermissionKeys.Parceiros.Update);
+        groupBuilder.MapGet(GetParceiros).RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
+        groupBuilder.MapGet(GetParceiroById, "{id:long}").RequireAuthorization(BusinessPermissionKeys.Parceiros.View);
+        groupBuilder.MapPost(CriarParceiro).RequireAuthorization(BusinessPermissionKeys.Parceiros.Create);
+        groupBuilder.MapPut(AtualizarParceiro, "{id:long}").RequireAuthorization(BusinessPermissionKeys.Parceiros.Update);
+        groupBuilder.MapPost(AtivarParceiro, "{id:long}/ativar").RequireAuthorization(BusinessPermissionKeys.Parceiros.Update);
+        groupBuilder.MapPost(InativarParceiro, "{id:long}/inativar").RequireAuthorization(BusinessPermissionKeys.Parceiros.Update);
+        groupBuilder.MapDelete(ExcluirParceiro, "{id:long}").RequireAuthorization(BusinessPermissionKeys.Parceiros.Delete);
     }
 
     [EndpointSummary("Listar parceiros")]
-    [EndpointDescription("Lista paginada com busca por nome, responsável, cidade, e-mail, telefone ou documento e filtro por situação.")]
+    [EndpointDescription("Lista paginada com busca por nome, responsável, cidade, endereço, telefone ou documento e filtro por ativo.")]
     public static async Task<Ok<PaginatedList<ParceiroDto>>> GetParceiros(
         ISender sender,
         [FromQuery] int? pageNumber,
         [FromQuery] int? pageSize,
         [FromQuery] string? searchTerm,
-        [FromQuery] SituacaoParceiro? situacao,
+        [FromQuery] bool? ativo,
         CancellationToken cancellationToken)
     {
-        var lista = await sender.Send(new GetParceirosQuery
+        return TypedResults.Ok(await sender.Send(new GetParceirosQuery
         {
-            PaginationParams = new PaginationParams
-            {
-                PageNumber = pageNumber ?? 1,
-                PageSize = pageSize ?? 0
-            },
+            PaginationParams = new PaginationParams { PageNumber = pageNumber ?? 1, PageSize = pageSize ?? 0 },
             SearchTerm = searchTerm,
-            Situacao = situacao
-        }, cancellationToken);
-
-        return TypedResults.Ok(lista);
+            Ativo = ativo,
+        }, cancellationToken));
     }
 
     [EndpointSummary("Obter parceiro")]
-    public static async Task<Ok<ParceiroDto>> GetParceiroById(
-        ISender sender,
-        long id,
-        CancellationToken cancellationToken)
-    {
-        return TypedResults.Ok(await sender.Send(new GetParceiroByIdQuery(id), cancellationToken));
-    }
+    public static async Task<Ok<ParceiroDto>> GetParceiroById(ISender sender, long id, CancellationToken cancellationToken) =>
+        TypedResults.Ok(await sender.Send(new GetParceiroByIdQuery(id), cancellationToken));
 
     [EndpointSummary("Cadastrar parceiro")]
-    [EndpointDescription("Cria o parceiro, o usuário do responsável com senha temporária e o vínculo, e envia o e-mail de boas-vindas. Devolve o id.")]
-    public static async Task<Created<long>> CriarParceiro(
-        ISender sender,
-        CriarParceiroCommand command,
-        CancellationToken cancellationToken)
+    [EndpointDescription("Só o cadastro: o parceiro não ganha acesso. Devolve o id.")]
+    public static async Task<Created<long>> CriarParceiro(ISender sender, CriarParceiroCommand command, CancellationToken cancellationToken)
     {
         var id = await sender.Send(command, cancellationToken);
 
@@ -93,41 +58,29 @@ public class RedeParceiros : IEndpointGroup
     }
 
     [EndpointSummary("Atualizar parceiro")]
-    [EndpointDescription("O e-mail de acesso não muda aqui. Devolve a nova versão do registro.")]
-    public static async Task<Ok<uint>> AtualizarParceiro(
-        ISender sender,
-        long id,
-        AtualizarParceiroCommand command,
-        CancellationToken cancellationToken)
+    [EndpointDescription("Fuso e cidade valem para as TVs do local na próxima sincronização. Devolve a nova versão.")]
+    public static async Task<Ok<uint>> AtualizarParceiro(ISender sender, long id, AtualizarParceiroCommand command, CancellationToken cancellationToken)
     {
         RotaIndoor.GarantirMesmoId(id, command.Id);
 
         return TypedResults.Ok(await sender.Send(command, cancellationToken));
     }
 
-    [EndpointSummary("Bloquear parceiro")]
-    [EndpointDescription("Bloqueia com motivo obrigatório: a equipe perde o acesso e as TVs param de receber grade nova. Devolve a nova versão do registro.")]
-    public static async Task<Ok<uint>> BloquearParceiro(
-        ISender sender,
-        long id,
-        BloquearParceiroCommand command,
-        CancellationToken cancellationToken)
+    [EndpointSummary("Ativar parceiro")]
+    public static async Task<Ok<uint>> AtivarParceiro(ISender sender, long id, [FromQuery] uint version, CancellationToken cancellationToken) =>
+        TypedResults.Ok(await sender.Send(new DefinirAtivoParceiroCommand(id, true, version), cancellationToken));
+
+    [EndpointSummary("Inativar parceiro")]
+    [EndpointDescription("Sai da lista de escolha das telas; as TVs já instaladas seguem como estão.")]
+    public static async Task<Ok<uint>> InativarParceiro(ISender sender, long id, [FromQuery] uint version, CancellationToken cancellationToken) =>
+        TypedResults.Ok(await sender.Send(new DefinirAtivoParceiroCommand(id, false, version), cancellationToken));
+
+    [EndpointSummary("Excluir parceiro")]
+    [EndpointDescription("Só sem telas cadastradas no local.")]
+    public static async Task<NoContent> ExcluirParceiro(ISender sender, long id, CancellationToken cancellationToken)
     {
-        RotaIndoor.GarantirMesmoId(id, command.Id);
+        await sender.Send(new ExcluirParceiroCommand(id), cancellationToken);
 
-        return TypedResults.Ok(await sender.Send(command, cancellationToken));
-    }
-
-    [EndpointSummary("Desbloquear parceiro")]
-    [EndpointDescription("Devolve a nova versão do registro.")]
-    public static async Task<Ok<uint>> DesbloquearParceiro(
-        ISender sender,
-        long id,
-        DesbloquearParceiroCommand command,
-        CancellationToken cancellationToken)
-    {
-        RotaIndoor.GarantirMesmoId(id, command.Id);
-
-        return TypedResults.Ok(await sender.Send(command, cancellationToken));
+        return TypedResults.NoContent();
     }
 }

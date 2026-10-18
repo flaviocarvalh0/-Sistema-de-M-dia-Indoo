@@ -10,7 +10,7 @@ namespace Atlas.Application.Business.Rede.Playlists.Commands.DefinirItensPlaylis
 /// Grava a grade inteira de uma vez, na ordem da lista (a posição vira a
 /// ordem do loop) — é o que a tela de arrastar e soltar envia. Item com id
 /// atualiza, sem id entra, ausente sai. A operadora monta a grade com mídias
-/// de qualquer parceiro; a mesma mídia pode entrar mais de uma vez (cota
+/// de qualquer cliente; a mesma mídia pode entrar mais de uma vez (cota
 /// dupla).
 /// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Playlists.Update)]
@@ -43,7 +43,7 @@ public class DefinirItensPlaylistCommandHandler(IApplicationDbContext context)
             throw new ValidationException(nameof(request.Itens), ["Uma das mídias não foi encontrada. Recarregue a lista de mídias."]);
         }
 
-        // Só entra na grade mídia que o parceiro ativou (é o que o plano dele
+        // Só entra na grade mídia que o cliente ativou (é o que o plano dele
         // paga). Itens que já estavam ficam, mesmo se a mídia foi inativada
         // depois: ela só não toca até ser ativada de novo.
         var jaNaGrade = playlist.Itens.Select(i => (i.Id, i.MidiaId)).ToHashSet();

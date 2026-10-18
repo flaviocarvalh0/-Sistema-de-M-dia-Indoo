@@ -1,3 +1,4 @@
+using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Application.Business.Rede.Playlists.Commands.DefinirItensPlaylist;
 using Atlas.Application.Business.Rede.Playlists.Commands.EstadoPlaylist;
 using Atlas.Application.Business.Rede.Playlists.Commands.SalvarPlaylist;
@@ -5,7 +6,7 @@ using Atlas.Application.Business.Rede.Playlists.Queries;
 using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros.Entities;
+using Atlas.Domain.Business.Clientes.Entities;
 using Atlas.Infrastructure.Data;
 using Atlas.Infrastructure.UnitTests.Business.Indoor;
 using FluentAssertions;
@@ -22,17 +23,17 @@ public class RedePlaylistsTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
 
-    private readonly long _parceiroA;
-    private readonly long _parceiroB;
+    private readonly long _clienteA;
+    private readonly long _clienteB;
 
     public RedePlaylistsTests()
     {
-        var a = new Parceiro { Nome = "Academia", Email = "a@teste.local" };
-        var b = new Parceiro { Nome = "Tapiocaria", Email = "b@teste.local" };
-        _context.Parceiros.AddRange(a, b);
+        var a = new Cliente { Nome = "Academia", Email = "a@teste.local" };
+        var b = new Cliente { Nome = "Tapiocaria", Email = "b@teste.local" };
+        _context.Clientes.AddRange(a, b);
         _context.SaveChanges();
-        _parceiroA = a.Id;
-        _parceiroB = b.Id;
+        _clienteA = a.Id;
+        _clienteB = b.Id;
     }
 
     public void Dispose() => _context.Dispose();
@@ -51,8 +52,8 @@ public class RedePlaylistsTests : IDisposable
     [Fact]
     public async Task DefinirItens_MisturaAnunciantesRepeteMidiaEMostraODono()
     {
-        var a = await Midia(_parceiroA, "Promo academia", duracao: 30);
-        var b = await Midia(_parceiroB, "Tapioca do dia", duracao: 10);
+        var a = await Midia(_clienteA, "Promo academia", duracao: 30);
+        var b = await Midia(_clienteB, "Tapioca do dia", duracao: 10);
         var playlist = await Playlist("Padaria");
 
         await DefinirItens(playlist.Id, Item(null, a.Id), Item(null, b.Id), Item(null, a.Id, DiasSemana.DiasUteis));
@@ -60,7 +61,7 @@ public class RedePlaylistsTests : IDisposable
         var dto = await new GetPlaylistByIdQueryHandler(_context, new IdentityNomesFake())
             .Handle(new GetPlaylistByIdQuery(playlist.Id), CancellationToken.None);
 
-        dto.Itens!.Select(i => (i.Ordem, i.Titulo, i.ParceiroNome)).Should().Equal(
+        dto.Itens!.Select(i => (i.Ordem, i.Titulo, i.ClienteNome)).Should().Equal(
             (0, "Promo academia", "Academia"),
             (1, "Tapioca do dia", "Tapiocaria"),
             (2, "Promo academia", "Academia"));
@@ -70,7 +71,7 @@ public class RedePlaylistsTests : IDisposable
     [Fact]
     public async Task DefinirItens_MidiaInativaNaoEntra_MasItemQueJaEstavaFica()
     {
-        var a = await Midia(_parceiroA, "Promo");
+        var a = await Midia(_clienteA, "Promo");
         var playlist = await Playlist("Padaria");
         await DefinirItens(playlist.Id, Item(null, a.Id));
 
@@ -143,8 +144,8 @@ public class RedePlaylistsTests : IDisposable
     [Fact]
     public async Task DefinirItens_GuardaAPosicaoFixa()
     {
-        var a = await Midia(_parceiroA, "Da casa");
-        var b = await Midia(_parceiroB, "Anúncio");
+        var a = await Midia(_clienteA, "Da casa");
+        var b = await Midia(_clienteB, "Anúncio");
         var playlist = await Playlist("Padaria");
 
         await DefinirItens(playlist.Id, Item(null, a.Id) with { PosicaoFixa = true }, Item(null, b.Id));
@@ -168,7 +169,7 @@ public class RedePlaylistsTests : IDisposable
     public async Task ExcluirPlaylist_EmUsoPorTelaDeveSerRecusada()
     {
         var playlist = await Playlist("Padaria");
-        _context.Telas.Add(new Tela { ParceiroId = _parceiroB, Nome = "TV", PlaylistId = playlist.Id });
+        _context.Telas.Add(new Tela { Parceiro = new Parceiro { Nome = "Local" }, Nome = "TV", PlaylistId = playlist.Id });
         await _context.SaveChangesAsync();
 
         var acao = () => new ExcluirPlaylistCommandHandler(_context).Handle(new ExcluirPlaylistCommand(playlist.Id), CancellationToken.None);
@@ -204,14 +205,14 @@ public class RedePlaylistsTests : IDisposable
         return playlist;
     }
 
-    private async Task<Midia> Midia(long parceiroId, string titulo, int duracao = 15)
+    private async Task<Midia> Midia(long clienteId, string titulo, int duracao = 15)
     {
         var midia = new Midia
         {
-            ParceiroId = parceiroId,
+            ClienteId = clienteId,
             Titulo = titulo,
             Tipo = TipoMidia.Video,
-            ChaveArmazenamento = $"parceiros/{parceiroId}/midias/{Guid.NewGuid():N}.mp4",
+            ChaveArmazenamento = $"clientes/{clienteId}/midias/{Guid.NewGuid():N}.mp4",
             TipoConteudo = "video/mp4",
             TamanhoBytes = 100,
             Hash = new string('a', 64),

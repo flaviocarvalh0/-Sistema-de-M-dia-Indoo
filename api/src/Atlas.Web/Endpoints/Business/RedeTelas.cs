@@ -13,7 +13,7 @@ namespace Atlas.Web.Endpoints.Business;
 /// <summary>
 /// Telas (TVs) da rede, geridas pela operadora, dona do hardware: cadastro,
 /// parceiro, pareamento e situação. O parceiro só escolhe a playlist
-/// (<see cref="ParceiroTelas"/>).
+/// (<see cref="ClienteTelas"/>).
 /// </summary>
 public class RedeTelas : IEndpointGroup
 {

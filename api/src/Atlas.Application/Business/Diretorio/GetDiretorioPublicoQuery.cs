@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using Atlas.Application.Business.Common;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros.Enums;
+using Atlas.Domain.Business.Clientes.Enums;
 
 namespace Atlas.Application.Business.Diretorio;
 
@@ -13,16 +13,16 @@ namespace Atlas.Application.Business.Diretorio;
 /// público — só eles: os QR codes dos anúncios não entram (ADR-018).
 /// </summary>
 /// <remarks>
-/// Dupla autorização: a operadora liga o diretório na tela e cada parceiro
-/// aceita aparecer. O estabelecimento que hospeda a TV vem primeiro (se
-/// aceitou), mesmo sem anúncio na grade. Código inexistente, tela inativa ou
+/// Dupla autorização: a operadora liga o diretório na tela e cada cliente
+/// aceita aparecer. Se o parceiro (o local da TV) também é cliente, esse
+/// cliente vem primeiro (se aceitou), mesmo sem anúncio na grade. Código inexistente, tela inativa ou
 /// diretório desligado respondem 404, sem dizer qual dos três.
 /// </remarks>
 public sealed record GetDiretorioPublicoQuery(string Codigo) : IRequest<DiretorioPublicoDto>;
 
 public sealed record DiretorioPublicoDto
 {
-    /// <summary>Nome do estabelecimento onde a TV está; nulo se ele não aceitou aparecer.</summary>
+    /// <summary>Nome do parceiro (o local onde a TV está), no título da página.</summary>
     public string? Estabelecimento { get; init; }
 
     public IReadOnlyList<AnuncianteDiretorioDto> Anunciantes { get; init; } = [];
@@ -36,7 +36,7 @@ public sealed record AnuncianteDiretorioDto
     public string? Categoria { get; init; }
     public string? Descricao { get; init; }
 
-    /// <summary>É o estabelecimento que hospeda a TV (vai primeiro).</summary>
+    /// <summary>É o cliente dono do local da TV (vai primeiro).</summary>
     public bool Anfitriao { get; init; }
 
     public IReadOnlyList<ContatoDiretorioDto> Contatos { get; init; } = [];
@@ -67,7 +67,8 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
                 .Where(t => t.CodigoDiretorio == codigo && t.Ativo && t.DiretorioAtivo)
                 .Select(t => new
                 {
-                    t.ParceiroId,
+                    Local = t.Parceiro.Nome,
+                    ClienteDoLocal = t.Parceiro.ClienteId,
                     t.PlaylistId,
                     PlaylistAtiva = t.Playlist != null && t.Playlist.Ativo,
                     t.Parceiro.FusoHorario,
@@ -85,28 +86,34 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
                 .AsNoTracking()
                 .Where(i => i.PlaylistId == playlistId
                     && i.Midia.Ativo
-                    && i.Midia.Parceiro.Situacao != SituacaoParceiro.Bloqueado
-                    && i.Midia.Parceiro.ExibirNoDiretorioPublico
+                    && i.Midia.Cliente.Situacao != SituacaoCliente.Bloqueado
+                    && i.Midia.Cliente.ExibirNoDiretorioPublico
                     && (i.Midia.InicioExibicao == null || i.Midia.InicioExibicao <= hoje)
                     && (i.Midia.FimExibicao == null || i.Midia.FimExibicao >= hoje))
                 .OrderBy(i => i.Ordem)
-                .Select(i => new { i.Midia.ParceiroId, i.DiasSemana })
+                .Select(i => new { i.Midia.ClienteId, i.DiasSemana })
                 .ToListAsync(cancellationToken)
             : [];
 
         var deHoje = itens.Where(i => i.DiasSemana.Inclui(hoje.DayOfWeek)).ToList();
-        var ids = deHoje.Select(i => i.ParceiroId).Append(tela.ParceiroId).Distinct().ToList();
+        var ids = deHoje.Select(i => i.ClienteId).ToList();
+        if (tela.ClienteDoLocal is { } clienteDoLocal)
+        {
+            ids.Add(clienteDoLocal);
+        }
 
-        var parceiros = await context.Parceiros
+        ids = ids.Distinct().ToList();
+
+        var clientes = await context.Clientes
             .AsNoTracking()
-            .Where(p => ids.Contains(p.Id) && p.ExibirNoDiretorioPublico && p.Situacao != SituacaoParceiro.Bloqueado)
+            .Where(p => ids.Contains(p.Id) && p.ExibirNoDiretorioPublico && p.Situacao != SituacaoCliente.Bloqueado)
             .Select(p => new
             {
                 p.Id, p.Nome, p.Categoria, p.DescricaoPublica, p.WhatsappPublico, p.InstagramPublico, p.SitePublico,
             })
             .ToListAsync(cancellationToken);
 
-        var cartoes = parceiros
+        var cartoes = clientes
             .Select(p =>
             {
                 var contatos = new List<ContatoDiretorioDto>();
@@ -130,7 +137,7 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
                     Nome = p.Nome,
                     Categoria = p.Categoria,
                     Descricao = p.DescricaoPublica,
-                    Anfitriao = p.Id == tela.ParceiroId,
+                    Anfitriao = p.Id == tela.ClienteDoLocal,
                     Contatos = SemRepetir(contatos).Take(MaximoContatos).ToList(),
                 };
             })
@@ -140,7 +147,7 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
 
         return new DiretorioPublicoDto
         {
-            Estabelecimento = cartoes.FirstOrDefault(c => c.Anfitriao)?.Nome,
+            Estabelecimento = tela.Local,
             Anunciantes = cartoes,
             GeradoEm = agora,
         };

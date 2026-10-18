@@ -1,7 +1,7 @@
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Dispositivo.Common;
 using Atlas.Domain.Business.Indoor.Entities;
-using Atlas.Domain.Business.Parceiros.Enums;
+using Atlas.Domain.Business.Clientes.Enums;
 
 namespace Atlas.Application.Business.Dispositivo.Autenticacao;
 

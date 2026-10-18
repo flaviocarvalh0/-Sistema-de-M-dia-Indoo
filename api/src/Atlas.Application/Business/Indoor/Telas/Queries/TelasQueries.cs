@@ -1,6 +1,6 @@
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Indoor.Telas.Dtos;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Application.Common.Extensions.Pagination;
 using Atlas.Application.Common.Models.Pagination;
 using Atlas.Domain.Business.Constants;
@@ -10,7 +10,7 @@ namespace Atlas.Application.Business.Indoor.Telas.Queries;
 
 /// <summary>
 /// "Onde meus anúncios passam": as telas ativas cuja playlist (ativa) tem
-/// alguma mídia ativa do parceiro do usuário logado. Somente leitura.
+/// alguma mídia ativa do cliente do usuário logado. Somente leitura.
 /// </summary>
 [Authorize(Policy = BusinessPermissionKeys.Telas.View)]
 public record GetTelasQuery : IRequest<PaginatedList<TelaDto>>
@@ -21,15 +21,15 @@ public record GetTelasQuery : IRequest<PaginatedList<TelaDto>>
 
 public class GetTelasQueryHandler(
     IApplicationDbContext context,
-    IParceiroAtual parceiroAtual,
+    IClienteAtual clienteAtual,
     IIdentityService identityService,
     TimeProvider timeProvider)
     : IRequestHandler<GetTelasQuery, PaginatedList<TelaDto>>
 {
     public async Task<PaginatedList<TelaDto>> Handle(GetTelasQuery request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var query = context.Telas.AsNoTracking().OndePassa(parceiro.ParceiroId);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
+        var query = context.Telas.AsNoTracking().OndePassa(cliente.ClienteId);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -56,18 +56,18 @@ public record GetTelaByIdQuery(long Id) : IRequest<TelaDto>;
 
 public class GetTelaByIdQueryHandler(
     IApplicationDbContext context,
-    IParceiroAtual parceiroAtual,
+    IClienteAtual clienteAtual,
     IIdentityService identityService,
     TimeProvider timeProvider)
     : IRequestHandler<GetTelaByIdQuery, TelaDto>
 {
     public async Task<TelaDto> Handle(GetTelaByIdQuery request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
 
         var tela = await context.Telas
             .AsNoTracking()
-            .OndePassa(parceiro.ParceiroId)
+            .OndePassa(cliente.ClienteId)
             .Where(t => t.Id == request.Id)
             .ParaDto(timeProvider.GetUtcNow(), comPareamento: false)
             .FirstOrDefaultAsync(cancellationToken);
@@ -83,14 +83,14 @@ public class GetTelaByIdQueryHandler(
 internal static class TelasDoAnunciante
 {
     /// <summary>
-    /// Telas que exibem o parceiro agora: tela e playlist ativas, com algum
+    /// Telas que exibem o cliente agora: tela e playlist ativas, com algum
     /// item de mídia ativa dele. Mídia de anunciante bloqueado não toca, e um
     /// anunciante bloqueado nem chega aqui (o painel dele é barrado antes).
     /// </summary>
-    public static IQueryable<Tela> OndePassa(this IQueryable<Tela> telas, long parceiroId) =>
+    public static IQueryable<Tela> OndePassa(this IQueryable<Tela> telas, long clienteId) =>
         telas.Where(t => t.Ativo
             && t.Playlist != null
             && t.Playlist.Ativo
-            && t.Playlist.Itens.Any(i => i.Midia.ParceiroId == parceiroId && i.Midia.Ativo));
+            && t.Playlist.Itens.Any(i => i.Midia.ClienteId == clienteId && i.Midia.Ativo));
 }
 

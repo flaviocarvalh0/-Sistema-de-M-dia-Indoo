@@ -1,15 +1,14 @@
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Domain.Platform.Attributes;
 
 namespace Atlas.Domain.Business.Indoor.Entities;
 
 /// <summary>
-/// TV (TV box) da operadora, instalada num parceiro (o "host", que cede o
-/// espaço e ganha cotas de anúncio). A operadora cadastra a tela, pareia a TV
+/// TV (TV box) da operadora, instalada num parceiro (o estabelecimento que
+/// cede o espaço e não acessa o sistema). A operadora cadastra a tela, pareia a TV
 /// (código de uso único que a TV troca por um token próprio) e escolhe a
-/// <see cref="Playlist"/> que ela exibe. O fuso horário da grade é o do host.
+/// <see cref="Playlist"/> que ela exibe. O fuso horário da grade é o do parceiro.
 /// </summary>
 /// <remarks>
 /// O que muda a cada sincronização (último contato, versão do app) fica em
@@ -17,7 +16,7 @@ namespace Atlas.Domain.Business.Indoor.Entities;
 /// registra só as mudanças feitas no painel e no pareamento.
 /// </remarks>
 [MetadataConfiguration("Telas")]
-public class Tela : BaseAuditableEntity, IDoParceiro
+public class Tela : BaseAuditableEntity
 {
     public const int TamanhoCodigoPareamento = 8;
 

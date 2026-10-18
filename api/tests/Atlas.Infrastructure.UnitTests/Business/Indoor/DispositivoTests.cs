@@ -1,3 +1,4 @@
+using Atlas.Domain.Business.Parceiros.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using Atlas.Application.Business.Dispositivo.Autenticacao;
 using Atlas.Application.Business.Dispositivo.Common;
@@ -9,7 +10,7 @@ using Atlas.Application.Common.Exceptions;
 using Atlas.Domain.Business.Conteudo.Entities;
 using Atlas.Domain.Business.Indoor.Entities;
 using Atlas.Domain.Business.Indoor.Enums;
-using Atlas.Domain.Business.Parceiros.Entities;
+using Atlas.Domain.Business.Clientes.Entities;
 using Atlas.Infrastructure.Business.Dispositivo;
 using Atlas.Infrastructure.Data;
 using FluentAssertions;
@@ -36,12 +37,15 @@ public class DispositivoTests : IDisposable
     private readonly ArmazenamentoFake _armazenamento = new();
     private readonly RelogioFixo _relogio = new(Agora);
     private readonly GeradorTokenFake _gerador = new();
+    private readonly Cliente _cliente;
     private readonly Parceiro _parceiro;
     private readonly Tela _tela;
 
     public DispositivoTests()
     {
-        _parceiro = new Parceiro { Nome = "Academia Centro", Email = "a@teste.local", FusoHorario = "America/Manaus" };
+        _cliente = new Cliente { Nome = "Academia Centro", Email = "a@teste.local", FusoHorario = "America/Manaus" };
+        _context.Clientes.Add(_cliente);
+        _parceiro = new Parceiro { Nome = "Academia Centro", FusoHorario = "America/Manaus" };
         _context.Parceiros.Add(_parceiro);
         _tela = new Tela { Parceiro = _parceiro, Nome = "Recepção" };
         _tela.GerarCodigoPareamento("AB12CD34", Agora.AddHours(-1));
@@ -108,7 +112,7 @@ public class DispositivoTests : IDisposable
     public async Task Autenticar_HostBloqueadoNaoImpedeOPareamento()
     {
         // A TV é da operadora: o host bloqueado não tira a tela do ar.
-        _parceiro.Bloquear("Inadimplência");
+        _cliente.Bloquear("Inadimplência");
         await _context.SaveChangesAsync();
 
         (await Autenticar("AB12CD34", "tv-1")).TelaId.Should().Be(_tela.Id);
@@ -155,11 +159,11 @@ public class DispositivoTests : IDisposable
         await Esperar401(valida with { DispositivoId = "tv-2" });
         await Esperar401(valida with { VersaoCredencial = _tela.VersaoCredencial - 1 });
 
-        // A TV mudou de host (a operadora trocou o parceiro da tela): o token continua valendo.
+        // A TV mudou de local (a operadora trocou o parceiro da tela): o token continua valendo.
         (await Atual(valida with { ParceiroId = _parceiro.Id + 1 }).ObterAsync(CancellationToken.None)).TelaId.Should().Be(_tela.Id);
 
-        // Host bloqueado não suspende a TV (ela é da operadora).
-        _parceiro.Bloquear("Inadimplência");
+        // Cliente bloqueado não suspende a TV (ela é da operadora).
+        _cliente.Bloquear("Inadimplência");
         await _context.SaveChangesAsync();
         (await Atual(valida).ObterAsync(CancellationToken.None)).TelaId.Should().Be(_tela.Id);
 
@@ -187,11 +191,11 @@ public class DispositivoTests : IDisposable
     [Fact]
     public async Task Sincronizar_MidiaDeAnuncianteBloqueadoSaiDaGrade()
     {
-        var anunciante = new Parceiro { Nome = "Loja", Email = "loja@teste.local" };
-        _context.Parceiros.Add(anunciante);
+        var anunciante = new Cliente { Nome = "Loja", Email = "loja@teste.local" };
+        _context.Clientes.Add(anunciante);
         await _context.SaveChangesAsync();
         var daLoja = Midia("Promo da loja");
-        daLoja.ParceiroId = anunciante.Id;
+        daLoja.ClienteId = anunciante.Id;
 
         var credencial = await ParearComGradeAsync((Midia("Da academia"), DiasSemana.Todos), (daLoja, DiasSemana.Todos));
         (await Sincronizar(credencial, new GetSincronizacaoQuery())).Itens!.Should().HaveCount(2);
@@ -301,7 +305,7 @@ public class DispositivoTests : IDisposable
     }
 
     [Fact]
-    public async Task Sincronizar_HojeEOdoFusoDoParceiro()
+    public async Task Sincronizar_HojeEOdoFusoDoCliente()
     {
         var credencial = await ParearComGradeAsync((Midia("Segunda"), DiasSemana.Segunda));
 
@@ -681,10 +685,10 @@ public class DispositivoTests : IDisposable
 
     private Midia Midia(string titulo, DateOnly? inicio = null, DateOnly? fim = null, bool ativa = true) => new()
     {
-        ParceiroId = _parceiro.Id,
+        ClienteId = _cliente.Id,
         Titulo = titulo,
         Tipo = TipoMidia.Video,
-        ChaveArmazenamento = ChavesArmazenamento.Gerar(_parceiro.Id, TiposArquivoMidia.Mp4),
+        ChaveArmazenamento = ChavesArmazenamento.Gerar(_cliente.Id, TiposArquivoMidia.Mp4),
         TipoConteudo = TiposArquivoMidia.Mp4,
         TamanhoBytes = 1000,
         Hash = new string('c', 64),

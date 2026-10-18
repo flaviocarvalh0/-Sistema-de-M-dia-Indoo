@@ -2,7 +2,7 @@ using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Midias.Common;
 using Atlas.Application.Business.Indoor.Midias.Dtos;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Application.Common.Extensions.Pagination;
 using Atlas.Application.Common.Models.Pagination;
 using Atlas.Domain.Business.Constants;
@@ -20,13 +20,13 @@ public record GetMidiasQuery : IRequest<PaginatedList<MidiaDto>>
     public TipoMidia? Tipo { get; init; }
 }
 
-public class GetMidiasQueryHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual, IIdentityService identityService)
+public class GetMidiasQueryHandler(IApplicationDbContext context, IClienteAtual clienteAtual, IIdentityService identityService)
     : IRequestHandler<GetMidiasQuery, PaginatedList<MidiaDto>>
 {
     public async Task<PaginatedList<MidiaDto>> Handle(GetMidiasQuery request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var query = context.Midias.AsNoTracking().Where(m => m.ParceiroId == parceiro.ParceiroId);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
+        var query = context.Midias.AsNoTracking().Where(m => m.ClienteId == cliente.ClienteId);
 
         if (request.Ativo is { } ativo)
         {
@@ -62,7 +62,7 @@ public record GetMidiaByIdQuery(long Id) : IRequest<MidiaDto>;
 
 public class GetMidiaByIdQueryHandler(
     IApplicationDbContext context,
-    IParceiroAtual parceiroAtual,
+    IClienteAtual clienteAtual,
     IIdentityService identityService,
     IArmazenamentoMidias armazenamento)
     : IRequestHandler<GetMidiaByIdQuery, MidiaDto>
@@ -71,11 +71,11 @@ public class GetMidiaByIdQueryHandler(
 
     public async Task<MidiaDto> Handle(GetMidiaByIdQuery request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
 
         var midia = await context.Midias
             .AsNoTracking()
-            .Where(m => m.Id == request.Id && m.ParceiroId == parceiro.ParceiroId)
+            .Where(m => m.Id == request.Id && m.ClienteId == cliente.ClienteId)
             .Select(m => new { m.ChaveArmazenamento })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -96,18 +96,18 @@ public class GetMidiaByIdQueryHandler(
     }
 }
 
-/// <summary>Espaço, cota e plano (mídias ativas) do parceiro, para o painel avisar antes do envio.</summary>
+/// <summary>Espaço, cota e plano (mídias ativas) do cliente, para o painel avisar antes do envio.</summary>
 [Authorize(Policy = BusinessPermissionKeys.Midias.View)]
 public record GetUsoArmazenamentoQuery : IRequest<UsoArmazenamentoDto>;
 
-public class GetUsoArmazenamentoQueryHandler(IApplicationDbContext context, IParceiroAtual parceiroAtual)
+public class GetUsoArmazenamentoQueryHandler(IApplicationDbContext context, IClienteAtual clienteAtual)
     : IRequestHandler<GetUsoArmazenamentoQuery, UsoArmazenamentoDto>
 {
     public async Task<UsoArmazenamentoDto> Handle(GetUsoArmazenamentoQuery request, CancellationToken cancellationToken)
     {
-        var parceiro = await parceiroAtual.ObterAsync(cancellationToken);
-        var (usado, cota) = await CotaArmazenamento.ObterAsync(context, parceiro.ParceiroId, cancellationToken);
-        var (ativas, limite) = await LimiteMidiasAtivas.ObterAsync(context, parceiro.ParceiroId, cancellationToken);
+        var cliente = await clienteAtual.ObterAsync(cancellationToken);
+        var (usado, cota) = await CotaArmazenamento.ObterAsync(context, cliente.ClienteId, cancellationToken);
+        var (ativas, limite) = await LimiteMidiasAtivas.ObterAsync(context, cliente.ClienteId, cancellationToken);
 
         return new UsoArmazenamentoDto(usado, cota, Midia.TamanhoMaximoBytes, ativas, limite);
     }

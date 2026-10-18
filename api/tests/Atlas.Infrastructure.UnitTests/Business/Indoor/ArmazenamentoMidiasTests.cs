@@ -46,25 +46,25 @@ public class TiposArquivoMidiaTests
 public class ChavesArmazenamentoTests
 {
     [Fact]
-    public void Gerar_DeveFicarNaPastaDoParceiroComAExtensaoDoTipo()
+    public void Gerar_DeveFicarNaPastaDoClienteComAExtensaoDoTipo()
     {
         var chave = ChavesArmazenamento.Gerar(42, TiposArquivoMidia.Mp4);
 
-        chave.Should().MatchRegex("^parceiros/42/midias/[0-9a-f]{32}\\.mp4$");
+        chave.Should().MatchRegex("^clientes/42/midias/[0-9a-f]{32}\\.mp4$");
         ChavesArmazenamento.Valida(chave, 42, TiposArquivoMidia.Mp4).Should().BeTrue();
     }
 
     [Theory]
-    [InlineData("parceiros/7/midias/0123456789abcdef0123456789abcdef.mp4", "video/mp4", true)]
-    [InlineData("parceiros/8/midias/0123456789abcdef0123456789abcdef.mp4", "video/mp4", false)]   // outro parceiro
-    [InlineData("parceiros/7/midias/0123456789abcdef0123456789abcdef.png", "video/mp4", false)]   // extensão de outro tipo
-    [InlineData("parceiros/7/midias/../8/midias/0123456789abcdef0123456789.mp4", "video/mp4", false)]
-    [InlineData("parceiros/7/midias/sub/0123456789abcdef0123456789abcd.mp4", "video/mp4", false)]
-    [InlineData("parceiros/7/midias/0123456789ABCDEF0123456789ABCDEF.mp4", "video/mp4", false)]   // maiúsculas
-    [InlineData("parceiros/70/midias/0123456789abcdef0123456789abcdef.mp4", "video/mp4", false)]
-    [InlineData("parceiros/7/midias/0123456789abcdef0123456789abcdef.mp4", "video/webm", false)]
+    [InlineData("clientes/7/midias/0123456789abcdef0123456789abcdef.mp4", "video/mp4", true)]
+    [InlineData("clientes/8/midias/0123456789abcdef0123456789abcdef.mp4", "video/mp4", false)]   // outro cliente
+    [InlineData("clientes/7/midias/0123456789abcdef0123456789abcdef.png", "video/mp4", false)]   // extensão de outro tipo
+    [InlineData("clientes/7/midias/../8/midias/0123456789abcdef0123456789.mp4", "video/mp4", false)]
+    [InlineData("clientes/7/midias/sub/0123456789abcdef0123456789abcd.mp4", "video/mp4", false)]
+    [InlineData("clientes/7/midias/0123456789ABCDEF0123456789ABCDEF.mp4", "video/mp4", false)]   // maiúsculas
+    [InlineData("clientes/70/midias/0123456789abcdef0123456789abcdef.mp4", "video/mp4", false)]
+    [InlineData("clientes/7/midias/0123456789abcdef0123456789abcdef.mp4", "video/webm", false)]
     [InlineData(null, "video/mp4", false)]
-    public void Valida_SoAceitaAChaveGeradaParaOParceiro(string? chave, string tipo, bool esperado)
+    public void Valida_SoAceitaAChaveGeradaParaOCliente(string? chave, string tipo, bool esperado)
     {
         ChavesArmazenamento.Valida(chave, 7, tipo).Should().Be(esperado);
     }
@@ -130,7 +130,7 @@ public class VerificadorArquivoMidiaTests
 
 public class ArmazenamentoSupabaseTests
 {
-    private const string Chave = "parceiros/7/midias/0123456789abcdef0123456789abcdef.mp4";
+    private const string Chave = "clientes/7/midias/0123456789abcdef0123456789abcdef.mp4";
     private static readonly DateTimeOffset Agora = new(2026, 10, 13, 12, 0, 0, TimeSpan.Zero);
 
     private readonly SupabaseFake _supabase = new();
@@ -138,7 +138,7 @@ public class ArmazenamentoSupabaseTests
     [Fact]
     public async Task PrepararEnvio_DeveAssinarAChaveEDevolverAUrlAbsoluta()
     {
-        _supabase.Responder(HttpStatusCode.OK, """{"url":"/object/upload/sign/midias/parceiros/7/midias/x.mp4?token=abc","token":"abc"}""");
+        _supabase.Responder(HttpStatusCode.OK, """{"url":"/object/upload/sign/midias/clientes/7/midias/x.mp4?token=abc","token":"abc"}""");
 
         var envio = await Armazenamento().PrepararEnvioAsync(Chave, CancellationToken.None);
 
@@ -148,21 +148,21 @@ public class ArmazenamentoSupabaseTests
         requisicao.Authorization.Should().Be("Bearer chave-servico");
         requisicao.ApiKey.Should().Be("chave-servico");
 
-        envio.Url.Should().Be(new Uri("https://projeto.supabase.test/storage/v1/object/upload/sign/midias/parceiros/7/midias/x.mp4?token=abc"));
+        envio.Url.Should().Be(new Uri("https://projeto.supabase.test/storage/v1/object/upload/sign/midias/clientes/7/midias/x.mp4?token=abc"));
         envio.ExpiraEm.Should().Be(Agora.AddHours(2));
     }
 
     [Fact]
     public async Task GerarUrlLeitura_DeveMandarAValidadeEmSegundos()
     {
-        _supabase.Responder(HttpStatusCode.OK, """{"signedURL":"/object/sign/midias/parceiros/7/midias/x.mp4?token=xyz"}""");
+        _supabase.Responder(HttpStatusCode.OK, """{"signedURL":"/object/sign/midias/clientes/7/midias/x.mp4?token=xyz"}""");
 
         var url = await Armazenamento().GerarUrlLeituraAsync(Chave, TimeSpan.FromHours(6), CancellationToken.None);
 
         var requisicao = _supabase.Requisicoes.Single();
         requisicao.Url.Should().Be($"https://projeto.supabase.test/storage/v1/object/sign/midias/{Chave}");
         JsonDocument.Parse(requisicao.Corpo!).RootElement.GetProperty("expiresIn").GetInt32().Should().Be(21600);
-        url.Should().Be(new Uri("https://projeto.supabase.test/storage/v1/object/sign/midias/parceiros/7/midias/x.mp4?token=xyz"));
+        url.Should().Be(new Uri("https://projeto.supabase.test/storage/v1/object/sign/midias/clientes/7/midias/x.mp4?token=xyz"));
     }
 
     [Fact]

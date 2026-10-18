@@ -1,3 +1,4 @@
+using Atlas.Domain.Business.Parceiros.Entities;
 using System.Text;
 using Atlas.Application.Business.Conteudo.Clima;
 using Atlas.Application.Business.Conteudo.Common;
@@ -5,7 +6,7 @@ using Atlas.Application.Business.Conteudo.Noticias;
 using Atlas.Application.Business.Rede.FontesNoticia;
 using Atlas.Domain.Business.Conteudo.Entities;
 using Atlas.Domain.Business.Indoor.Entities;
-using Atlas.Domain.Business.Parceiros.Entities;
+using Atlas.Domain.Business.Clientes.Entities;
 using Atlas.Infrastructure.Data;
 using Atlas.Infrastructure.UnitTests.Business.Indoor;
 using FluentAssertions;
@@ -510,7 +511,7 @@ public class ConteudoExternoTests : IDisposable
 
     private async Task<Parceiro> CriarHostComTelaAsync(string? cidade, bool telaAtiva = true)
     {
-        var host = new Parceiro { Nome = $"Host {Guid.NewGuid():N}", Email = $"{Guid.NewGuid():N}@h.test", Cidade = cidade };
+        var host = new Parceiro { Nome = $"Local {Guid.NewGuid():N}", Cidade = cidade };
         _context.Parceiros.Add(host);
         _context.Telas.Add(new Tela { Parceiro = host, Nome = "TV", Ativo = telaAtiva });
         await _context.SaveChangesAsync();

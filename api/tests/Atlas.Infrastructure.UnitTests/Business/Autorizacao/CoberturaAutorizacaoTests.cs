@@ -6,7 +6,8 @@ using Atlas.Application.Business.Indoor.Midias.Commands.SubstituirArquivo;
 using Atlas.Application.Business.Indoor.Telas.Queries;
 using Atlas.Application.Business.Rede.FontesNoticia;
 using Atlas.Application.Business.Rede.Midias.Queries;
-using Atlas.Application.Business.Rede.Parceiros.Queries;
+using Atlas.Application.Business.Rede.Clientes.Queries;
+using Atlas.Application.Business.Rede.Parceiros;
 using Atlas.Application.Business.Rede.Playlists.Commands.DefinirItensPlaylist;
 using Atlas.Application.Business.Rede.Playlists.Commands.SalvarPlaylist;
 using Atlas.Application.Business.Rede.Playlists.Queries;
@@ -35,7 +36,7 @@ public class CoberturaAutorizacaoTests
     /// anônimo (limite de tentativas por IP) e a sincronização exige o token
     /// da TV (política <c>Dispositivo</c> no endpoint e <c>IDispositivoAtual</c> no handler).
     /// O diretório da TV é a página pública do QR code (ADR-018): código
-    /// aleatório, limite por IP e só dados que o parceiro aceitou publicar.
+    /// aleatório, limite por IP e só dados que o cliente aceitou publicar.
     /// </summary>
     private static readonly Type[] Anonimos =
     [
@@ -45,7 +46,7 @@ public class CoberturaAutorizacaoTests
     ];
 
     private static List<Type> Requests() =>
-        typeof(GetParceirosQuery).Assembly.GetTypes()
+        typeof(GetClientesQuery).Assembly.GetTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false }
                 && t.Namespace?.StartsWith("Atlas.Application.Business") == true
                 && typeof(IBaseRequest).IsAssignableFrom(t))
@@ -85,10 +86,10 @@ public class CoberturaAutorizacaoTests
     }
 
     /// <summary>
-    /// Posse das telas: o hardware é da operadora. O parceiro tem só
+    /// Posse das telas: o hardware é da operadora. O cliente tem só
     /// <c>Telas.View</c>, então tudo que altera tela exige Create/Update/Delete,
     /// e as consultas da rede exigem também <c>Parceiros.View</c> (senão o
-    /// parceiro listaria as telas dos outros).
+    /// cliente listaria as telas dos outros).
     /// </summary>
     [Theory]
     [InlineData(typeof(GetTelasRedeQuery), new[] { BusinessPermissionKeys.Telas.View, BusinessPermissionKeys.Parceiros.View })]
@@ -101,14 +102,19 @@ public class CoberturaAutorizacaoTests
     [InlineData(typeof(InativarTelaCommand), new[] { BusinessPermissionKeys.Telas.Update })]
     [InlineData(typeof(ExcluirTelaCommand), new[] { BusinessPermissionKeys.Telas.Delete })]
     [InlineData(typeof(GetTelasQuery), new[] { BusinessPermissionKeys.Telas.View })]
+    // Parceiros (locais das TVs) só a operadora vê: o cliente não tem Parceiros.*.
+    [InlineData(typeof(GetParceirosQuery), new[] { BusinessPermissionKeys.Parceiros.View })]
+    [InlineData(typeof(CriarParceiroCommand), new[] { BusinessPermissionKeys.Parceiros.Create })]
+    [InlineData(typeof(AtualizarParceiroCommand), new[] { BusinessPermissionKeys.Parceiros.Update })]
+    [InlineData(typeof(ExcluirParceiroCommand), new[] { BusinessPermissionKeys.Parceiros.Delete })]
     [InlineData(typeof(GetTelaByIdQuery), new[] { BusinessPermissionKeys.Telas.View })]
-    // Playlists e mídias da rede são da operadora: o parceiro não tem Playlists.*
-    // nem Parceiros.View.
+    // Playlists e mídias da rede são da operadora: o cliente não tem Playlists.*
+    // nem Clientes.View.
     [InlineData(typeof(GetPlaylistsQuery), new[] { BusinessPermissionKeys.Playlists.View })]
     [InlineData(typeof(CriarPlaylistCommand), new[] { BusinessPermissionKeys.Playlists.Create })]
     [InlineData(typeof(DefinirItensPlaylistCommand), new[] { BusinessPermissionKeys.Playlists.Update })]
-    [InlineData(typeof(GetMidiasRedeQuery), new[] { BusinessPermissionKeys.Playlists.View, BusinessPermissionKeys.Parceiros.View })]
-    [InlineData(typeof(GetMidiaRedeByIdQuery), new[] { BusinessPermissionKeys.Playlists.View, BusinessPermissionKeys.Parceiros.View })]
+    [InlineData(typeof(GetMidiasRedeQuery), new[] { BusinessPermissionKeys.Playlists.View, BusinessPermissionKeys.Clientes.View })]
+    [InlineData(typeof(GetMidiaRedeByIdQuery), new[] { BusinessPermissionKeys.Playlists.View, BusinessPermissionKeys.Clientes.View })]
     [InlineData(typeof(SubstituirArquivoMidiaCommand), new[] { BusinessPermissionKeys.Midias.Update })]
     [InlineData(typeof(GetFontesNoticiaQuery), new[] { BusinessPermissionKeys.FonteNoticias.View })]
     [InlineData(typeof(GetNoticiasDaFonteQuery), new[] { BusinessPermissionKeys.FonteNoticias.View })]

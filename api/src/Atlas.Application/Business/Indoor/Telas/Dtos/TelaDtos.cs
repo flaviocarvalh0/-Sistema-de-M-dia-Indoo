@@ -5,8 +5,8 @@ using Atlas.Domain.Business.Indoor.Enums;
 namespace Atlas.Application.Business.Indoor.Telas.Dtos;
 
 /// <summary>
-/// A tela como a operadora (Rede → Telas) e o parceiro (Mídia Indoor → Telas)
-/// a veem. Para o parceiro, o código de pareamento vem sempre vazio: parear é
+/// A tela como a operadora (Rede → Telas) e o cliente (Onde meus anúncios
+/// passam) a veem. O parceiro é o local onde a TV está. Para o cliente, o código de pareamento vem sempre vazio: parear é
 /// trabalho da operadora.
 /// </summary>
 public sealed record TelaDto : IDtoAuditavel

@@ -5,7 +5,7 @@ using Atlas.Application.Business.Conteudo.Common;
 using Atlas.Application.Business.Conteudo.Cotacoes;
 using Atlas.Application.Business.Conteudo.Noticias;
 using Atlas.Application.Business.Indoor.Armazenamento;
-using Atlas.Application.Business.Parceiros.Common;
+using Atlas.Application.Business.Clientes.Common;
 using Atlas.Application.Common.Interfaces;
 using Atlas.Domain.Business.Constants;
 using Atlas.Domain.Constants;
@@ -29,7 +29,7 @@ public static class DependencyInjection
 {
     public static void AddBusinessServices(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddScoped<IParceiroAtual, ParceiroAtual>();
+        builder.Services.AddScoped<IClienteAtual, ClienteAtual>();
         builder.Services.AddSingleton<IConfiguracaoIndoor, ConfiguracaoIndoor>();
         builder.AddArmazenamentoMidias();
         builder.Services.AddAutenticacaoDispositivo(builder.Configuration);
