@@ -16,8 +16,7 @@ sealed class FalhaApi implements Exception {
   String toString() => mensagem;
 }
 
-/// 400 no pareamento: código inválido, expirado, já usado, de tela inativa
-/// ou de parceiro bloqueado (a API não diz qual).
+/// 400 no pareamento: código inválido, expirado, já usado ou de tela inativa.
 class CodigoRecusado extends FalhaApi {
   const CodigoRecusado() : super('Código inválido ou expirado. Gere outro no painel.');
 }

@@ -90,7 +90,7 @@ lib/
     baixador_midia.dart           .part → SHA-256 em blocos → renomeia; 3 tentativas (mídias e imagens das notícias)
     sincronizador.dart            um ciclo: pergunta, baixa, troca grade e notícias de uma vez, limpa
     atualizador_app.dart          baixa a versão nova do app e chama o instalador nativo (ADR-021)
-  reproducao/filtro_do_dia.dart   "hoje" no fuso do parceiro, dias da semana e período
+  reproducao/filtro_do_dia.dart   "hoje" no fuso do parceiro (local da TV), dias da semana e período
   reproducao/composicao_fila.dart          a fila de cada volta: embaralhar (fixos no lugar) e notícia a cada N
   reproducao/controlador_reproducao.dart   o loop sem tela: próximo passo da fila, fim, falha, espera
   reproducao/video_reproducao.dart         vídeo (video_player) atrás de uma interface testável

@@ -8,24 +8,34 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 
 | Perfil | Onde | O quê |
 |---|---|---|
-| **Operadora** (grupo "Operadora") | Painel → Rede | Cadastra os parceiros e as TVs (o hardware é dela), monta as playlists com os anúncios da rede e escolhe o que cada TV toca |
-| **Parceiro** (grupo "Proprietário de Parceiro") | Painel → Mídia Indoor | Anunciante: envia e mantém as próprias mídias, dentro do plano, e vê onde elas passam |
+| **Operadora** (grupo "Operadora") | Painel → Rede | Cadastra parceiros, clientes e TVs (o hardware é dela), monta as playlists com os anúncios da rede e escolhe o que cada TV toca |
+| **Cliente** (grupo "Cliente") | Painel → Mídia Indoor | Anunciante: envia e mantém as próprias mídias, dentro do plano, e vê onde elas passam |
+| **Parceiro** | — | O local onde a TV fica (academia, clínica). **Não acessa o sistema**; se também anuncia, é cadastrado como cliente (ADR-022) |
 | **TV** | App `player/` | Toca a grade da tela com notícias, relógio e clima, mesmo sem internet |
 | **Administrador** (`admin`) | Atlas Studio | Usuários, grupos, menus, SMTP e parâmetros |
 
-## Rede (operadora)
+## Parceiros (operadora, Rede → Parceiros)
 
 | Funcionalidade | Detalhe |
 |---|---|
-| Cadastro de parceiro | Nome, responsável, e-mail de acesso, telefone, CPF/CNPJ, cidade, fuso horário e espaço (MB) |
-| Acesso do responsável | O cadastro cria o usuário do responsável e envia a senha temporária por e-mail; a troca é obrigatória no primeiro login |
-| Espaço por parceiro | Cota de armazenamento em MB (padrão 200), conferida antes de cada envio |
-| Plano (mídias ativas) | Quantas mídias o parceiro pode ter ativas ao mesmo tempo (padrão 1). Reduzir não inativa nada: só impede ativar novas |
-| Fuso horário | Define o "hoje" e o dia da semana da grade das TVs instaladas no parceiro (host) |
-| Bloquear / desbloquear | Com motivo. Bloqueado, o parceiro perde o painel e as mídias dele saem das grades na próxima sincronização. As TVs instaladas nele continuam tocando normalmente |
-| Lista | Situação, telas no local, mídias ativas (x de y), espaço usado/cota; filtro por situação; histórico de alterações |
+| Cadastro | Nome do local, responsável, telefone, e-mail de contato, CPF/CNPJ, endereço, cidade (clima das TVs) e fuso horário (o "hoje" e o dia da semana da grade das TVs daqui). Sem login |
+| Também anuncia como | Ligação opcional ao cadastro de cliente do dono: no diretório das TVs do local, ele aparece primeiro. Um cliente pode ter várias unidades |
+| Ativar / inativar | Inativo sai da lista ao cadastrar telas; as TVs dele seguem como estão |
+| Excluir | Só sem telas no local |
+| Lista | Cidade, telas no local, com quem está ligado, situação; filtro por situação; histórico de alterações |
 
-## Mídias (parceiro)
+## Clientes (operadora, Rede → Clientes)
+
+| Funcionalidade | Detalhe |
+|---|---|
+| Cadastro de cliente | Nome, responsável, e-mail de acesso, telefone, CPF/CNPJ, cidade, fuso horário (o "hoje" do painel dele) e espaço (MB) |
+| Acesso do responsável | O cadastro cria o usuário do responsável e envia a senha temporária por e-mail; a troca é obrigatória no primeiro login |
+| Espaço por cliente | Cota de armazenamento em MB (padrão 200), conferida antes de cada envio |
+| Plano (mídias ativas) | Quantas mídias o cliente pode ter ativas ao mesmo tempo (padrão 1). Reduzir não inativa nada: só impede ativar novas |
+| Bloquear / desbloquear | Com motivo. Bloqueado, o cliente perde o painel e as mídias dele saem das grades na próxima sincronização |
+| Lista | Situação, TVs com anúncio dele, mídias ativas (x de y), espaço usado/cota; filtro por situação; histórico de alterações |
+
+## Mídias (cliente)
 
 | Funcionalidade | Detalhe |
 |---|---|
@@ -36,20 +46,20 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Ativar / inativar | Inativa sai do loop das TVs, mas continua nas grades. Mídia nova nasce ativa se o plano tiver vaga e inativa se estiver completo; ativar além do plano é recusado com a explicação |
 | Plano | "Mídias ativas: x de y" na lista, com aviso de plano completo também na página de envio |
 | Substituir arquivo | Troca o vídeo/imagem de uma mídia sem mudar a situação. Fora das grades, troca na hora. **Em grade, vai para a aprovação da operadora** (ADR-020): as TVs seguem com o atual até aprovar; a lista mostra "Aguardando aprovação" ou o motivo da recusa, que também chega por e-mail. Aprovada, as TVs baixam o novo pelo hash e o antigo sai do storage |
-| QR code | Opcional, na aba "QR code" da edição. O formulário pede só o que o tipo precisa: **Link** (endereço), **WhatsApp** (telefone e mensagem inicial), **Instagram** (usuário), **Telefone** (número) ou **Pix** (chave, nome e cidade de quem recebe e valor opcional — vira um Pix copia e cola do Banco Central). Legenda, canto da tela e tamanho escolhidos pelo parceiro. "Ver QR code" mostra a prévia para testar com o celular |
+| QR code | Opcional, na aba "QR code" da edição. O formulário pede só o que o tipo precisa: **Link** (endereço), **WhatsApp** (telefone e mensagem inicial), **Instagram** (usuário), **Telefone** (número) ou **Pix** (chave, nome e cidade de quem recebe e valor opcional — vira um Pix copia e cola do Banco Central). Legenda, canto da tela e tamanho escolhidos pelo cliente. "Ver QR code" mostra a prévia para testar com o celular |
 | Diretório das TVs | Cartão no topo de Mídias: **Aparecer no diretório** (aceite do dono, desligado por padrão) com categoria, descrição, WhatsApp, Instagram e site. A página mostra só esses contatos (os QR codes dos anúncios não entram) |
 | Pré-visualizar | Link temporário de 1 h |
 | Excluir | Só mídia fora das grades; o arquivo sai do storage |
-| Espaço usado | Barra com uso e cota do parceiro |
+| Espaço usado | Barra com uso e cota do cliente |
 
 ## Playlists (operadora, Rede → Playlists)
 
 | Funcionalidade | Detalhe |
 |---|---|
 | Playlist reutilizável | A mesma playlist toca em várias telas; nome único na rede |
-| Grade | Adicionar mídias ativas de qualquer parceiro (busca por título ou parceiro, filtro por parceiro), reordenar arrastando, remover |
+| Grade | Adicionar mídias ativas de qualquer cliente (busca por título ou cliente, filtro por cliente), reordenar arrastando, remover |
 | Repetição | A mesma mídia pode entrar mais de uma vez; o seletor mostra "Já adicionado (N×)" |
-| Anunciante | Cada item mostra o parceiro dono da mídia |
+| Anunciante | Cada item mostra o cliente dono da mídia |
 | Dias da semana por item | Botões Seg…Dom e atalhos (todos os dias, seg a sex, fim de semana) |
 | Ciclo | Duração total do loop e quantas telas usam a playlist |
 | Duplicar | "Clonar" cria outra playlist com a mesma grade (mídias inativas ficam de fora) |
@@ -77,29 +87,29 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 
 ## Telas — operadora (Rede → Telas)
 
-O hardware é da operadora: ela instala cada TV num estabelecimento (host) e
+O hardware é da operadora: ela instala cada TV num parceiro (o local) e
 escolhe a playlist.
 
 | Funcionalidade | Detalhe |
 |---|---|
-| Cadastro | Estabelecimento (host, define o fuso), playlist, nome, local e identificação do aparelho (MAC/série, só informativa) |
-| Lista da rede | Todas as TVs, com estabelecimento, playlist e conexão; filtro por estabelecimento e situação; busca por nome, parceiro, local ou aparelho |
+| Cadastro | Parceiro (o local; define o fuso e a cidade do clima), playlist, nome, local e identificação do aparelho (MAC/série, só informativa) |
+| Lista da rede | Todas as TVs, com parceiro, playlist e conexão; filtro por parceiro e situação; busca por nome, parceiro, local ou aparelho |
 | Código de pareamento | 8 caracteres, válido por 24 h, uso único; exibido em destaque com contagem regressiva |
 | Conexão | Aguardando pareamento, Online ou Offline (sem sincronizar há 5 min); a lista atualiza a cada minuto |
 | Parear outra TV | Gera um código novo; a TV atual continua até a nova parear |
 | Desvincular TV | A TV perde o acesso na próxima sincronização e a tela volta a aguardar pareamento |
-| Trocar estabelecimento ou playlist | Vale na próxima sincronização; a TV continua pareada |
+| Trocar parceiro ou playlist | Vale na próxima sincronização; a TV continua pareada |
 | Ativar / inativar | Inativa: a TV continua no que já baixou, sem receber grade nova |
-| Copiar | "Clonar" cria outra tela no mesmo estabelecimento e local |
+| Copiar | "Clonar" cria outra tela no mesmo parceiro e local |
 | Alerta de TV fora do ar | E-mail para a operadora quando uma TV ativa fica 15 min sem sincronizar, só entre 7 h e 22 h no fuso do estabelecimento, e outro quando ela volta. Um resumo por varredura (5 min), sem repetir a mesma queda (ADR-020) |
 | Versões do app | **Versões do app** (botão na lista): envio do APK, liberação **Só TVs de teste** → **Todas as TVs**, suspensão e exclusão; quantas TVs estão em cada versão. Coluna **App** na lista e **TV de teste** no cadastro (ADR-021) |
-| Diretório de anunciantes | Liga na edição da tela: a TV mostra um QR code fixo que abre uma página pública com os anunciantes da grade de hoje que aceitaram aparecer, o estabelecimento primeiro. **Diretório de anunciantes** na linha mostra o QR (para testar ou imprimir), abre a página e permite **Trocar endereço** (o anterior para de funcionar) |
+| Diretório de anunciantes | Liga na edição da tela: a TV mostra um QR code fixo que abre uma página pública com os anunciantes da grade de hoje que aceitaram aparecer; o cliente ligado ao parceiro (se ele também anuncia) vem primeiro. **Diretório de anunciantes** na linha mostra o QR (para testar ou imprimir), abre a página e permite **Trocar endereço** (o anterior para de funcionar) |
 
-## Onde meus anúncios passam (parceiro)
+## Onde meus anúncios passam (cliente)
 
 | Funcionalidade | Detalhe |
 |---|---|
-| Lista | Somente leitura: as TVs ativas cuja playlist tem uma mídia ativa do parceiro, com nome, local, estabelecimento, conexão e última sincronização |
+| Lista | Somente leitura: as TVs ativas cuja playlist tem uma mídia ativa do cliente, com nome, local, parceiro, conexão e última sincronização |
 
 ## App das TVs
 
@@ -126,14 +136,14 @@ escolhe a playlist.
 
 ## Segurança e isolamento
 
-- Cada parceiro só vê e altera as próprias mídias. Mídia de outro parceiro,
+- Cada cliente só vê e altera as próprias mídias. Mídia de outro cliente,
   ou tela onde ele não passa, responde 404.
 - Playlists e mídias da rede só para a operadora (ADR-015).
 - As TVs usam um token próprio, que não abre o painel (ADR-011).
 - O bucket das mídias é privado, acessado por links temporários (ADR-012).
 - O pareamento tem limite de 10 tentativas por IP a cada 5 minutos. A
   sincronização tem limite de 30 por minuto por tela.
-- Histórico de alterações de parceiros, telas, mídias e playlists.
+- Histórico de alterações de parceiros, clientes, telas, mídias e playlists.
 - Diretório das TVs (ADR-018): página pública sem login, mas com código
   aleatório por tela (não o id), limite de 60 acessos por minuto por IP e
   cache de 60 s. Mostra só quem aceitou e só os dados do perfil público e
@@ -142,10 +152,10 @@ escolhe a playlist.
 
 ## Fora do escopo atual
 
-- Autocadastro de parceiros (hoje só a operadora cadastra).
-- Equipe do parceiro com permissões diferentes do dono (o papel "Equipe"
+- Autocadastro de clientes (hoje só a operadora cadastra).
+- Equipe do cliente com permissões diferentes do dono (o papel "Equipe"
   existe no modelo, sem tela).
-- Operadora acessar o painel de um parceiro ("acessar como").
+- Operadora acessar o painel de um cliente ("acessar como").
 - Relatório de exibições (prova de veiculação).
 - Contagem de leituras do QR code (o QR é estático e leva direto ao destino).
 - Diretório: contagem de acessos e de cliques por anunciante, e o logo no

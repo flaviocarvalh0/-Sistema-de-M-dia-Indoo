@@ -323,3 +323,16 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
 - [ ] Validar numa TV real: instalação com e sem device owner e reabertura
   após atualizar (o código nativo não é compilado no ambiente de CI).
 
+
+### Parceiro (local da TV) e cliente (anunciante) ✅
+
+- [x] O antigo "parceiro" (login, mídias, plano, diretório, bloqueio) virou
+  **cliente**; **parceiro** passou a ser o local da TV, sem acesso, com
+  ligação opcional ao cliente do dono
+  ([ADR-022](../api/docs/decisions/ADR-022-Parceiro-e-Cliente.md)).
+- [x] Telas e clima apontam para o parceiro; mídias para o cliente. CRUD de
+  parceiros em Rede → Parceiros; Rede → Clientes no lugar do antigo cadastro.
+- [x] Migration `Business_ClientesEParceiros` começa limpo (apaga parceiros,
+  telas, mídias e os logins antigos).
+- [x] Studio: grupo **Cliente** (renomeia o "Proprietário de Parceiro"),
+  permissões `Clientes.*` e menus Parceiros e Clientes.

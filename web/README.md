@@ -1,8 +1,9 @@
 # Mídia Indoor — painel
 
 Painel Angular do **Sistema de Mídia Indoor**: a operadora cadastra os
-parceiros e as TVs, as fontes de notícias e monta as playlists com os
-anúncios da rede; cada parceiro (anunciante) envia e mantém os próprios
+parceiros (os locais das TVs, sem acesso), os clientes, as TVs e as fontes
+de notícias e monta as playlists com os anúncios da rede; cada cliente
+(anunciante) envia e mantém os próprios
 vídeos e imagens. Consome a biblioteca `@atlas/framework` e conversa com a API em
 [`../api`](../api/README.md).
 
@@ -44,17 +45,18 @@ liberada no CORS da API.
 
 | Rota | Quem usa | O quê |
 |---|---|---|
-| `/rede/parceiro` | Operadora | Parceiros: cadastro (cria o login do responsável), espaço em MB, plano de mídias ativas, bloquear/desbloquear |
+| `/rede/parceiro` | Operadora | Parceiros (locais das TVs, sem login): contato, endereço, cidade do clima, fuso da grade, ligação opcional ao cliente do dono, ativar/inativar |
+| `/rede/cliente` | Operadora | Clientes (anunciantes): cadastro (cria o login do responsável), espaço em MB, plano de mídias ativas, bloquear/desbloquear |
 | `/rede/tela` | Operadora | TVs da rede (o hardware é dela): estabelecimento (host), playlist, identificação do aparelho, código de pareamento, conexão, desvincular |
 | `/rede/tela/versoes-app` | Operadora | Versões do app das TVs: envio do APK, liberação para TVs de teste ou todas, suspensão (ADR-021) |
 | `/rede/playlist` | Operadora | Playlists da rede (uma playlist toca em várias telas), com a composição da fila (informativo a cada N, cartões de tempo e cotações, embaralhar, relógio, clima); "Clonar" duplica com a grade |
-| `/rede/playlist/:id/grade` | Operadora | Mídias ativas de todos os parceiros (busca, filtro, "Já adicionado (N×)"), ordem do loop, 📌 posição fixa e dias da semana de cada item |
+| `/rede/playlist/:id/grade` | Operadora | Mídias ativas de todos os clientes (busca, filtro, "Já adicionado (N×)"), ordem do loop, 📌 posição fixa e dias da semana de cada item |
 | `/rede/fonte-noticia` | Operadora | Feeds de notícias (RSS/Atom): cadastro, "Coletar agora", situação da última leitura e as notícias guardadas |
-| `/indoor/midia` | Parceiro | Biblioteca: título, duração, período, ativar/inativar dentro do plano ("Mídias ativas: x de y"), substituir arquivo, pré-visualizar, espaço usado |
-| `/indoor/midia/enviar` | Parceiro | Envio de vídeo MP4 ou imagem JPG/PNG direto ao storage, com SHA-256 e progresso; com `?substituir={id}`, troca o arquivo de uma mídia |
-| `/indoor/tela` | Parceiro | **Onde meus anúncios passam**: TVs com mídia ativa dele, somente leitura |
+| `/indoor/midia` | Cliente | Biblioteca: título, duração, período, ativar/inativar dentro do plano ("Mídias ativas: x de y"), substituir arquivo, pré-visualizar, espaço usado |
+| `/indoor/midia/enviar` | Cliente | Envio de vídeo MP4 ou imagem JPG/PNG direto ao storage, com SHA-256 e progresso; com `?substituir={id}`, troca o arquivo de uma mídia |
+| `/indoor/tela` | Cliente | **Onde meus anúncios passam**: TVs com mídia ativa dele, somente leitura |
 
-O parceiro só vê as próprias mídias: o isolamento é feito pela API.
+O cliente só vê as próprias mídias: o isolamento é feito pela API.
 
 ## Estrutura
 
@@ -73,7 +75,7 @@ public/assets/config.json   endereço da API, lido em tempo de execução
 O arquivo não passa pela API:
 
 1. `POST /midias/envio` — a API confere tipo, tamanho (até 50 MB) e o espaço
-   do parceiro e devolve uma URL assinada do storage;
+   do cliente e devolve uma URL assinada do storage;
 2. o navegador faz o `PUT` do arquivo direto nessa URL (com progresso);
 3. `POST /midias` com o SHA-256 calculado no navegador — a API baixa o
    arquivo, confere tipo e hash e só então cadastra a mídia.
@@ -95,7 +97,7 @@ conteúdo que vai para a TV.
 A página pública que o celular abre (`/d/{codigo}`) **não** é deste painel:
 é HTML servido pela API (ADR-018), porque o pacote inicial do painel é
 pesado para o 4G. Aqui ficam a chave na tela (Rede → Telas, com o QR e
-"Trocar endereço") e o perfil público do parceiro (cartão no topo de Mídias,
+"Trocar endereço") e o perfil público do cliente (cartão no topo de Mídias,
 `features/perfil/perfil-publico.ts`).
 
 ## Publicar

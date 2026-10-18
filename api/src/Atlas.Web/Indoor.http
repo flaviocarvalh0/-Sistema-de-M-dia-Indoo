@@ -1,4 +1,4 @@
-# Roteiro de teste da Mídia Indoor (operadora, parceiro e TV).
+# Roteiro de teste da Mídia Indoor (operadora, cliente e TV).
 #
 # Funciona na extensão REST Client do VS Code (humao.rest-client) e no
 # Visual Studio 2022 17.12+. Rode as requisições de cima para baixo: cada uma
@@ -19,9 +19,9 @@ Content-Type: application/json
 
 { "userName": "admin", "password": "{{senhaAdmin}}", "mode": "Cookie" }
 
-### 2. Cadastrar parceiro (cria o usuário do dono e enfileira o e-mail com a senha temporária)
-# @name parceiro
-POST {{api}}/api/v1/business/rede/parceiros
+### 2. Cadastrar cliente (cria o usuário do dono e enfileira o e-mail com a senha temporária)
+# @name cliente
+POST {{api}}/api/v1/business/rede/clientes
 Content-Type: application/json
 
 {
@@ -58,11 +58,11 @@ Content-Type: application/json
 { "userName": "{{emailDono}}", "password": "{{senhaNova}}", "mode": "Cookie" }
 
 ### 5. Espaço disponível
-GET {{api}}/api/v1/business/parceiro/midias/armazenamento
+GET {{api}}/api/v1/business/cliente/midias/armazenamento
 
 ### 6. Vídeo — passo 1: pedir a URL de envio (tamanhoBytes = tamanho do arquivo)
 # @name envioVideo
-POST {{api}}/api/v1/business/parceiro/midias/envio
+POST {{api}}/api/v1/business/cliente/midias/envio
 Content-Type: application/json
 
 { "tipoConteudo": "video/mp4", "tamanhoBytes": 1000000 }
@@ -75,7 +75,7 @@ Content-Type: video/mp4
 
 ### 6. Vídeo — passo 3: a API confere o arquivo (tipo, tamanho, SHA-256) e cadastra
 # @name video
-POST {{api}}/api/v1/business/parceiro/midias
+POST {{api}}/api/v1/business/cliente/midias
 Content-Type: application/json
 
 {
@@ -87,7 +87,7 @@ Content-Type: application/json
 
 ### 7. Imagem (mesmos três passos)
 # @name envioImagem
-POST {{api}}/api/v1/business/parceiro/midias/envio
+POST {{api}}/api/v1/business/cliente/midias/envio
 Content-Type: application/json
 
 { "tipoConteudo": "image/png", "tamanhoBytes": 100000 }
@@ -100,7 +100,7 @@ Content-Type: image/png
 
 ###
 # @name imagem
-POST {{api}}/api/v1/business/parceiro/midias
+POST {{api}}/api/v1/business/cliente/midias
 Content-Type: application/json
 
 {
@@ -111,15 +111,15 @@ Content-Type: application/json
 }
 
 ### 8. Mídias (o detalhe traz urlVisualizacao, válida por 1 h: abra no navegador)
-GET {{api}}/api/v1/business/parceiro/midias
+GET {{api}}/api/v1/business/cliente/midias
 
 ###
-GET {{api}}/api/v1/business/parceiro/midias/{{video.response.body.$}}
+GET {{api}}/api/v1/business/cliente/midias/{{video.response.body.$}}
 
 ### 8b. Uso do plano: midiasAtivas de limiteMidiasAtivas
-GET {{api}}/api/v1/business/parceiro/midias/armazenamento
+GET {{api}}/api/v1/business/cliente/midias/armazenamento
 
-### 9. A operadora monta a playlist com as mídias dos parceiros
+### 9. A operadora monta a playlist com as mídias dos clientes
 # O login por cookie é um só por vez: entra de novo como operadora.
 POST {{api}}/api/Auth/login
 Content-Type: application/json
@@ -127,7 +127,7 @@ Content-Type: application/json
 { "userName": "admin", "password": "{{senhaAdmin}}", "mode": "Cookie" }
 
 ###
-GET {{api}}/api/v1/business/rede/midias?ativo=true&parceiroId={{parceiro.response.body.$}}
+GET {{api}}/api/v1/business/rede/midias?ativo=true&clienteId={{cliente.response.body.$}}
 
 ### 9a. Fontes de notícias: a Agência Brasil vem cadastrada; "coletar" lê o feed na hora
 # @name fontes
@@ -175,7 +175,20 @@ Content-Type: application/json
 ###
 GET {{api}}/api/v1/business/rede/playlists/{{playlist.response.body.$}}
 
-### 10. A operadora cadastra a tela no estabelecimento (host) com a playlist
+### 10a. A operadora cadastra o parceiro: o local onde a TV fica (sem acesso
+# ao sistema). Aqui o dono do local também anuncia: liga ao cliente do passo 2.
+# @name parceiro
+POST {{api}}/api/v1/business/rede/parceiros
+Content-Type: application/json
+
+{
+  "nome": "Academia Centro",
+  "cidade": "Manaus",
+  "fusoHorario": "America/Manaus",
+  "clienteId": {{cliente.response.body.$}}
+}
+
+### 10b. A operadora cadastra a tela no parceiro, com a playlist
 # @name tela
 POST {{api}}/api/v1/business/rede/telas
 Content-Type: application/json
@@ -207,7 +220,7 @@ Content-Type: application/json
 { "userName": "{{emailDono}}", "password": "{{senhaNova}}", "mode": "Cookie" }
 
 ###
-GET {{api}}/api/v1/business/parceiro/telas
+GET {{api}}/api/v1/business/cliente/telas
 
 ### ===================== TV (etapa 5) =====================
 # Copie o código gerado no passo 11 (pode digitar em minúsculas e com hífen).
@@ -231,16 +244,16 @@ GET {{api}}/api/v1/dispositivo/sincronizacao?versaoGrade={{sincronizacao.respons
 Authorization: Bearer {{tv.response.body.token}}
 
 ### 15. No painel do dono a tela aparece Online
-GET {{api}}/api/v1/business/parceiro/telas/{{tela.response.body.$}}
+GET {{api}}/api/v1/business/cliente/telas/{{tela.response.body.$}}
 
 ### ===================== Diretório da TV (Entrega 5, ADR-018) =====================
 
 ### 16. O dono aceita aparecer no diretório e publica os contatos (logado como dono)
 # @name perfil
-GET {{api}}/api/v1/business/parceiro/perfil
+GET {{api}}/api/v1/business/cliente/perfil
 
 ###
-PUT {{api}}/api/v1/business/parceiro/perfil
+PUT {{api}}/api/v1/business/cliente/perfil
 Content-Type: application/json
 
 {

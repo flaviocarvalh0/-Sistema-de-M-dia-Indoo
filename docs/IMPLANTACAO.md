@@ -176,17 +176,17 @@ como reverter.
 
 ### 3.3 E-mail (SMTP)
 
-O responsável de cada parceiro recebe a senha temporária por e-mail. Entre
+O responsável de cada cliente (anunciante) recebe a senha temporária por e-mail. Entre
 como `admin`, vá em **Atlas Studio → SMTP**, configure o servidor de e-mail e
 envie o teste. Sem SMTP, a mensagem fica pendente em
 `platform.email_message` e pode ser reprocessada depois.
 
 ### 3.4 Usuários da operadora
 
-Em **Atlas Studio → Usuários**, crie quem vai cadastrar os parceiros e as
-TVs e coloque essas pessoas no grupo **Operadora**. O dono de cada parceiro
-entra sozinho no grupo **Proprietário de Parceiro** quando o parceiro é
-cadastrado.
+Em **Atlas Studio → Usuários**, crie quem vai cadastrar parceiros, clientes
+e TVs e coloque essas pessoas no grupo **Operadora**. O responsável de cada
+cliente entra sozinho no grupo **Cliente** quando o cliente é cadastrado.
+Parceiros (os locais das TVs) não têm acesso ao sistema (ADR-022).
 
 ## 4. App das TVs
 
@@ -291,12 +291,12 @@ aviso da página: precisam de uma instalação manual (4.2), uma vez.
   partir de `Indoor:UrlPainel` (`Atlas.Web/Business/CorsDoPainel.cs`).
 - **Diretório público:** `/d/{codigo}` e `/api/v1/publico/diretorio/{codigo}`
   são anônimos por decisão (ADR-018), com limite de 60 acessos por minuto por
-  IP e cache de 60 s. Mostram só o que cada parceiro aceitou publicar.
+  IP e cache de 60 s. Mostram só o que cada cliente aceitou publicar.
 - **Documentação da API exposta:** a plataforma publica `/scalar` e
   `/openapi` em qualquer ambiente. Se não quiser expor, bloqueie esses
   caminhos no proxy ou no IIS.
 - **Plano gratuito do Supabase:** o limite é 1 GB no total. A cota de cada
-  parceiro é definida no cadastro (padrão 200 MB). Some as cotas antes de
+  cliente é definida no cadastro (padrão 200 MB). Some as cotas antes de
   prometer espaço. As imagens das notícias também ficam no bucket (até 30
   por fonte, em `noticias/`).
 - **Licença das notícias:** a Agência Brasil (CC BY) exige o crédito, que a

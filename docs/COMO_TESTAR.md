@@ -70,7 +70,7 @@ no login.
 
 **Pelo roteiro (recomendado):** abra `api/src/Atlas.Web/Indoor.http`,
 coloque um `video.mp4` e uma `imagem.png` na mesma pasta e execute as
-requisições de cima para baixo. O roteiro cadastra um parceiro, entra como o
+requisições de cima para baixo. O roteiro cadastra um cliente (anunciante), entra como o
 dono, envia vídeo e imagem ao Supabase e, de volta como operadora, monta a
 playlist com as mídias dele, cria a tela com a playlist e gera o código de
 pareamento. Os passos 12 a 15 fazem o papel da TV: pareiam com o
@@ -86,7 +86,7 @@ usam o cookie.
 - `GET /midias/{id}` traz `urlVisualizacao`: abra no navegador e o arquivo
   toca (vem do Supabase, válida por 1 h).
 - Enviar um PNG como `video/mp4` é recusado e o arquivo some do bucket.
-- Enviar além da cota do parceiro é recusado antes do upload.
+- Enviar além da cota do cliente é recusado antes do upload.
 - Excluir uma mídia que está numa playlist, ou uma playlist que está numa
   tela, é recusado.
 - Com o plano padrão (1 mídia ativa), a segunda mídia nasce inativa e
@@ -95,20 +95,19 @@ usam o cookie.
   entrar duas vezes.
 - `PUT /midias/{id}/arquivo` troca o arquivo: a TV recebe o hash novo na
   próxima sincronização e o arquivo antigo some do bucket.
-- O parceiro recebe 403 em `rede/playlists`, `rede/midias` e `rede/fontes-noticia`.
+- O cliente recebe 403 em `rede/parceiros`, `rede/clientes`, `rede/playlists`, `rede/midias` e `rede/fontes-noticia`.
 - `POST rede/fontes-noticia/{id}/coletar` devolve quantas notícias entraram
   (ou o erro do feed); `GET rede/fontes-noticia/{id}/noticias` mostra as
   notícias com a imagem guardada.
 - Com "notícia a cada N" na playlist, a sincronização da TV traz `noticias`;
   mandando a `versaoNoticias` recebida, `noticias` volta nulo (e a grade de
   anúncios não é reenviada quando só as notícias mudam).
-- Com a cidade do host preenchida (ex.: "Manaus" ou "São José - SC"), em até
+- Com a cidade do parceiro (local da TV) preenchida (ex.: "Manaus" ou "São José - SC"), em até
   30 min a sincronização traz `clima`.
 - Salvar com uma `version` antiga devolve 409.
-- O `admin` não enxerga o painel de parceiro (403): ele não pertence a um parceiro.
+- O `admin` não enxerga o painel do cliente (403): ele não pertence a um cliente.
 - Desvincular a TV no painel faz a sincronização dela responder 401; inativar
-  a tela, 403. Bloquear o anunciante tira as mídias dele da grade; bloquear o
-  host não afeta a TV.
+  a tela, 403. Bloquear o cliente tira as mídias dele da grade; a TV continua.
 
 ### Testes automatizados
 
@@ -152,8 +151,8 @@ da API).
 
 ### Roteiro
 
-1. Entre como `admin` e abra **Rede → Parceiros**. Cadastre um parceiro: o
-   responsável recebe a senha temporária por e-mail (sem SMTP configurado,
+1. Entre como `admin` e abra **Rede → Clientes**. Cadastre um cliente (quem
+   anuncia): o responsável recebe a senha temporária por e-mail (sem SMTP configurado,
    consulte `select html_body from platform.email_message order by id desc limit 1;`).
 2. Saia e entre com o e-mail do responsável; troque a senha.
 3. **Mídias → Enviar mídia**: escolha um MP4 (a duração vem do vídeo). A
@@ -165,22 +164,24 @@ da API).
    continua ativa e nas mesmas grades; as TVs baixam o arquivo novo.
 5. Saia e entre como `admin` (ou um usuário do grupo **Operadora**).
    **Rede → Playlists → Novo**, depois clique na playlist para abrir a grade:
-   busque as mídias ativas da rede (por título ou parceiro), adicione — a
+   busque as mídias ativas da rede (por título ou cliente), adicione — a
    mesma mídia pode entrar mais de uma vez e aparece "Já adicionado (N×)" —,
    arraste para mudar a ordem, desmarque dias e **Salvar grade**.
-6. **Rede → Telas → Novo**: escolha o estabelecimento (host, que define o
+6. **Rede → Parceiros → Novo**: cadastre o local onde a TV fica (cidade e
+   fuso; se o dono também anuncia, escolha o cliente em **Também anuncia
+   como**). Depois **Rede → Telas → Novo**: escolha o parceiro (que define o
    fuso), a playlist do passo 5, o nome e, se quiser, a identificação do
    aparelho. Use o botão de QR Code da linha (**Gerar código**): o código
    aparece em destaque, com o tempo restante.
 7. Faça o papel da TV com os passos do `Indoor.http` usando esse código: a
    tela passa a **Online** (a lista se atualiza a cada minuto).
 8. Entre de novo como o dono: em **Onde meus anúncios passam** a TV aparece
-   somente leitura, com o estabelecimento e a conexão.
-9. Como operadora, em **Rede → Parceiros**, a coluna **Mídias ativas** mostra
-   o uso do plano; edite o parceiro e aumente **Mídias ativas (plano)** para
+   somente leitura, com o parceiro (local) e a conexão.
+9. Como operadora, em **Rede → Clientes**, a coluna **Mídias ativas** mostra
+   o uso do plano; edite o cliente e aumente **Mídias ativas (plano)** para
    o dono conseguir ativar a imagem.
 10. **Desvincular TV** na linha da tela: a próxima sincronização da TV recebe
-    401 e a tela volta a *Aguardando pareamento*. Trocar o estabelecimento ou
+    401 e a tela volta a *Aguardando pareamento*. Trocar o parceiro ou
     a playlist da tela não desvincula a TV.
 11. **Rede → Fontes de notícias:** a Agência Brasil já vem cadastrada. Use
     **Coletar agora** (ícone de setas) e clique na linha para ver as notícias
@@ -192,7 +193,7 @@ da API).
     no 📌 do primeiro item para ele não entrar no sorteio e salve. Na TV, em
     até 1 minuto a fila passa a intercalar notícias, com a hora e a
     temperatura no canto (o clima precisa da cidade preenchida no cadastro do
-    estabelecimento).
+    parceiro).
 13. **QR code:** como dono, edite uma mídia e abra a aba **QR code**. Escolha
     **WhatsApp**, informe o telefone com DDD e uma mensagem e salve. A coluna
     **QR code** mostra o tipo; o ícone de QR da linha (**Ver QR code**) abre a
@@ -205,7 +206,7 @@ da API).
     WhatsApp, Instagram ou site. Como operadora, edite a tela em **Rede →
     Telas**, marque **Diretório de anunciantes** e salve; o ícone de pessoas
     da linha (**Diretório de anunciantes**) mostra o QR code e o endereço.
-    **Abrir página** mostra o que o celular vê: o estabelecimento primeiro e
+    **Abrir página** mostra o que o celular vê: o cliente ligado ao parceiro primeiro e
     só quem aceitou. Para ler com o celular de verdade, a API precisa de um
     endereço que o celular alcance em `Indoor:UrlPublica` (em
     desenvolvimento, `https://localhost:7216` só abre no próprio PC; na rede

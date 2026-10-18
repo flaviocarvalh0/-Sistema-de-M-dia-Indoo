@@ -1,7 +1,7 @@
 # Mídia Indoor — API
 
-Gestão de TVs (digital signage) para parceiros — academias, lanchonetes,
-clínicas —, construída sobre a **Atlas Platform** `v0.4.0-alpha.1` (ver
+Gestão de TVs (digital signage) em rede — instaladas nos parceiros
+(academias, lanchonetes, clínicas), com os anúncios dos clientes —, construída sobre a **Atlas Platform** `v0.4.0-alpha.1` (ver
 [Versão da Plataforma](docs/platform/Versao-da-Plataforma.md)).
 
 Faz parte do monorepo `-Sistema-de-M-dia-Indoo`: o painel é a pasta `web/`
@@ -31,7 +31,7 @@ Pré-requisitos: .NET SDK 9 e PostgreSQL.
    cria o `admin`, os metadados e o histórico.
 4. **Studio:** aplique `docs/scripts/studio-indoor.sql` com
    `docs/scripts/aplicar-script.ps1` (pede a senha do banco no prompt). Cria os
-   módulos, os menus e os grupos `Operadora` e `Proprietário de Parceiro`.
+   módulos, os menus e os grupos `Operadora` e `Cliente`.
 5. **Configuração:** `Indoor:UrlPainel` no appsettings é o endereço do painel
    usado nos e-mails de boas-vindas.
 6. **Storage das mídias (Supabase):** crie um projeto em

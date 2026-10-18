@@ -6,35 +6,54 @@ Atlas: chave `long`, concorrência otimista pela coluna `xmin` (propriedade
 `last_modified_by`) e nomes em snake_case.
 
 ```text
-business.parceiro ──< business.usuario_parceiro >── platform.user
-      │
-      ├──< indoor.midia ──────────────┐
-      │                               │
-      ├──< indoor.playlist ──< indoor.item_playlist
-      │          ▲
-      └──< indoor.tela ── (playlist_id, opcional)
-                 │
-                 └── indoor.estado_tela (1:1)
+business.cliente ──< business.usuario_cliente >── platform.user
+      │      ▲
+      │      └─(cliente_id, opcional)── business.parceiro ──< indoor.tela ── (playlist_id, opcional)
+      │                                        │                    │
+      └──< indoor.midia ──┐                    └── conteudo.previsao_clima
+                          │                                         └── indoor.estado_tela (1:1)
+           indoor.playlist ──< indoor.item_playlist
 ```
+
+**Parceiro** é o local onde a TV fica (sem acesso); **cliente** é o
+anunciante, com login (ADR-022).
 
 ## Diferenças em relação à spec original
 
 | Spec | Implementado | Motivo |
 |---|---|---|
 | `Guid Id` | `long Id` + `Version` (xmin) | Padrão Atlas (histórico, RBAC e listagens dependem dele) |
-| `Tenant` | `Parceiro` + `UsuarioParceiro` | O Atlas não tem `TenantId`; o inquilino vem do vínculo do usuário (`IParceiroAtual`) |
+| `Tenant` | `Cliente` + `UsuarioCliente` | O Atlas não tem `TenantId`; o inquilino (anunciante) vem do vínculo do usuário (`IClienteAtual`) |
 | `Screen` / `Media` / `PlaylistItem` | `Tela` / `Midia` / `ItemPlaylist` | Negócio em português (ADR-004) |
 | `Playlist.ScreenId` | `Tela.PlaylistId` (opcional) | Uma playlist roda em N telas |
 | `MacAddress` ou `PairingCode` | `CodigoPareamento` (uso único, 24 h) + `DispositivoId` | MAC é falsificável e o Android 10+ o esconde |
 | `LastSync`, `Status` | `EstadoTela.UltimaSincronizacao`; situação calculada | Não gravar uma versão de histórico da tela a cada sync |
 | `FileUrl` | `ChaveArmazenamento` | A URL (assinada) é gerada na hora pelo storage |
 | `FileHash` MD5 | `Hash` SHA-256 | Mais seguro; já é o algoritmo das imagens da plataforma |
-| `StartDate`/`EndDate` `DateTime?` | `InicioExibicao`/`FimExibicao` `DateOnly?` | A validade é por dia, no fuso do parceiro |
+| `StartDate`/`EndDate` `DateTime?` | `InicioExibicao`/`FimExibicao` `DateOnly?` | A validade é por dia, no fuso do parceiro onde a TV está |
 | `DaysOfWeek` `"1,2,3"` | `DiasSemana` flags (`int`) | Tipado, validável e filtrável no SQL |
 
 ## Tabelas
 
-### `business.parceiro` — o inquilino
+### `business.parceiro` — o local da TV (sem acesso)
+
+| Coluna | Tipo | Regras |
+|---|---|---|
+| `nome` | varchar(150) | obrigatório |
+| `nome_responsavel` | varchar(150) | |
+| `telefone` | varchar(11) | só dígitos com DDD (10 ou 11) |
+| `email` | varchar(254) | contato (não é login) |
+| `documento` | varchar(14) | CPF ou CNPJ |
+| `endereco` | varchar(250) | |
+| `cidade` | varchar(100) | clima das TVs daqui |
+| `fuso_horario` | varchar(64) | IANA; o "hoje" da grade das TVs daqui |
+| `ativo` | bool | inativo sai da escolha ao cadastrar telas |
+| `observacao` | text | |
+| `cliente_id` | bigint | opcional; FK `cliente` (set null): o dono também anuncia |
+
+Histórico ativo. Permissões `Parceiros.*` (operadora). Só é excluído sem telas.
+
+### `business.cliente` — o anunciante (inquilino)
 
 | Coluna | Tipo | Regras |
 |---|---|---|
@@ -49,7 +68,7 @@ business.parceiro ──< business.usuario_parceiro >── platform.user
 | `situacao` | int | 1 Ativo, 2 Bloqueado (exige `motivo_bloqueio`) |
 | `motivo_bloqueio` | varchar(500) | |
 | `observacao_interna` | text | só a operadora vê |
-| `exibir_no_diretorio_publico` | bool | aceite do próprio parceiro para aparecer no diretório das TVs (padrão falso) |
+| `exibir_no_diretorio_publico` | bool | aceite do próprio cliente para aparecer no diretório das TVs (padrão falso) |
 | `diretorio_aceito_em` | timestamptz | presente se e só se há aceite (registro do consentimento) |
 | `categoria` | varchar(40) | perfil público |
 | `descricao_publica` | varchar(140) | perfil público |
@@ -57,19 +76,19 @@ business.parceiro ──< business.usuario_parceiro >── platform.user
 | `instagram_publico` | varchar(30) | usuário, sem `@` |
 | `site_publico` | varchar(300) | começa com `http(s)://` |
 
-Histórico ativo. Permissões `Parceiros.*` (operadora). O perfil público é
-editado pelo próprio dono (`/parceiro/perfil`, ADR-018).
+Histórico ativo. Permissões `Clientes.*` (operadora). O perfil público é
+editado pelo próprio dono (`/cliente/perfil`, ADR-018).
 
-### `business.usuario_parceiro`
+### `business.usuario_cliente`
 
-Vínculo usuário → parceiro. `usuario_id` é único (um usuário, um parceiro).
+Vínculo usuário → cliente. `usuario_id` é único (um usuário, um cliente).
 `papel`: 1 Proprietário, 2 Equipe. Sem tela própria.
 
 ### `indoor.midia`
 
 | Coluna | Tipo | Regras |
 |---|---|---|
-| `parceiro_id` | bigint | FK `parceiro` (restrict) |
+| `cliente_id` | bigint | FK `cliente` (restrict) |
 | `titulo` | varchar(150) | obrigatório |
 | `tipo` | int | 1 Vídeo, 2 Imagem |
 | `chave_armazenamento` | varchar(300) | única; caminho no bucket |
@@ -80,11 +99,11 @@ Vínculo usuário → parceiro. `usuario_id` é único (um usuário, um parceiro
 | `inicio_exibicao` / `fim_exibicao` | date | fim ≥ início; nulos = sem limite |
 | `ativo` | bool | inativa sai da grade |
 
-Índices: `(parceiro_id, ativo)`. Histórico ativo. Permissões `Midias.*`.
+Índices: `(cliente_id, ativo)`. Histórico ativo. Permissões `Midias.*`.
 
 ### `indoor.playlist` e `indoor.item_playlist`
 
-`playlist`: `nome` único por parceiro, `descricao`, `ativo`. Histórico ativo.
+`playlist`: da rede (operadora), `nome` único, `descricao`, `ativo`. Histórico ativo.
 Permissões `Playlists.*`.
 
 `item_playlist`: `playlist_id` (cascade), `midia_id` (restrict — mídia em uso
@@ -97,7 +116,7 @@ posição na lista vira a ordem.
 
 | Coluna | Tipo | Regras |
 |---|---|---|
-| `parceiro_id` | bigint | FK `parceiro` |
+| `parceiro_id` | bigint | FK `parceiro` (o local) |
 | `nome` | varchar(100) | único por parceiro |
 | `localizacao` | varchar(150) | |
 | `playlist_id` | bigint | opcional; FK `playlist` (restrict) |
@@ -121,9 +140,9 @@ Offline) é calculada por `Tela.Situacao(agora, tolerância)`.
 
 ## Regras de isolamento
 
-- Nenhum handler recebe `parceiroId` do cliente: o painel usa
-  `IParceiroAtual` (vínculo do usuário logado) e a TV usa as claims do token
-  do dispositivo.
-- Registro de outro parceiro responde 404, nunca 403 (não revela que existe).
-- `Tela.PlaylistId` e `ItemPlaylist.MidiaId` precisam pertencer ao mesmo
-  parceiro — conferido nos handlers (o banco não cruza o parceiro nas FKs).
+- Nenhum handler do painel do anunciante recebe `clienteId`: ele usa
+  `IClienteAtual` (vínculo do usuário logado). A TV usa as claims do token
+  do dispositivo (tela e parceiro).
+- Registro de outro cliente responde 404, nunca 403 (não revela que existe).
+- Parceiros, telas e playlists são da operadora (`Parceiros.View` separa a
+  visão da rede da do cliente).
