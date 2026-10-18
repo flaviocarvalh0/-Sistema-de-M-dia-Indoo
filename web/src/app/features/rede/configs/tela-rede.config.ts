@@ -2,7 +2,7 @@ import { CampoOption, ColunaDef, FormItemConfig } from '@atlas/framework';
 import { SITUACAO_TELA_BADGE } from '../../telas/configs/tela.config';
 
 export const TELA_REDE_COLUNAS: ColunaDef[] = [
-  { campo: 'parceiroNome', titulo: 'Estabelecimento', tipo: 'texto' },
+  { campo: 'parceiroNome', titulo: 'Parceiro (local)', tipo: 'texto' },
   { campo: 'nome', titulo: 'Tela', principal: true, tipo: 'texto' },
   { campo: 'localizacao', titulo: 'Local', tipo: 'texto' },
   { campo: 'identificacaoAparelho', titulo: 'Aparelho', tipo: 'texto' },
@@ -18,8 +18,8 @@ export const TELA_REDE_COLUNAS: ColunaDef[] = [
 export function criarCamposTelaRede(parceiros: CampoOption[], playlists: CampoOption[]): FormItemConfig[] {
   return [
     {
-      type: 'select', name: 'parceiroId', label: 'Estabelecimento (host)', required: true, col: 'col-md-6', options: parceiros,
-      hint: 'O parceiro que cede o espaço. O fuso horário da grade vem dele.',
+      type: 'select', name: 'parceiroId', label: 'Parceiro (local da TV)', required: true, col: 'col-md-6', options: parceiros,
+      hint: 'O estabelecimento onde a TV fica (cadastro em Rede → Parceiros). O fuso da grade e a cidade do clima vêm dele.',
     },
     {
       type: 'select', name: 'playlistId', label: 'Playlist', col: 'col-md-6', options: playlists,

@@ -5,8 +5,9 @@
 export type SituacaoTela = 'AguardandoPareamento' | 'Online' | 'Offline';
 
 /**
- * A tela como a operadora (Rede → Telas) e o parceiro (Onde meus anúncios passam)
- * a veem. Para o parceiro, `codigoPareamento` vem sempre vazio.
+ * A tela como a operadora (Rede → Telas) e o cliente (Onde meus anúncios passam)
+ * a veem. `parceiro*` é o local onde a TV fica. Para o cliente,
+ * `codigoPareamento` vem sempre vazio.
  */
 export interface TelaDto {
   id: number;

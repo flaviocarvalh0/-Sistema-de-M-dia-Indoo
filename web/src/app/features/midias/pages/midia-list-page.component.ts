@@ -16,7 +16,7 @@ import { PerfilPublicoDto, PerfilPublicoService, criarCamposPerfilPublico, telef
 const ENTIDADE = 'midia';
 
 /**
- * Biblioteca de vídeos e imagens do parceiro. O envio e a troca de arquivo
+ * Biblioteca de vídeos e imagens do cliente. O envio e a troca de arquivo
  * têm página própria (`/indoor/midia/enviar`); aqui se edita título, duração
  * e período, o QR code exibido por cima da mídia, ativa/inativa (dentro do
  * limite do plano) e exclui (só mídia fora de playlists). As grades são

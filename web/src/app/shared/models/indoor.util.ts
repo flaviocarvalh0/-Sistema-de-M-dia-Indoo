@@ -49,7 +49,7 @@ export function opcoes<T extends string>(rotulos: Record<T, string>): CampoOptio
   return (Object.keys(rotulos) as T[]).map(value => ({ value, label: rotulos[value] }));
 }
 
-/** Fusos do Brasil (IANA), para o cadastro do parceiro. */
+/** Fusos do Brasil (IANA), para o cadastro do cliente. */
 export const FUSOS_BRASIL: Record<string, string> = {
   'America/Sao_Paulo': 'Brasília (SP, RJ, MG, Sul, GO, DF, BA, NE)',
   'America/Manaus': 'Amazonas (Manaus)',

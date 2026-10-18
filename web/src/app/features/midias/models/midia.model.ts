@@ -9,11 +9,11 @@ export type TamanhoQrCode = 'Pequeno' | 'Medio' | 'Grande';
 
 export interface MidiaDto {
   id: number;
-  /** Parceiro anunciante dono da mídia. */
-  parceiroId: number;
-  parceiroNome: string;
+  /** Cliente anunciante dono da mídia. */
+  clienteId: number;
+  clienteNome: string;
   /** Anunciante bloqueado: a mídia sai das TVs até o desbloqueio. */
-  parceiroBloqueado: boolean;
+  clienteBloqueado: boolean;
   titulo: string;
   tipo: TipoMidia;
   tipoConteudo: string;
@@ -68,7 +68,7 @@ export interface UsoArmazenamento {
   usadoBytes: number;
   cotaBytes: number;
   tamanhoMaximoArquivoBytes: number;
-  /** Mídias ativas agora e quantas o plano do parceiro permite. */
+  /** Mídias ativas agora e quantas o plano do cliente permite. */
   midiasAtivas: number;
   limiteMidiasAtivas: number;
 }

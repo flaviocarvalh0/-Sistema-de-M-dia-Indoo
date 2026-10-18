@@ -9,21 +9,21 @@ import { TIPO_QR_ROTULO } from '../configs/midia.config';
 import { formatarBytes, formatarData, formatarDuracao } from '../../../shared/models/indoor.util';
 
 /**
- * Mídias do parceiro.
+ * Mídias do cliente.
  *
- *  - GET  /api/v1/business/parceiro/midias?tipo=&ativo=
- *  - GET  /api/v1/business/parceiro/midias/armazenamento
- *  - GET  /api/v1/business/parceiro/midias/{id}            (traz urlVisualizacao)
- *  - POST /api/v1/business/parceiro/midias/envio            → { chave, urlEnvio, expiraEm }
- *  - POST /api/v1/business/parceiro/midias                  → id (depois do PUT no storage)
- *  - PUT  /api/v1/business/parceiro/midias/{id}             → nova versão
- *  - PUT  /api/v1/business/parceiro/midias/{id}/arquivo     → nova versão (troca o arquivo)
- *  - POST /api/v1/business/parceiro/midias/{id}/ativar|inativar?version=
- *  - DELETE /api/v1/business/parceiro/midias/{id}
+ *  - GET  /api/v1/business/cliente/midias?tipo=&ativo=
+ *  - GET  /api/v1/business/cliente/midias/armazenamento
+ *  - GET  /api/v1/business/cliente/midias/{id}            (traz urlVisualizacao)
+ *  - POST /api/v1/business/cliente/midias/envio            → { chave, urlEnvio, expiraEm }
+ *  - POST /api/v1/business/cliente/midias                  → id (depois do PUT no storage)
+ *  - PUT  /api/v1/business/cliente/midias/{id}             → nova versão
+ *  - PUT  /api/v1/business/cliente/midias/{id}/arquivo     → nova versão (troca o arquivo)
+ *  - POST /api/v1/business/cliente/midias/{id}/ativar|inativar?version=
+ *  - DELETE /api/v1/business/cliente/midias/{id}
  */
 @Injectable({ providedIn: 'root' })
 export class MidiaService extends CrudService<MidiaDto, number> {
-  protected readonly resource = 'api/v1/business/parceiro/midias';
+  protected readonly resource = 'api/v1/business/cliente/midias';
 
   /**
    * Cliente sem interceptors: o PUT vai direto para o storage (URL assinada),

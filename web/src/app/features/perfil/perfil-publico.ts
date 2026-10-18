@@ -3,8 +3,8 @@ import { Observable } from 'rxjs';
 import { CrudService, FormItemConfig, comErroLocal } from '@atlas/framework';
 
 /**
- * Perfil público do parceiro logado: o que aparece no diretório das TVs e o
- * aceite para aparecer (backend: Atlas.Application/Business/Parceiros/Perfil).
+ * Perfil público do cliente logado: o que aparece no diretório das TVs e o
+ * aceite para aparecer (backend: Atlas.Application/Business/Clientes/Perfil).
  */
 export interface PerfilPublicoDto {
   nome: string;
@@ -22,12 +22,12 @@ export interface PerfilPublicoDto {
 }
 
 /**
- *  - GET /api/v1/business/parceiro/perfil
- *  - PUT /api/v1/business/parceiro/perfil → nova versão
+ *  - GET /api/v1/business/cliente/perfil
+ *  - PUT /api/v1/business/cliente/perfil → nova versão
  */
 @Injectable({ providedIn: 'root' })
 export class PerfilPublicoService extends CrudService<PerfilPublicoDto, number> {
-  protected readonly resource = 'api/v1/business/parceiro/perfil';
+  protected readonly resource = 'api/v1/business/cliente/perfil';
 
   obter(): Observable<PerfilPublicoDto> {
     return this.http.get<PerfilPublicoDto>(this.baseUrl);

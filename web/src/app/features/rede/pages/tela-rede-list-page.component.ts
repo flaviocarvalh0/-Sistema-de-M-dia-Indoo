@@ -28,10 +28,10 @@ interface CodigoExibido {
 }
 
 /**
- * Telas da rede (operadora, dona do hardware): cadastro, estabelecimento
- * (host) e playlist de cada TV, pareamento por código e a situação da
- * conexão. O parceiro só acompanha, em Mídia Indoor → Onde meus anúncios
- * passam.
+ * Telas da rede (operadora, dona do hardware): cadastro, parceiro (o local
+ * onde a TV fica) e playlist de cada TV, pareamento por código e a situação
+ * da conexão. O cliente (anunciante) só acompanha, em Mídia Indoor → Onde
+ * meus anúncios passam.
  */
 @Component({
   selector: 'app-tela-rede-list-page',
@@ -210,7 +210,7 @@ export class TelaRedeListPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.parceiroService.listar({ pageIndex: 0, pageSize: 1000 }, null).subscribe(page =>
-      this.parceiros.set(page.content.map(p => ({ value: p.id, label: p.situacao === 'Bloqueado' ? `${p.nome} (bloqueado)` : p.nome }))));
+      this.parceiros.set(page.content.map(p => ({ value: p.id, label: p.ativo ? p.nome : `${p.nome} (inativo)` }))));
     this.playlistService.listarTodas().subscribe(lista =>
       this.playlists.set(lista.map(p => ({ value: p.id, label: p.ativo ? p.nome : `${p.nome} (inativa)` }))));
     this.carregar();

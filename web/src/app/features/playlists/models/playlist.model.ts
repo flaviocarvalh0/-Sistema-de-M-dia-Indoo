@@ -33,9 +33,9 @@ export interface ItemPlaylistDto {
   id: number;
   ordem: number;
   midiaId: number;
-  /** Parceiro anunciante dono da mídia. */
-  parceiroId: number;
-  parceiroNome: string;
+  /** Cliente anunciante dono da mídia. */
+  clienteId: number;
+  clienteNome: string;
   titulo: string;
   tipo: TipoMidia;
   duracaoSegundos: number;

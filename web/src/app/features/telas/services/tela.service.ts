@@ -6,14 +6,14 @@ import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util'
 
 /**
  * "Onde meus anúncios passam": as TVs ativas cuja playlist tem uma mídia
- * ativa do parceiro logado. Somente leitura (telas e grades são da operadora).
+ * ativa do cliente logado. Somente leitura (telas e grades são da operadora).
  *
- *  - GET /api/v1/business/parceiro/telas?searchTerm=
- *  - GET /api/v1/business/parceiro/telas/{id}
+ *  - GET /api/v1/business/cliente/telas?searchTerm=
+ *  - GET /api/v1/business/cliente/telas/{id}
  */
 @Injectable({ providedIn: 'root' })
 export class TelaService extends CrudService<TelaDto, number> {
-  protected readonly resource = 'api/v1/business/parceiro/telas';
+  protected readonly resource = 'api/v1/business/cliente/telas';
 
   listar(query: QueryParams): Observable<Page<LinhaTela>> {
     return this.http
@@ -43,7 +43,7 @@ export function tempoDesde(iso: string | null | undefined, agora = Date.now()): 
   return `há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
 }
 
-/** Colunas calculadas da grid, iguais na visão da operadora e do parceiro. */
+/** Colunas calculadas da grid, iguais na visão da operadora e do cliente. */
 export function paraLinhaTela(t: TelaDto): LinhaTela {
   return {
     ...t,

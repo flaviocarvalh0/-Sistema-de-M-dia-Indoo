@@ -6,7 +6,7 @@ import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util'
 import { formatarDuracao } from '../../../shared/models/indoor.util';
 
 /**
- * Playlists da rede, montadas pela operadora com as mídias dos parceiros
+ * Playlists da rede, montadas pela operadora com as mídias dos clientes
  * (reutilizáveis: uma playlist toca em N telas).
  *
  *  - GET  /api/v1/business/rede/playlists?ativo=

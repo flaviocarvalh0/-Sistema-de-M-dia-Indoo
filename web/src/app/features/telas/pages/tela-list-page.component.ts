@@ -11,7 +11,7 @@ const ENTIDADE = 'tela';
 
 /**
  * "Onde meus anúncios passam": somente leitura. Lista as TVs ativas cuja
- * playlist tem pelo menos uma mídia ativa do parceiro logado, com a conexão
+ * playlist tem pelo menos uma mídia ativa do cliente logado, com a conexão
  * de cada uma. Telas e grades são da operadora (Rede).
  */
 @Component({

@@ -27,7 +27,7 @@ import { formatarBytes } from '../../../shared/models/indoor.util';
             <li class="list-group-item" [attr.data-midia]="m.id">
               <div class="d-flex flex-wrap align-items-center gap-2">
                 <div class="me-auto">
-                  <strong>{{ m.titulo }}</strong> <span class="text-muted">· {{ m.parceiroNome }}</span>
+                  <strong>{{ m.titulo }}</strong> <span class="text-muted">· {{ m.clienteNome }}</span>
                   <div class="small text-muted">
                     Enviado {{ m.pendenteEnviadoEm | date:'dd/MM HH:mm' }} · {{ tamanho(m.pendenteTamanhoBytes) }}
                     · em {{ m.quantidadePlaylists }} playlist(s)

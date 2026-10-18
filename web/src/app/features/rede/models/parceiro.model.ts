@@ -1,30 +1,24 @@
 /**
- * Contratos da Rede (backend: Atlas.Application/Business/Rede/Parceiros).
- * Enums chegam como NOME (JsonStringEnumConverter).
+ * Parceiros: os locais onde a operadora instala as TVs (backend:
+ * Atlas.Application/Business/Rede/Parceiros). Não acessam o sistema; se o
+ * dono também anuncia, ele é cadastrado como cliente e ligado aqui.
  */
-export type SituacaoParceiro = 'Ativo' | 'Bloqueado';
-
 export interface ParceiroDto {
   id: number;
   nome: string;
   nomeResponsavel?: string | null;
-  email: string;
   telefone?: string | null;
+  email?: string | null;
   documento?: string | null;
+  endereco?: string | null;
   cidade?: string | null;
   fusoHorario: string;
-  cotaArmazenamentoMb: number;
-  armazenamentoUsadoBytes: number;
-  /** Quantas mídias o parceiro pode ter ativas ao mesmo tempo (plano). */
-  limiteMidiasAtivas: number;
-  midiasAtivas: number;
+  ativo: boolean;
+  observacao?: string | null;
+  /** Cadastro de cliente do dono do local, quando ele também anuncia. */
+  clienteId?: number | null;
+  clienteNome?: string | null;
   quantidadeTelas: number;
-  situacao: SituacaoParceiro;
-  /** Aceitou aparecer no diretório das TVs (decisão do próprio parceiro; aqui é só leitura). */
-  exibirNoDiretorioPublico: boolean;
-  diretorioAceitoEm?: string | null;
-  motivoBloqueio?: string | null;
-  observacaoInterna?: string | null;
   created: string;
   createdByName?: string | null;
   lastModified?: string | null;
@@ -32,5 +26,4 @@ export interface ParceiroDto {
   version: number;
 }
 
-/** Linha da grid: o DTO mais as colunas calculadas. */
-export type LinhaParceiro = ParceiroDto & { usoArmazenamento: string; usoMidiasAtivas: string; diretorio: string };
+export type LinhaParceiro = ParceiroDto & { anuncia: string };

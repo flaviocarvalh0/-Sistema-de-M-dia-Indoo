@@ -5,10 +5,10 @@ import { MidiaDto } from '../../midias/models/midia.model';
 import { paramsPaginacao } from '../../../shared/utils/paginacao.util';
 
 /**
- * Mídias de todos os parceiros, somente leitura, para a operadora montar as
+ * Mídias de todos os clientes, somente leitura, para a operadora montar as
  * grades (o criativo é do anunciante).
  *
- *  - GET /api/v1/business/rede/midias?parceiroId=&ativo=&tipo=&searchTerm=
+ *  - GET /api/v1/business/rede/midias?clienteId=&ativo=&tipo=&searchTerm=
  *  - GET /api/v1/business/rede/midias/{id}   (traz urlVisualizacao e urlVisualizacaoPendente)
  *  - POST /api/v1/business/rede/midias/{id}/aprovar-troca?version=
  *  - POST /api/v1/business/rede/midias/{id}/recusar-troca  { id, motivo, version }

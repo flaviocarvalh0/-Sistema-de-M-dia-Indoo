@@ -6,7 +6,7 @@ export const SITUACAO_TELA_BADGE: Record<string, string> = {
   Offline: 'bg-danger',
 };
 
-/** "Onde meus anúncios passam" (parceiro, somente leitura). */
+/** "Onde meus anúncios passam" (cliente, somente leitura). */
 export const TELA_COLUNAS: ColunaDef[] = [
   { campo: 'nome', titulo: 'Tela', principal: true, tipo: 'texto' },
   { campo: 'localizacao', titulo: 'Local', tipo: 'texto' },

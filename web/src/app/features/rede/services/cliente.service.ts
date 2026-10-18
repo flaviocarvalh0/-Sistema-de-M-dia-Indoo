@@ -1,0 +1,64 @@
+import { Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { CrudService, Page, PaginatedResponse, QueryParams, comErroLocal } from '@atlas/framework';
+import { LinhaCliente, ClienteDto, SituacaoCliente } from '../models/cliente.model';
+import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util';
+import { formatarBytes } from '../../../shared/models/indoor.util';
+
+/**
+ * Clientes da rede (operadora).
+ *
+ *  - GET  /api/v1/business/rede/clientes?situacao=
+ *  - GET  /api/v1/business/rede/clientes/{id}
+ *  - POST /api/v1/business/rede/clientes                 → id (cria o usuário do responsável)
+ *  - PUT  /api/v1/business/rede/clientes/{id}            → nova versão
+ *  - POST /api/v1/business/rede/clientes/{id}/bloquear | desbloquear
+ */
+@Injectable({ providedIn: 'root' })
+export class ClienteService extends CrudService<ClienteDto, number> {
+  protected readonly resource = 'api/v1/business/rede/clientes';
+
+  listar(query: QueryParams, situacao: SituacaoCliente | null): Observable<Page<LinhaCliente>> {
+    return this.http
+      .get<PaginatedResponse<ClienteDto>>(this.baseUrl, { params: paramsPaginacao(query, { situacao }) })
+      .pipe(
+        map(resp => paraPage(resp, query)),
+        map(page => ({
+          ...page,
+          content: page.content.map(p => ({
+            ...p,
+            usoArmazenamento: `${formatarBytes(p.armazenamentoUsadoBytes)} de ${p.cotaArmazenamentoMb} MB`,
+            usoMidiasAtivas: `${p.midiasAtivas} de ${p.limiteMidiasAtivas}`,
+            diretorio: p.exibirNoDiretorioPublico ? 'Aparece' : '—',
+          })),
+        })),
+      );
+  }
+
+  /** Sai de modal com `errosInline: true`: erro no banner do modal. */
+  salvar(id: number | null, valor: Partial<ClienteDto>, version?: number): Observable<unknown> {
+    const corpo = {
+      nome: valor.nome,
+      nomeResponsavel: valor.nomeResponsavel,
+      telefone: valor.telefone || null,
+      documento: valor.documento || null,
+      cidade: valor.cidade || null,
+      fusoHorario: valor.fusoHorario,
+      cotaArmazenamentoMb: Number(valor.cotaArmazenamentoMb),
+      limiteMidiasAtivas: Number(valor.limiteMidiasAtivas),
+      observacaoInterna: valor.observacaoInterna || null,
+    };
+
+    return id
+      ? this.http.put(`${this.baseUrl}/${id}`, { id, ...corpo, version }, { context: comErroLocal() })
+      : this.http.post(this.baseUrl, { ...corpo, email: valor.email }, { context: comErroLocal() });
+  }
+
+  bloquear(id: number, motivo: string, version: number): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/${id}/bloquear`, { id, motivo, version }, { context: comErroLocal() });
+  }
+
+  desbloquear(id: number, version: number): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/${id}/desbloquear`, { id, version });
+  }
+}

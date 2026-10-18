@@ -17,7 +17,7 @@ interface ItemEdicao {
   chave: number;
   id?: number;
   midiaId: number;
-  parceiroNome: string;
+  clienteNome: string;
   titulo: string;
   tipo: TipoMidia;
   duracaoSegundos: number;
@@ -31,7 +31,7 @@ let sequenciaChave = 0;
 
 /**
  * Grade da playlist, montada pela operadora com as mídias ativas de todos os
- * parceiros: a sequência do loop (arrastar para reordenar) e os dias da
+ * clientes: a sequência do loop (arrastar para reordenar) e os dias da
  * semana de cada item. A mesma mídia pode entrar mais de uma vez (o seletor
  * só avisa "já na grade"). Salva a grade inteira de uma vez
  * (`PUT {id}/itens`), com a versão para não sobrescrever edição concorrente.
@@ -87,19 +87,19 @@ let sequenciaChave = 0;
           <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
             <span class="small fw-semibold me-1">Adicionar mídia</span>
             <input type="search" class="form-control form-control-sm" style="max-width: 280px"
-                   placeholder="Buscar por título ou parceiro…" aria-label="Buscar mídia"
+                   placeholder="Buscar por título ou cliente…" aria-label="Buscar mídia"
                    [ngModel]="busca()" (ngModelChange)="busca.set($event)" />
-            <select class="form-select form-select-sm" style="max-width: 240px" aria-label="Filtrar por parceiro"
-                    [ngModel]="parceiroFiltro()" (ngModelChange)="parceiroFiltro.set($event)">
-              <option [ngValue]="null">Todos os parceiros</option>
-              @for (p of parceiros(); track p.id) {
+            <select class="form-select form-select-sm" style="max-width: 240px" aria-label="Filtrar por cliente"
+                    [ngModel]="clienteFiltro()" (ngModelChange)="clienteFiltro.set($event)">
+              <option [ngValue]="null">Todos os clientes</option>
+              @for (p of clientes(); track p.id) {
                 <option [ngValue]="p.id">{{ p.nome }}</option>
               }
             </select>
             <span class="small text-muted">Só mídias ativas entram na grade.</span>
           </div>
           @if (!midias().length && !carregando()) {
-            <div class="small text-muted">Nenhuma mídia ativa na rede — os parceiros enviam e ativam em Mídia Indoor → Mídias.</div>
+            <div class="small text-muted">Nenhuma mídia ativa na rede — os clientes enviam e ativam em Mídia Indoor → Mídias.</div>
           } @else if (!midiasFiltradas().length) {
             <div class="small text-muted">Nenhuma mídia ativa com esse filtro.</div>
           } @else {
@@ -109,8 +109,8 @@ let sequenciaChave = 0;
                   <i class="bi" [class.bi-camera-video]="m.tipo === 'Video'" [class.bi-image]="m.tipo === 'Imagem'"></i>
                   <div class="flex-grow-1" style="min-width: 200px">
                     <span class="fw-semibold">{{ m.titulo }}</span>
-                    <span class="small text-muted"> · {{ m.parceiroNome }} · {{ rotuloTipo(m.tipo) }}, {{ duracao(m.duracaoSegundos) }}</span>
-                    @if (m.parceiroBloqueado) { <span class="badge bg-danger ms-1">parceiro bloqueado</span> }
+                    <span class="small text-muted"> · {{ m.clienteNome }} · {{ rotuloTipo(m.tipo) }}, {{ duracao(m.duracaoSegundos) }}</span>
+                    @if (m.clienteBloqueado) { <span class="badge bg-danger ms-1">cliente bloqueado</span> }
                   </div>
                   @if (vezesNaGrade(m.id); as vezes) {
                     <span class="badge text-bg-info" [title]="'Esta mídia já está na grade ' + vezes + 'x'">Já adicionado ({{ vezes }}×)</span>
@@ -153,7 +153,7 @@ let sequenciaChave = 0;
                 <div class="fw-semibold">
                   <i class="bi me-1" [class.bi-camera-video]="item.tipo === 'Video'" [class.bi-image]="item.tipo === 'Imagem'"></i>
                   {{ item.titulo }}
-                  <span class="small text-muted fw-normal">· {{ item.parceiroNome }}</span>
+                  <span class="small text-muted fw-normal">· {{ item.clienteNome }}</span>
                   @if (!item.midiaAtiva) { <span class="badge bg-warning text-dark ms-1">mídia inativa</span> }
                 </div>
                 <div class="small text-muted">{{ duracao(item.duracaoSegundos) }} · {{ item.periodo }} · {{ descreverDias(item.diasSemana) }}</div>
@@ -211,21 +211,21 @@ export class GradePlaylistPageComponent implements OnInit {
   private original = signal('');
 
   busca = signal('');
-  parceiroFiltro = signal<number | null>(null);
+  clienteFiltro = signal<number | null>(null);
 
-  /** Parceiros que têm mídia ativa, para o filtro do seletor. */
-  parceiros = computed(() => {
+  /** Clientes que têm mídia ativa, para o filtro do seletor. */
+  clientes = computed(() => {
     const porId = new Map<number, string>();
-    for (const m of this.midias()) porId.set(m.parceiroId, m.parceiroNome);
+    for (const m of this.midias()) porId.set(m.clienteId, m.clienteNome);
     return [...porId].map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome));
   });
 
   midiasFiltradas = computed(() => {
     const termo = this.busca().trim().toLowerCase();
-    const parceiro = this.parceiroFiltro();
+    const cliente = this.clienteFiltro();
     return this.midias().filter(m =>
-      (parceiro == null || m.parceiroId === parceiro)
-      && (!termo || m.titulo.toLowerCase().includes(termo) || m.parceiroNome.toLowerCase().includes(termo)));
+      (cliente == null || m.clienteId === cliente)
+      && (!termo || m.titulo.toLowerCase().includes(termo) || m.clienteNome.toLowerCase().includes(termo)));
   });
 
   /** Quantas vezes cada mídia já aparece na grade em edição. */
@@ -266,7 +266,7 @@ export class GradePlaylistPageComponent implements OnInit {
       chave: ++sequenciaChave,
       midiaId: m.id,
       posicaoFixa: false,
-      parceiroNome: m.parceiroNome,
+      clienteNome: m.clienteNome,
       titulo: m.titulo,
       tipo: m.tipo,
       duracaoSegundos: m.duracaoSegundos,
@@ -375,7 +375,7 @@ export class GradePlaylistPageComponent implements OnInit {
       id: i.id,
       midiaId: i.midiaId,
       posicaoFixa: i.posicaoFixa,
-      parceiroNome: i.parceiroNome,
+      clienteNome: i.clienteNome,
       titulo: i.titulo,
       tipo: i.tipo,
       duracaoSegundos: i.duracaoSegundos,

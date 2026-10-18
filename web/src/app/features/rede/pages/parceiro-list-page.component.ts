@@ -1,19 +1,21 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import {
-  AcaoLinha, AtlasAuthService, ConfirmModalService, EventoFiltro, EventoPaginacao, FormItemConfig,
+  AcaoLinha, AtlasAuthService, CampoOption, ConfirmModalService, EventoFiltro, EventoPaginacao, FormItemConfig,
   FormModalService, ListagemDinamicaComponent, QueryParams, ToastService,
 } from '@atlas/framework';
 import { ParceiroService } from '../services/parceiro.service';
-import { LinhaParceiro, ParceiroDto, SituacaoParceiro } from '../models/parceiro.model';
-import { PARCEIRO_COLUNAS, criarCamposBloqueio, criarCamposParceiro } from '../configs/parceiro.config';
+import { ClienteService } from '../services/cliente.service';
+import { LinhaParceiro, ParceiroDto } from '../models/parceiro.model';
+import { PARCEIRO_COLUNAS, criarCamposParceiro } from '../configs/parceiro.config';
 import { preencherCampos } from '../../../shared/utils/form.util';
 
 /** Nome físico da tabela — chave do RBAC no front. */
 const ENTIDADE = 'parceiro';
 
 /**
- * Parceiros da rede (operadora). Cadastrar cria também o usuário do
- * responsável, que recebe a senha temporária por e-mail.
+ * Parceiros (operadora): os locais onde as TVs ficam. Não acessam o sistema;
+ * quem anuncia é cliente. O parceiro que também anuncia é ligado ao cadastro
+ * de cliente dele.
  */
 @Component({
   selector: 'app-parceiro-list-page',
@@ -24,16 +26,12 @@ const ENTIDADE = 'parceiro';
       <div class="btn-group btn-group-sm" role="group" aria-label="Filtrar por situação">
         @for (f of filtros; track f.rotulo) {
           <button type="button" class="btn"
-                  [class.btn-primary]="situacao() === f.valor"
-                  [class.btn-outline-primary]="situacao() !== f.valor"
-                  (click)="filtrarSituacao(f.valor)">{{ f.rotulo }}</button>
+                  [class.btn-primary]="ativo() === f.valor"
+                  [class.btn-outline-primary]="ativo() !== f.valor"
+                  (click)="filtrarAtivo(f.valor)">{{ f.rotulo }}</button>
         }
       </div>
-      @if (podeCriar) {
-        <button type="button" class="btn btn-sm btn-primary ms-auto" (click)="onNovo()">
-          <i class="bi bi-plus-lg me-1"></i>Novo parceiro
-        </button>
-      }
+      <span class="small text-muted ms-2">Os locais onde as TVs ficam. Eles não acessam o sistema: quem anuncia é cadastrado em Clientes.</span>
     </div>
 
     <atlas-listagem-dinamica
@@ -41,17 +39,18 @@ const ENTIDADE = 'parceiro';
       entityName="${ENTIDADE}"
       campoId="id"
       [autoInjetarId]="false"
-      mensagemVazio="Nenhum parceiro. Cadastre o primeiro para ele começar a usar as TVs."
+      mensagemVazio="Nenhum parceiro. Cadastre o estabelecimento onde a TV vai ficar e depois a tela em Rede → Telas."
       [itens]="itens()"
       [totalElementos]="total()"
       [colunas]="colunas"
       [carregando]="carregando()"
-      [mostrarExcluir]="false"
       [acoesLinha]="acoesLinha"
-      [mostrarNovo]="false"
+      (criarNovo)="onNovo()"
       (recarregar)="carregar()"
       (linhaClicada)="onEditar($event)"
       (editar)="onEditar($event)"
+      (excluir)="onExcluir($event)"
+      (clonar)="onCopiar($event)"
       (acaoLinha)="onAcaoLinha($event)"
       (onPaginationChange)="onPaginacao($event)"
       (onFilterChange)="onFiltro($event)">
@@ -60,48 +59,50 @@ const ENTIDADE = 'parceiro';
 })
 export class ParceiroListPageComponent implements OnInit {
   private service = inject(ParceiroService);
+  private clienteService = inject(ClienteService);
   private formModal = inject(FormModalService);
   private confirmModal = inject(ConfirmModalService);
   private toast = inject(ToastService);
   private atlasAuth = inject(AtlasAuthService);
 
   readonly colunas = PARCEIRO_COLUNAS;
-  /**
-   * O "Novo" da grid fica desligado porque ligá-lo liga também o "Clonar": o
-   * e-mail do responsável é único, então copiar parceiro não tem uso.
-   */
-  readonly podeCriar = this.atlasAuth.canCreateEntity(ENTIDADE);
-  readonly filtros: { rotulo: string; valor: SituacaoParceiro | null }[] = [
+  readonly filtros: { rotulo: string; valor: boolean | null }[] = [
     { rotulo: 'Todos', valor: null },
-    { rotulo: 'Ativos', valor: 'Ativo' },
-    { rotulo: 'Bloqueados', valor: 'Bloqueado' },
+    { rotulo: 'Ativos', valor: true },
+    { rotulo: 'Inativos', valor: false },
   ];
 
   itens = signal<LinhaParceiro[]>([]);
   total = signal(0);
   carregando = signal(false);
-  situacao = signal<SituacaoParceiro | null>(null);
+  ativo = signal<boolean | null>(null);
+  clientes = signal<CampoOption<number>[]>([]);
 
   private query: QueryParams = { pageIndex: 0, pageSize: 10 };
 
   acoesLinha: AcaoLinha[] = [
     {
-      id: 'bloquear', label: 'Bloquear', icone: 'bi bi-lock', classe: 'btn-outline-danger',
-      visivel: (p: LinhaParceiro) => p.situacao !== 'Bloqueado' && this.podeAtualizar(),
+      id: 'inativar', label: 'Inativar', icone: 'bi bi-pause-circle', classe: 'btn-outline-secondary',
+      visivel: (p: LinhaParceiro) => p.ativo && this.podeAtualizar(),
     },
     {
-      id: 'desbloquear', label: 'Desbloquear', icone: 'bi bi-unlock', classe: 'btn-outline-success',
-      visivel: (p: LinhaParceiro) => p.situacao === 'Bloqueado' && this.podeAtualizar(),
+      id: 'ativar', label: 'Ativar', icone: 'bi bi-play-circle', classe: 'btn-outline-success',
+      visivel: (p: LinhaParceiro) => !p.ativo && this.podeAtualizar(),
     },
   ];
 
   ngOnInit(): void {
     this.carregar();
+    // A lista de clientes só existe para quem pode vê-la (operadora).
+    if (this.atlasAuth.canViewEntity('cliente')) {
+      this.clienteService.listar({ pageIndex: 0, pageSize: 1000 }, null).subscribe(page =>
+        this.clientes.set(page.content.map(c => ({ value: c.id, label: c.situacao === 'Bloqueado' ? `${c.nome} (bloqueado)` : c.nome }))));
+    }
   }
 
   carregar(): void {
     this.carregando.set(true);
-    this.service.listar(this.query, this.situacao()).subscribe({
+    this.service.listar(this.query, this.ativo()).subscribe({
       next: page => {
         this.itens.set(page.content);
         this.total.set(page.totalElements);
@@ -111,8 +112,8 @@ export class ParceiroListPageComponent implements OnInit {
     });
   }
 
-  filtrarSituacao(valor: SituacaoParceiro | null): void {
-    this.situacao.set(valor);
+  filtrarAtivo(valor: boolean | null): void {
+    this.ativo.set(valor);
     this.query = { ...this.query, pageIndex: 0 };
     this.carregar();
   }
@@ -121,13 +122,19 @@ export class ParceiroListPageComponent implements OnInit {
   onFiltro(e: EventoFiltro): void { this.query = { ...this.query, search: e.busca, pageIndex: 0 }; this.carregar(); }
 
   onNovo(): void {
-    this.abrir(null, criarCamposParceiro(false));
+    this.abrir(null, criarCamposParceiro(this.clientes()));
+  }
+
+  /** "Clonar": outra unidade do mesmo dono (mesmo cliente, cidade e fuso). */
+  onCopiar(item: LinhaParceiro): void {
+    const base = { ...item, nome: `${item.nome} (cópia)`, endereco: null, observacao: null };
+    this.abrir(null, preencherCampos(criarCamposParceiro(this.clientes()), base));
   }
 
   onEditar(item: LinhaParceiro): void {
     this.service.getById(item.id).subscribe(parceiro => {
       const campos: FormItemConfig[] = [
-        { type: 'section', label: 'Cadastro', children: preencherCampos(criarCamposParceiro(true), parceiro) },
+        { type: 'section', label: 'Cadastro', children: preencherCampos(criarCamposParceiro(this.clientes()), parceiro) },
         {
           type: 'section', label: 'Histórico', children: [
             { type: 'history', name: 'historico', label: '', col: 'col-12', entityName: ENTIDADE },
@@ -139,8 +146,31 @@ export class ParceiroListPageComponent implements OnInit {
   }
 
   onAcaoLinha(ev: { acaoId: string; item: LinhaParceiro }): void {
-    if (ev.acaoId === 'bloquear') this.bloquear(ev.item);
-    if (ev.acaoId === 'desbloquear') this.desbloquear(ev.item);
+    if (ev.acaoId === 'inativar' || ev.acaoId === 'ativar') {
+      const ativo = ev.acaoId === 'ativar';
+      this.service.definirAtivo(ev.item.id, ativo, ev.item.version).subscribe(() => {
+        this.toast.success(ativo ? 'Parceiro ativado.' : 'Parceiro inativado: sai da lista ao cadastrar telas. As TVs dele seguem como estão.');
+        this.carregar();
+      });
+    }
+  }
+
+  onExcluir(p: LinhaParceiro): void {
+    this.confirmModal.confirm({
+      title: 'Excluir parceiro',
+      message: p.quantidadeTelas > 0
+        ? `"${p.nome}" tem ${p.quantidadeTelas} tela(s): mova ou exclua as telas antes, ou inative o parceiro.`
+        : `Excluir "${p.nome}"?`,
+      confirmText: 'Sim, excluir',
+      cancelText: 'Cancelar',
+      iconClass: 'bi bi-trash text-danger',
+    }).subscribe(ok => {
+      if (!ok) return;
+      this.service.excluir(p.id).subscribe(() => {
+        this.toast.success('Parceiro excluído.');
+        this.carregar();
+      });
+    });
   }
 
   private abrir(parceiro: ParceiroDto | null, campos: FormItemConfig[], abas = false): void {
@@ -153,46 +183,12 @@ export class ParceiroListPageComponent implements OnInit {
       tabbedSections: abas,
       largura: '760px',
       errosInline: true,
-      // Só "Salvar e fechar": a API devolve id/versão, não o registro.
       permitirContinuar: false,
       mostrarBotaoSalvarECopiar: false,
       registro: parceiro,
       persistir: (valor, atual) => this.service.salvar(atual?.id ?? null, valor, atual?.version),
-      msgSucesso: parceiro
-        ? 'Parceiro salvo.'
-        : 'Parceiro cadastrado. O responsável recebe a senha temporária por e-mail.',
+      msgSucesso: parceiro ? 'Parceiro salvo.' : 'Parceiro cadastrado. Agora cadastre a TV dele em Rede → Telas.',
     }).subscribe(res => { if (res?.recarregar || res?.acao === 'fechar' || res?.acao === 'copiar') this.carregar(); });
-  }
-
-  private bloquear(p: LinhaParceiro): void {
-    this.formModal.open({
-      titulo: `Bloquear ${p.nome}`,
-      campos: criarCamposBloqueio(),
-      largura: '560px',
-      errosInline: true,
-      registroIdExibicao: p.id,
-      mostrarBotaoSalvarECopiar: false,
-      permitirContinuar: false,
-      registro: p,
-      persistir: valor => this.service.bloquear(p.id, valor.motivo, p.version),
-      msgSucesso: 'Parceiro bloqueado.',
-    }).subscribe(res => { if (res?.recarregar || res?.acao === 'fechar') this.carregar(); });
-  }
-
-  private desbloquear(p: LinhaParceiro): void {
-    this.confirmModal.confirm({
-      title: 'Desbloquear parceiro',
-      message: `${p.nome} volta a ter acesso ao painel e as TVs voltam a receber a grade. Confirma?`,
-      confirmText: 'Sim, desbloquear',
-      cancelText: 'Cancelar',
-      iconClass: 'bi bi-unlock text-success',
-    }).subscribe(ok => {
-      if (!ok) return;
-      this.service.desbloquear(p.id, p.version).subscribe(() => {
-        this.toast.success('Parceiro desbloqueado.');
-        this.carregar();
-      });
-    });
   }
 
   private podeAtualizar(): boolean {

@@ -85,7 +85,7 @@ export const routes: Routes = [
       // tabela em kebab-case). Divergir disso faz o link do menu apontar para
       // uma URL que este arquivo não registra.
 
-      // Módulo "Mídia Indoor" (/indoor) — o painel do parceiro (anunciante):
+      // Módulo "Mídia Indoor" (/indoor) — o painel do cliente (anunciante):
       // as mídias dele e onde elas passam.
       {
         path: 'indoor',
@@ -118,12 +118,13 @@ export const routes: Routes = [
         ]
       },
 
-      // Módulo "Rede" (/rede) — a operadora: parceiros, telas (hardware),
+      // Módulo "Rede" (/rede) — a operadora: parceiros (locais), clientes, telas (hardware),
       // playlists (as grades da rede) e fontes de notícias.
       {
         path: 'rede',
         children: [
           {
+            // Locais das TVs (não acessam o sistema).
             path: 'parceiro',
             canActivate: [atlasPermissionGuard],
             data: { entity: 'parceiro', action: 'View' },
@@ -132,8 +133,17 @@ export const routes: Routes = [
                 .then(m => m.ParceiroListPageComponent)
           },
           {
+            // Anunciantes: têm acesso ao painel (módulo Mídia Indoor).
+            path: 'cliente',
+            canActivate: [atlasPermissionGuard],
+            data: { entity: 'cliente', action: 'View' },
+            loadComponent: () =>
+              import('./features/rede/pages/cliente-list-page.component')
+                .then(m => m.ClienteListPageComponent)
+          },
+          {
             // Telas da rede: a operadora é dona do hardware. A mesma entidade
-            // aparece somente leitura para o parceiro em /indoor/tela.
+            // aparece somente leitura para o cliente em /indoor/tela.
             path: 'tela',
             canActivate: [atlasPermissionGuard],
             data: { entity: 'tela', action: 'Create' },
@@ -151,7 +161,7 @@ export const routes: Routes = [
                 .then(m => m.VersoesAppPageComponent)
           },
           {
-            // Grades da rede: a operadora monta com as mídias dos parceiros.
+            // Grades da rede: a operadora monta com as mídias dos clientes.
             path: 'playlist',
             canActivate: [atlasPermissionGuard],
             data: { entity: 'playlist', action: 'View' },
