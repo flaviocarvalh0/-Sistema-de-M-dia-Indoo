@@ -61,6 +61,14 @@ void main() {
       expect(qr.tamanho, TamanhoQrCode.pequeno);
     });
 
+    test('o convite para anunciar vem junto e vai para o QR', () {
+      final diretorio = DiretorioTv.fromJson({'url': 'https://tv.rede.test/d/X', 'legenda': 'Anunciantes', 'convite': 'Quer anunciar aqui?'});
+      expect(diretorio.qrCode.convite, 'Quer anunciar aqui?');
+      expect(DiretorioTv.fromJson(diretorio.toJson()).convite, diretorio.convite, reason: 'sobrevive ao banco local');
+      expect(DiretorioTv.fromJson({'url': 'https://tv.rede.test/d/X', 'convite': ' '}).convite, isNull);
+      expect(DiretorioTv.fromJson({'url': 'https://tv.rede.test/d/X'}).qrCode.convite, isNull);
+    });
+
     test('ausente (desligado ou API antiga) fica nulo', () {
       final resposta = RespostaSincronizacao.fromJson({
         'alterada': false, 'versaoGrade': 'v', 'fusoHorario': 'America/Manaus', 'intervaloSincronizacaoSegundos': 60, 'nomeTela': 'Balcão',
@@ -163,6 +171,18 @@ void main() {
       final canto = tester.getTopLeft(find.byKey(const ValueKey('qr-code-anuncio')));
       expect(canto.dx, closeTo(1080 * 0.03, 0.5));
       expect(canto.dy, closeTo(1080 * 0.03, 0.5));
+    });
+
+    testWidgets('o QR do diretório mostra o convite embaixo da legenda', (tester) async {
+      await mostrar(tester, const Size(1920, 1080), const QrCodeAnuncio(
+          conteudo: 'https://tv.rede.test/d/X', legenda: 'Contatos dos anunciantes', tamanho: TamanhoQrCode.pequeno,
+          convite: 'Quer anunciar aqui?'));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Contatos dos anunciantes'), findsOneWidget);
+      expect(find.byKey(const ValueKey('qr-convite')), findsOneWidget);
+      expect(tester.getTopLeft(find.byKey(const ValueKey('qr-convite'))).dy,
+          greaterThan(tester.getTopLeft(find.text('Contatos dos anunciantes')).dy));
     });
 
     testWidgets('inferior direito encosta no canto de baixo', (tester) async {

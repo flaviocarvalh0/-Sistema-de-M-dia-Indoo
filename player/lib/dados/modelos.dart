@@ -142,6 +142,7 @@ class QrCodeAnuncio {
     required this.legenda,
     this.posicao = PosicaoQrCode.inferiorDireito,
     this.tamanho = TamanhoQrCode.medio,
+    this.convite,
   });
 
   factory QrCodeAnuncio.fromJson(Map<String, dynamic> json) => QrCodeAnuncio(
@@ -155,6 +156,10 @@ class QrCodeAnuncio {
   final String legenda;
   final PosicaoQrCode posicao;
   final TamanhoQrCode tamanho;
+
+  /// Linha de destaque embaixo da legenda ("Quer anunciar aqui?"). Só no QR
+  /// do diretório; nos anúncios fica nulo.
+  final String? convite;
 
   /// A API manda o nome com inicial maiúscula (`InferiorDireito`).
   static T? _enum<T extends Enum>(List<T> valores, Object? nome) {
@@ -455,21 +460,26 @@ class AtualizacaoApp implements ArquivoRemoto {
 /// QR code fixo do diretório de anunciantes da TV (ADR-018): a página
 /// pública com os contatos dos anunciantes que aceitaram aparecer.
 class DiretorioTv {
-  const DiretorioTv({required this.url, this.legenda = 'Contatos dos anunciantes'});
+  const DiretorioTv({required this.url, this.legenda = 'Contatos dos anunciantes', this.convite});
 
   factory DiretorioTv.fromJson(Map<String, dynamic> json) => DiretorioTv(
         url: json['url'] as String,
         legenda: json['legenda'] as String? ?? 'Contatos dos anunciantes',
+        convite: (json['convite'] as String?)?.trim().isEmpty ?? true ? null : (json['convite'] as String).trim(),
       );
 
   final String url;
   final String legenda;
 
+  /// "Quer anunciar aqui?" quando a operadora cadastrou o
+  /// contato (a página que o QR abre tem o botão); nulo = sem convite.
+  final String? convite;
+
   /// No canto inferior direito, pequeno: fica fora do relógio (em cima) e
   /// some quando o anúncio tem QR code próprio.
-  QrCodeAnuncio get qrCode => QrCodeAnuncio(conteudo: url, legenda: legenda, tamanho: TamanhoQrCode.pequeno);
+  QrCodeAnuncio get qrCode => QrCodeAnuncio(conteudo: url, legenda: legenda, tamanho: TamanhoQrCode.pequeno, convite: convite);
 
-  Map<String, dynamic> toJson() => {'url': url, 'legenda': legenda};
+  Map<String, dynamic> toJson() => {'url': url, 'legenda': legenda, if (convite != null) 'convite': convite};
 }
 
 /// Resposta de `GET /sincronizacao`.
