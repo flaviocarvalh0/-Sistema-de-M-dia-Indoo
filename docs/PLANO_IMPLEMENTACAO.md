@@ -349,7 +349,22 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   no painel do cliente e da operadora, com "Copiar resumo para o WhatsApp".
 - [ ] Detectar TV desligada ou na entrada errada (HDMI-CEC / captura de tela) —
   até lá, o relatório avisa que não mede isso.
-- [ ] Heartbeat de reprodução com alerta "sincroniza mas não exibe" e
-  verificação do relógio da TV.
+- [x] Heartbeat de reprodução com alerta "sincroniza mas não exibe" e
+  verificação do relógio da TV
+  ([ADR-024](../api/docs/decisions/ADR-024-Heartbeat-de-Reproducao.md)).
 - [ ] Validar numa TV real: exibições sobem depois de uma queda de internet.
 
+### Cloudflare R2 e teto de 10 GB ✅
+
+- [x] `ArmazenamentoR2` pela API S3, com SigV4 próprio conferido com os exemplos
+  da AWS; R2 tem prioridade sobre o Supabase
+  ([ADR-025](../api/docs/decisions/ADR-025-Cloudflare-R2-e-Teto-de-Armazenamento.md)).
+- [x] Teto da rede (padrão 9 GB, máximo 10 GB): reserva antes da URL, tamanho e
+  tipo assinados, conferência no recebimento.
+- [x] Inventário de hora em hora: uso real do bucket, órfãos apagados (com
+  salvaguarda), alertas a 70/85/95%.
+- [x] Barra "Armazenamento da rede" em Rede → Clientes.
+- [x] Cópia Supabase → R2 na subida (`CopiarDoSupabase`).
+- [ ] Criar a conta e o bucket na Cloudflare e rodar o teste de contrato
+  (`INDOOR_R2_*`).
+- [ ] Backup do PostgreSQL (aguardando servidor na nuvem).

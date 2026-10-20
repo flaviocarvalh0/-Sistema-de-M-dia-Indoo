@@ -34,20 +34,22 @@ Pré-requisitos: .NET SDK 9 e PostgreSQL.
    módulos, os menus e os grupos `Operadora` e `Cliente`.
 5. **Configuração:** `Indoor:UrlPainel` no appsettings é o endereço do painel
    usado nos e-mails de boas-vindas.
-6. **Storage das mídias (Supabase):** crie um projeto em
-   [supabase.com](https://supabase.com) (plano gratuito) e, em
-   *Project Settings → API*, copie a URL do projeto e a chave `service_role`.
-   A chave é segredo (ADR-008):
+6. **Storage das mídias (Cloudflare R2, ADR-025):** crie um bucket privado
+   `midias` no R2 e um token com **Object Read & Write** só nele. O segredo é
+   segredo (ADR-008):
 
    ```powershell
-   dotnet user-secrets set "Indoor:Armazenamento:Supabase:Url" "https://<projeto>.supabase.co" --project src/Atlas.Web
-   dotnet user-secrets set "Indoor:Armazenamento:Supabase:ChaveServico" "<service_role>" --project src/Atlas.Web
+   dotnet user-secrets set "Indoor:Armazenamento:R2:Conta" "<Account ID>" --project src/Atlas.Web
+   dotnet user-secrets set "Indoor:Armazenamento:R2:ChaveAcesso" "<Access Key ID>" --project src/Atlas.Web
+   dotnet user-secrets set "Indoor:Armazenamento:R2:SegredoAcesso" "<Secret Access Key>" --project src/Atlas.Web
    ```
 
-   Na subida, a API cria o bucket privado `midias` (50 MB por arquivo; MP4,
-   JPEG e PNG). Sem essas chaves a API sobe normalmente e só o envio de mídia
-   responde 503 com a explicação. Nos servidores, use as variáveis
-   `Indoor__Armazenamento__Supabase__Url` e `Indoor__Armazenamento__Supabase__ChaveServico`.
+   O storage da rede inteira tem teto: `Indoor:Armazenamento:LimiteTotalMb`
+   (padrão 9216, nunca acima de 10240 — os 10 GB gratuitos do R2). Envio que
+   não cabe é recusado antes de sair a URL. O Supabase continua suportado
+   (`Indoor:Armazenamento:Supabase:Url` e `:ChaveServico`) e é usado só sem o
+   R2. Sem nenhum, a API sobe e só o envio de mídia responde 503. Nos
+   servidores, use as variáveis `Indoor__Armazenamento__R2__…`.
 
 ### Testes
 
@@ -59,7 +61,10 @@ dotnet test tests/Atlas.Infrastructure.IntegrationTests
 O teste de contrato do storage (`ArmazenamentoSupabaseContratoTests`) só roda
 com `INDOOR_SUPABASE_URL` e `INDOOR_SUPABASE_CHAVE_SERVICO` definidas (bucket
 `midias-testes`, ou `INDOOR_SUPABASE_BUCKET`): envia, confere, baixa e apaga
-um arquivo de verdade.
+um arquivo de verdade. O do R2 (`ArmazenamentoR2ContratoTests`) roda com
+`INDOOR_R2_CONTA`, `INDOOR_R2_CHAVE` e `INDOOR_R2_SEGREDO` (bucket
+`midias-testes`, ou `INDOOR_R2_BUCKET`) e confere também que o R2 recusa
+arquivo maior que o declarado.
 
 Os de integração usam o banco **`Indoor_Testes`** — nunca o de
 desenvolvimento, porque apagam objetos de histórico de propósito. Prepare uma

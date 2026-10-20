@@ -44,6 +44,18 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 | `versaoApp` | Aparece no painel. |
 | `versaoCodigoApp` | O `versionCode` do app instalado (o `+N` do pubspec). Liga a atualização automática (ADR-021); sem ele, `atualizacao` vem sempre nulo. |
 | `itensProntos` | Quantas mídias estão baixadas e conferidas (aparece no painel). |
+| `reproducao` | Heartbeat (ADR-024): `Anuncio`, `Informativo` ou `Espera` — o que está na tela agora. |
+| `reproducaoDesde` | ISO 8601, relógio da TV: quando o item atual entrou na tela. |
+| `duracaoItem` | Duração prevista do item atual, em segundos. |
+| `midiaAtual` | Id da mídia na tela (anúncio). |
+| `primeiroPlano` | `true` se o app está visível. `false` (alguém apertou Home) conta como fora de exibição. |
+| `itensHoje` | Quantos anúncios valem para hoje. Em `Espera` com `itensHoje > 0`, a TV deveria estar exibindo. |
+| `relogio` | ISO 8601, a hora da TV agora. A API compara com a dela (relógio errado) e mede o tempo na tela pelo relógio da TV. |
+
+Os campos do heartbeat só valem juntos (`reproducao`, `reproducaoDesde` e
+`relogio` no mínimo). Com motivo por 10 min seguidos (app fora da tela, item
+na tela há mais que a duração + 2 min, ou espera com anúncios), o painel mostra
+**Fora de exibição** e a operadora recebe o alerta.
 
 `200`:
 

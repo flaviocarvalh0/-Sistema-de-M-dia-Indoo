@@ -34,6 +34,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Plano (mídias ativas) | Quantas mídias o cliente pode ter ativas ao mesmo tempo (padrão 1). Reduzir não inativa nada: só impede ativar novas |
 | Bloquear / desbloquear | Com motivo. Bloqueado, o cliente perde o painel e as mídias dele saem das grades na próxima sincronização |
 | Lista | Situação, TVs com anúncio dele, mídias ativas (x de y), espaço usado/cota; filtro por situação; histórico de alterações |
+| Armazenamento da rede | Barra acima da lista: usado, em envio e o teto (no máximo os 10 GB gratuitos do R2), última medição do bucket e arquivos sem dono apagados. E-mail à operadora a 70%, 85% e 95%. Acima do teto, novos envios são recusados (ADR-025) |
 
 ## Mídias (cliente)
 
@@ -96,6 +97,7 @@ escolhe a playlist.
 | Lista da rede | Todas as TVs, com parceiro, playlist e conexão; filtro por parceiro e situação; busca por nome, parceiro, local ou aparelho |
 | Código de pareamento | 8 caracteres, válido por 24 h, uso único; exibido em destaque com contagem regressiva |
 | Conexão | Aguardando pareamento, Online ou Offline (sem sincronizar há 5 min); a lista atualiza a cada minuto |
+| Fora de exibição | Sincroniza mas não exibe há 10 min: app fora da tela, vídeo travado ou "aguardando" com anúncios para hoje. Coluna **Atenção** com o motivo e o aviso de relógio errado (mais de 5 min de diferença). E-mail à operadora, como na queda (ADR-024) |
 | Parear outra TV | Gera um código novo; a TV atual continua até a nova parear |
 | Desvincular TV | A TV perde o acesso na próxima sincronização e a tela volta a aguardar pareamento |
 | Trocar parceiro ou playlist | Vale na próxima sincronização; a TV continua pareada |

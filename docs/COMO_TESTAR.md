@@ -27,9 +27,20 @@ cd api
 dotnet user-secrets set "ConnectionStrings:AtlasDb" "Host=localhost;Port=5432;Database=Indoor;Username=postgres;Password=<SENHA>" --project src/Atlas.Web
 dotnet user-secrets set "Jwt:Key" "<uma frase longa e aleatória, 64+ caracteres>" --project src/Atlas.Web
 dotnet user-secrets set "PlatformSettings:InitialAdminPassword" "Temp@12345" --project src/Atlas.Web
-dotnet user-secrets set "Indoor:Armazenamento:Supabase:Url" "https://<projeto>.supabase.co" --project src/Atlas.Web
-dotnet user-secrets set "Indoor:Armazenamento:Supabase:ChaveServico" "<chave secreta do Supabase>" --project src/Atlas.Web
+# Storage: Cloudflare R2 (ADR-025). Token só com "Object Read & Write" no bucket.
+dotnet user-secrets set "Indoor:Armazenamento:R2:Conta" "<Account ID>" --project src/Atlas.Web
+dotnet user-secrets set "Indoor:Armazenamento:R2:ChaveAcesso" "<Access Key ID>" --project src/Atlas.Web
+dotnet user-secrets set "Indoor:Armazenamento:R2:SegredoAcesso" "<Secret Access Key>" --project src/Atlas.Web
 ```
+
+Ainda no Supabase? Use `Indoor:Armazenamento:Supabase:Url` e
+`Indoor:Armazenamento:Supabase:ChaveServico` no lugar das três do R2. Com os
+dois e `Indoor:Armazenamento:CopiarDoSupabase` = `true`, a subida copia tudo
+para o R2 (ver `IMPLANTACAO.md`, 2.7).
+
+No R2, libere o CORS do bucket para `http://localhost:4200` (a API tenta na
+subida; se o token não puder, o log avisa e mostra como fazer no painel da
+Cloudflare).
 
 ## 4. Banco
 
@@ -129,6 +140,16 @@ arquivo no bucket `midias-testes`):
 $env:INDOOR_SUPABASE_URL = "https://<projeto>.supabase.co"
 $env:INDOOR_SUPABASE_CHAVE_SERVICO = "<chave secreta>"
 dotnet test tests/Atlas.Infrastructure.IntegrationTests --filter "FullyQualifiedName~Contrato"
+```
+
+E contra o Cloudflare R2 (use um bucket de testes, `midias-testes` por padrão;
+confere também que o R2 recusa arquivo maior que o declarado):
+
+```powershell
+$env:INDOOR_R2_CONTA = "<Account ID>"
+$env:INDOOR_R2_CHAVE = "<Access Key ID>"
+$env:INDOOR_R2_SEGREDO = "<Secret Access Key>"
+dotnet test tests/Atlas.Infrastructure.IntegrationTests --filter "FullyQualifiedName~ArmazenamentoR2Contrato"
 ```
 
 ## 7. Painel (`web/`)

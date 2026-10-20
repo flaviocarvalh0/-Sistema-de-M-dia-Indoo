@@ -8,9 +8,9 @@ Para rodar na sua máquina, veja [COMO_TESTAR.md](COMO_TESTAR.md).
 ```text
   Navegador (painel)  ──https──►  API (.NET 9)  ──►  PostgreSQL
         │                            │
-        │ PUT direto (URL assinada)  │ chave service_role
+        │ PUT direto (URL assinada)  │ token do R2 (só o bucket)
         ▼                            ▼
-              Supabase Storage (bucket privado "midias")
+              Cloudflare R2 (bucket privado "midias", teto de 10 GB)
                              ▲
   TVs (app Android) ──https──┘ download (URL assinada, 24 h)
          └──────────https──────────►  API  (pareamento e sincronização)
@@ -45,12 +45,17 @@ O login do painel usa cookie `Secure` com `SameSite=None`. No mesmo domínio
   - HTTPS com certificado válido. As TVs em release recusam certificado
     inválido.
 - **PostgreSQL 14+**, com um banco e um usuário próprios.
-- **Projeto no Supabase:**
-  - Anote a URL do projeto e a chave `service_role` (em Project Settings →
-    API).
-  - No plano gratuito são 1 GB de storage e 50 MB por arquivo.
-  - O plano gratuito **pausa o projeto depois de 7 dias sem uso**. Para
-    produção, avalie o plano pago.
+- **Storage: Cloudflare R2** (recomendado, ADR-025):
+  - Crie um bucket privado `midias` em *R2 Object Storage*. Anote o **Account
+    ID** (lado direito do painel do R2).
+  - Em *Manage R2 API Tokens*, crie um token com **Object Read & Write** e
+    escopo **só no bucket `midias`**. Anote o *Access Key ID* e o *Secret
+    Access Key* (aparece uma vez).
+  - Gratuito: **10 GB**, sem taxa de saída. A API nunca passa do teto
+    configurado (padrão 9 GB, máximo 10 GB). Como garantia extra, ligue um
+    alerta de cobrança na conta da Cloudflare (*Billing → Notifications*).
+- **Ou Supabase** (o storage antigo): URL do projeto e chave `service_role`.
+  Gratuito: 1 GB, e o projeto **pausa depois de 7 dias sem uso**.
 - **Servidor do painel:** IIS com o módulo **URL Rewrite**. O `web.config`
   usa rewrite para as rotas do Angular.
 - **Máquina de build do painel:** o `atlas-framework` precisa estar clonado e
@@ -80,8 +85,14 @@ Linux, use o `Environment=` do serviço systemd.
 | `PlatformSettings__InitialAdminPassword` | 1ª subida | Senha inicial do `admin` (ver 2.4) |
 | `Indoor__UrlPainel` | sim | `https://painel.suaempresa.com.br`. Vai nos e-mails e é a origem liberada no CORS |
 | `Indoor__UrlPublica` | para o diretório e o QR rastreado | Endereço HTTPS da API na internet, ex.: `https://tv.suaempresa.com.br`. Base do QR code do diretório (`/d/{codigo}`) e do QR rastreado dos anúncios (`/q/{codigo}`). Vazio: as TVs não mostram o QR do diretório, os QR dos anúncios vão direto ao destino e as leituras não são contadas |
-| `Indoor__Armazenamento__Supabase__Url` | sim | `https://<projeto>.supabase.co` |
-| `Indoor__Armazenamento__Supabase__ChaveServico` | sim | Chave `service_role`. **Segredo crítico**: nunca no painel nem nas TVs |
+| `Indoor__Armazenamento__R2__Conta` | sim (R2) | Account ID da Cloudflare |
+| `Indoor__Armazenamento__R2__ChaveAcesso` | sim (R2) | Access Key ID do token do bucket |
+| `Indoor__Armazenamento__R2__SegredoAcesso` | sim (R2) | Secret Access Key. **Segredo crítico**: nunca no painel nem nas TVs |
+| `Indoor__Armazenamento__R2__Bucket` | não | Padrão `midias` |
+| `Indoor__Armazenamento__LimiteTotalMb` | não | Teto do storage da rede. Padrão `9216` (9 GB); valores acima de `10240` viram 10 GB. Acima do teto, envios são recusados |
+| `Indoor__Armazenamento__Supabase__Url` | sem R2 | `https://<projeto>.supabase.co` |
+| `Indoor__Armazenamento__Supabase__ChaveServico` | sem R2 | Chave `service_role`. **Segredo crítico** |
+| `Indoor__Armazenamento__CopiarDoSupabase` | migração | `true` com R2 **e** Supabase configurados: na subida, copia para o R2 o que só está no Supabase (ver 2.7) |
 | `Indoor__ProxiesConfiaveis__0` | atrás de proxy | IP do proxy reverso (ex.: `127.0.0.1` com nginx na mesma máquina). Sem ele, os limites por IP (pareamento e diretório) veem só o IP do proxy. No IIS *in-process* não é necessário |
 | `Indoor__Dispositivo__IntervaloSincronizacaoSegundos` | não | Padrão `60` (mínimo 30). A TV aparece Offline depois de 5 min sem sincronizar |
 | `Indoor__Dispositivo__ValidadeTokenDias` | não | Padrão `30` |
@@ -94,8 +105,9 @@ Linux, use o `Environment=` do serviço systemd.
 | `Indoor__Alertas__TvOfflineMinutos` | não | Padrão `15`. Minutos sem sincronizar até o alerta |
 | `Indoor__Alertas__HoraInicio` / `Indoor__Alertas__HoraFim` | não | Padrão `7` e `22`. Só alerta nesse horário, no fuso do estabelecimento |
 
-Sem a configuração do Supabase a API sobe, mas as rotas de mídia respondem
-503.
+Com o R2 configurado, ele é o storage (mesmo com o Supabase também
+configurado). Sem nenhum dos dois, a API sobe, mas as rotas de mídia
+respondem 503.
 
 **Saída para a internet:** a API lê os feeds de notícias (ex.:
 `agenciabrasil.ebc.com.br`), abre as páginas das notícias para achar a foto
@@ -148,8 +160,29 @@ grupo.
 ### 2.6 Conferir
 
 - `https://api.suaempresa.com.br/scalar` abre a documentação da API.
-- No Supabase, em *Storage*, aparece o bucket privado `midias`. Ele é criado
-  na subida.
+- No log da subida: `CORS do bucket R2 liberado para https://painel...`. Se
+  aparecer o aviso de CORS (o token não administra o bucket), configure no
+  painel da Cloudflare, em *R2 → midias → Settings → CORS Policy*:
+
+  ```json
+  [{ "AllowedOrigins": ["https://painel.suaempresa.com.br"],
+     "AllowedMethods": ["PUT", "GET", "HEAD"], "AllowedHeaders": ["*"], "MaxAgeSeconds": 3600 }]
+  ```
+
+- No painel, **Rede → Clientes** mostra a barra **Armazenamento da rede**. Uma
+  hora depois da subida, ela mostra "Bucket medido" (o inventário).
+- Com Supabase: em *Storage* aparece o bucket privado `midias`, criado na subida.
+
+### 2.7 Migrar do Supabase para o R2
+
+1. Configure as variáveis do R2 **sem** tirar as do Supabase e ponha
+   `Indoor__Armazenamento__CopiarDoSupabase=true`.
+2. Reinicie a API. No log: `Cópia do Supabase para o R2: N copiado(s)...`. Se
+   parar no meio, reinicie: ela continua do que falta. Se o total passar do
+   teto, nada é copiado (o log diz quanto falta liberar).
+3. Confira no painel uma mídia tocando numa TV (a TV baixa de novo pelo R2 na
+   próxima sincronização sem `versaoGrade`, ou quando a URL de 24 h vencer).
+4. Tire `CopiarDoSupabase` e as variáveis do Supabase e reinicie.
 
 ## 3. Painel (web)
 
@@ -274,9 +307,11 @@ aviso da página: precisam de uma instalação manual (4.2), uma vez.
       **Diretório de anunciantes** em Rede → Telas e leia o QR code.
 - [ ] Admin e ícones criados (2.4) e `studio-indoor.sql` aplicado (2.5).
 - [ ] SMTP configurado e testado.
-- [ ] Bucket `midias` privado no Supabase. Chave `service_role` só na API.
-- [ ] Backup do PostgreSQL agendado. As mídias ficam no Supabase, fora do
-      backup do banco.
+- [ ] Bucket `midias` privado no R2, token só com "Object Read & Write" nele,
+      segredo só na API. Alerta de cobrança ligado na Cloudflare.
+- [ ] Barra **Armazenamento da rede** em Rede → Clientes abaixo de 70%.
+- [ ] Backup do PostgreSQL agendado. As mídias ficam no R2, fora do backup do
+      banco.
 - [ ] APK assinado com chave própria e guardada em lugar seguro.
 - [ ] `Indoor:Alertas:Emails` com o e-mail da operadora; desligar uma TV de
       teste e receber o alerta (15 min) e o "de volta ao ar".
@@ -296,10 +331,14 @@ aviso da página: precisam de uma instalação manual (4.2), uma vez.
 - **Documentação da API exposta:** a plataforma publica `/scalar` e
   `/openapi` em qualquer ambiente. Se não quiser expor, bloqueie esses
   caminhos no proxy ou no IIS.
-- **Plano gratuito do Supabase:** o limite é 1 GB no total. A cota de cada
-  cliente é definida no cadastro (padrão 200 MB). Some as cotas antes de
-  prometer espaço. As imagens das notícias também ficam no bucket (até 30
-  por fonte, em `noticias/`).
+- **Teto do storage (ADR-025):** a rede inteira cabe em
+  `Indoor:Armazenamento:LimiteTotalMb` (padrão 9 GB, nunca mais que os 10 GB
+  gratuitos do R2). A cota de cada cliente é definida no cadastro (padrão
+  200 MB); a soma das cotas pode passar do teto, mas o teto é o que vale:
+  envio que não cabe é recusado. A operadora recebe e-mail a 70%, 85% e 95%.
+  As imagens das notícias também ficam no bucket (até 30 por fonte, em
+  `noticias/`) e param de ser baixadas a 90% do teto. Arquivos sem dono há
+  mais de 6 h são apagados de hora em hora.
 - **Licença das notícias:** a Agência Brasil (CC BY) exige o crédito, que a
   TV mostra. Outras fontes só com licença para exibição pública.
 - **Clima:** usa a cidade do cadastro do estabelecimento. Para cidades com

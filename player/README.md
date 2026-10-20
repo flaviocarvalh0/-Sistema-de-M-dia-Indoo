@@ -164,7 +164,7 @@ nova, reaproveitamento de arquivos, hash errado, URL vencida, 401/403, sem
 rede, renovação de token e pareamento.
 
 Teste de ponta a ponta contra a API rodando (pareia, sincroniza e baixa do
-Supabase):
+storage):
 
 ```powershell
 $env:INDOOR_API_URL = "https://localhost:7216"
