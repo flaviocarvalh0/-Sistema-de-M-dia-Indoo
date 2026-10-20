@@ -76,6 +76,22 @@ public class DiretorioTests : IDisposable
     }
 
     [Fact]
+    public async Task Diretorio_ComContatoDaOperadoraTemOBotaoAnuncieComOLocal()
+    {
+        await Grade(Array.Empty<Midia>());
+
+        var semContato = await Consultar();
+        var comContato = await new GetDiretorioPublicoQueryHandler(_context, _relogio, new ConfiguracaoIndoorFake { WhatsAppAnuncie = "5592999990000" })
+            .Handle(new GetDiretorioPublicoQuery(Codigo), CancellationToken.None);
+
+        semContato.LinkAnuncie.Should().BeNull();
+        comContato.LinkAnuncie.Should().Be("https://wa.me/5592999990000?text=" + Uri.EscapeDataString("Olá! Vi a TV no Café Central e quero saber como anunciar."));
+        PaginaDiretorio.Renderizar(comContato, "n").Should().Contain("Quer anunciar aqui?").And.Contain("Clique aqui e fale com a gente")
+            .And.Contain("href=\"https://wa.me/5592999990000?text=");
+        PaginaDiretorio.Renderizar(semContato, "n").Should().NotContain("Quer anunciar aqui?");
+    }
+
+    [Fact]
     public async Task Diretorio_HostSemAceiteNaoAparece()
     {
         var loja = Anunciante("Loja", aceitou: true);

@@ -634,6 +634,10 @@ public class DispositivoTests : IDisposable
 
         var semUrlPublica = await Sincronizar(credencial, new GetSincronizacaoQuery(), new ConfiguracaoIndoorFake { UrlPublica = null });
         semUrlPublica.Diretorio.Should().BeNull("sem endereço público a TV não teria o que mostrar");
+
+        ligado.Diretorio.Convite.Should().BeNull("sem o WhatsApp da operadora não há convite");
+        var comContato = await Sincronizar(credencial, new GetSincronizacaoQuery(), new ConfiguracaoIndoorFake { WhatsAppAnuncie = "5592999990000" });
+        comContato.Diretorio!.Convite.Should().Be(DiretorioSincronizacaoDto.ConvitePadrao);
     }
 
     [Fact]

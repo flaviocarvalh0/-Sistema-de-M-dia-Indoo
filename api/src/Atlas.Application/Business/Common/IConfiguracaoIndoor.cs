@@ -19,6 +19,13 @@ public interface IConfiguracaoIndoor
     Uri? UrlPublica { get; }
 
     /// <summary>
+    /// WhatsApp da operadora para quem quer anunciar (parâmetro
+    /// <c>INDOOR.ANUNCIE.WHATSAPP</c>), só dígitos com o 55. Nulo = sem o
+    /// convite "Quer anunciar aqui?" na TV e no diretório.
+    /// </summary>
+    string? WhatsAppAnuncie { get; }
+
+    /// <summary>
     /// E-mails da operadora que recebem os avisos (troca de arquivo para
     /// aprovar, TV fora do ar): <c>Indoor:Alertas:Emails</c>. Vazio = sem e-mail.
     /// </summary>

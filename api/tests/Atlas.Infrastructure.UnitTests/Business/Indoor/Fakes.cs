@@ -137,6 +137,7 @@ internal sealed class ConfiguracaoIndoorFake : IConfiguracaoIndoor
 {
     public string UrlPainel => "https://painel.indoor.test/";
     public Uri? UrlPublica { get; set; } = new("https://tv.indoor.test");
+    public string? WhatsAppAnuncie { get; set; }
     public IReadOnlyList<string> EmailsOperadora { get; set; } = ["operadora@rede.test"];
     public TimeSpan ToleranciaAlertaOffline => TimeSpan.FromMinutes(15);
     public long LimiteArmazenamentoBytes { get; set; } = 9216L * 1024 * 1024;

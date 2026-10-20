@@ -73,8 +73,17 @@ internal sealed class ParametrosIndoor
         "INDOOR.COLETA.COTACOES_MINUTOS", "Indoor:Coleta:CotacoesMinutos", "NUMBER", "30",
         "De quantos em quantos minutos as cotações (PTAX) são atualizadas (mínimo 15).");
 
+    public static readonly DefinicaoParametro UrlPublica = new(
+        "INDOOR.URL_PUBLICA", "Indoor:UrlPublica", "STRING", "",
+        "Endereço HTTPS da API na internet, que o celular abre ao ler o QR da TV (ex.: https://tv.suaempresa.com.br). Base do QR rastreado (/q) e do diretório (/d). Vazio ou localhost: QR direto ao destino, sem contar leituras, e sem QR do diretório.");
+
+    public static readonly DefinicaoParametro AnuncieWhatsApp = new(
+        "INDOOR.ANUNCIE.WHATSAPP", "Indoor:Anuncie:WhatsApp", "STRING", "",
+        "WhatsApp da operadora para quem quer anunciar (DDD e número, ex.: 92999990000). Preenchido: a TV convida \"Quer anunciar aqui?\" e a página do diretório ganha o botão. Vazio: sem convite.");
+
     public static readonly IReadOnlyList<DefinicaoParametro> Todos =
     [
+        UrlPublica, AnuncieWhatsApp,
         AlertasEmails, AlertasTvOfflineMinutos, AlertasHoraInicio, AlertasHoraFim,
         ArmazenamentoLimiteMb,
         DispositivoIntervaloSegundos, DispositivoValidadeTokenDias, DispositivoValidadeUrlHoras,

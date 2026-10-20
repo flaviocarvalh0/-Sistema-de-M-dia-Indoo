@@ -1,4 +1,5 @@
 using Atlas.Application.Business.Common;
+using Atlas.Application.Business.Indoor.Midias.Common;
 using Atlas.Infrastructure.Business.Parametros;
 using Microsoft.Extensions.Configuration;
 
@@ -16,10 +17,19 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration, Parametro
         configuration["Indoor:UrlPainel"]
         ?? throw new InvalidOperationException("Configuração 'Indoor:UrlPainel' ausente no appsettings.");
 
+    /// <summary>
+    /// Nulo também para <c>localhost</c>: o celular que lê o QR abriria a si
+    /// mesmo, e a leitura nunca chegaria à API (o QR vai direto ao destino).
+    /// </summary>
     public Uri? UrlPublica =>
-        Uri.TryCreate(configuration["Indoor:UrlPublica"], UriKind.Absolute, out var url) && url.Scheme is "http" or "https"
+        Uri.TryCreate(parametros?.Valor(ParametrosIndoor.UrlPublica) ?? configuration["Indoor:UrlPublica"], UriKind.Absolute, out var url)
+        && url.Scheme is "http" or "https"
+        && !url.IsLoopback
             ? url
             : null;
+
+    public string? WhatsAppAnuncie =>
+        MontadorQrCode.NormalizarTelefone(parametros?.Valor(ParametrosIndoor.AnuncieWhatsApp) ?? configuration["Indoor:Anuncie:WhatsApp"] ?? string.Empty);
 
     public IReadOnlyList<string> EmailsOperadora =>
         (parametros?.Lista(ParametrosIndoor.AlertasEmails)

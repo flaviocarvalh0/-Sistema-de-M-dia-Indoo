@@ -52,7 +52,17 @@ public static class PaginaDiretorio
             Cartao(html, anunciante);
         }
 
-        html.Append("</main><footer><p>Os contatos são publicados pelos próprios anunciantes.</p></footer>");
+        html.Append("</main>");
+
+        if (diretorio.LinkAnuncie is { } anuncie)
+        {
+            html.Append("<section class=\"anuncie\"><div><p class=\"anuncie-titulo\">Quer anunciar aqui?</p>")
+                .Append("<p class=\"anuncie-texto\">Seu negócio nesta TV, visto por quem frequenta o local.</p></div>")
+                .Append("<a class=\"anuncie-botao\" href=\"").Append(T(anuncie))
+                .Append("\" target=\"_blank\" rel=\"noopener\">Clique aqui e fale com a gente</a></section>");
+        }
+
+        html.Append("<footer><p>Os contatos são publicados pelos próprios anunciantes.</p></footer>");
         Script(html, nonce);
         html.Append("</body></html>");
 
@@ -263,5 +273,11 @@ public static class PaginaDiretorio
         .seta{flex:none;width:18px;height:18px;color:var(--suave)}
         .vazio{text-align:center;color:var(--suave);padding:32px 8px}
         footer{padding:4px 16px 32px;text-align:center;font-size:13px;color:var(--suave)}
+        .anuncie{max-width:528px;margin:4px auto 16px;padding:18px;border-radius:18px;color:#F6F8F7;display:grid;gap:14px;border:1px solid rgba(157,234,196,.2);background:radial-gradient(ellipse at 10% 120%,rgba(73,179,147,.25),transparent 50%),linear-gradient(110deg,#132927,#10201F 60%,#182A27)}
+        @media (max-width:560px){.anuncie{margin:4px 16px 16px}}
+        .anuncie-titulo{margin:0;font-size:20px;font-weight:800;letter-spacing:-.02em}
+        .anuncie-texto{margin:4px 0 0;font-size:14px;color:#B4C1C0}
+        .anuncie-botao{display:block;text-align:center;padding:13px 16px;border-radius:12px;background:linear-gradient(145deg,#B8F36B,#82D9AA);color:#13221B;font-weight:800;text-decoration:none}
+        .anuncie-botao:focus-visible{outline:3px solid #5EEAD4;outline-offset:2px}
         """;
 }

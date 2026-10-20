@@ -27,6 +27,12 @@ public sealed record DiretorioPublicoDto
 
     public IReadOnlyList<AnuncianteDiretorioDto> Anunciantes { get; init; } = [];
 
+    /// <summary>
+    /// Conversa no WhatsApp da operadora para quem quer anunciar nesta TV
+    /// (parâmetro <c>INDOOR.ANUNCIE.WHATSAPP</c>); nulo = sem o botão.
+    /// </summary>
+    public string? LinkAnuncie { get; init; }
+
     public DateTimeOffset GeradoEm { get; init; }
 }
 
@@ -48,9 +54,18 @@ public sealed record AnuncianteDiretorioDto
 /// <param name="Detalhe">Para onde vai, legível: "(92) 99999-0000", "@usuario", "site.com.br".</param>
 public sealed record ContatoDiretorioDto(TipoQrCode Tipo, string Rotulo, string Valor, string? Detalhe = null);
 
-public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext context, TimeProvider timeProvider)
+public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext context, TimeProvider timeProvider, IConfiguracaoIndoor? configuracao = null)
     : IRequestHandler<GetDiretorioPublicoQuery, DiretorioPublicoDto>
 {
+    /// <summary>O WhatsApp da operadora já com a mensagem dizendo de qual TV veio o interesse.</summary>
+    public static string? LinkAnuncie(string? whatsapp, string? local) =>
+        whatsapp is null
+            ? null
+            : $"https://wa.me/{whatsapp}?text=" + Uri.EscapeDataString(
+                local is null
+                    ? "Olá! Vi a TV e quero saber como anunciar."
+                    : $"Olá! Vi a TV no {local} e quero saber como anunciar.");
+
     /// <summary>Botões por anunciante, no máximo.</summary>
     public const int MaximoContatos = 6;
 
@@ -149,6 +164,7 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
         {
             Estabelecimento = tela.Local,
             Anunciantes = cartoes,
+            LinkAnuncie = LinkAnuncie(configuracao?.WhatsAppAnuncie, tela.Local),
             GeradoEm = agora,
         };
     }

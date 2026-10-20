@@ -145,7 +145,16 @@ public sealed record DiretorioSincronizacaoDto
     /// <summary>Texto curto embaixo do QR code.</summary>
     public string Legenda { get; init; } = LegendaPadrao;
 
+    /// <summary>
+    /// Convite para anunciar, embaixo da legenda (parâmetro
+    /// <c>INDOOR.ANUNCIE.WHATSAPP</c> preenchido); nulo = sem convite. O botão
+    /// de contato fica na página que o QR abre.
+    /// </summary>
+    public string? Convite { get; init; }
+
     public const string LegendaPadrao = "Contatos dos anunciantes";
+
+    public const string ConvitePadrao = "Quer anunciar aqui?";
 }
 
 public sealed record CotacaoSincronizacaoDto
@@ -409,7 +418,11 @@ public class GetSincronizacaoQueryHandler(
             Cotacoes = composicao.CartaoCotacoes ? await ListarCotacoesAsync(agora, cancellationToken) : null,
             Atualizacao = await ObterAtualizacaoAsync(request.VersaoCodigoApp, tela.TvDeTeste, cancellationToken),
             Diretorio = tela.DiretorioAtivo && EnderecoDiretorio.Montar(configuracao, tela.CodigoDiretorio) is { } urlDiretorio
-                ? new DiretorioSincronizacaoDto { Url = urlDiretorio.AbsoluteUri }
+                ? new DiretorioSincronizacaoDto
+                {
+                    Url = urlDiretorio.AbsoluteUri,
+                    Convite = configuracao.WhatsAppAnuncie is null ? null : DiretorioSincronizacaoDto.ConvitePadrao,
+                }
                 : null,
         };
     }

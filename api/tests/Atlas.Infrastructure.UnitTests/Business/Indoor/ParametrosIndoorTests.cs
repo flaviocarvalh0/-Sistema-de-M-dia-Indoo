@@ -86,4 +86,26 @@ public class ParametrosIndoorTests
 
         configuracao.IntervaloColetaNoticias.Should().Be(TimeSpan.FromMinutes(45));
     }
+
+    [Theory]
+    [InlineData("https://localhost:7216")]
+    [InlineData("http://127.0.0.1:5366")]
+    public void UrlPublicaLocal_ViraNula_OCelularNaoChegaria(string url)
+    {
+        var configuracao = new ConfiguracaoIndoor(Configuracao(("Indoor:UrlPublica", url)), Cadastrados());
+
+        configuracao.UrlPublica.Should().BeNull();
+    }
+
+    [Fact]
+    public void UrlPublicaEContato_DoPainelValemSobreOAppsettings()
+    {
+        var configuracao = new ConfiguracaoIndoor(
+            Configuracao(("Indoor:UrlPublica", "https://antiga.test")),
+            Cadastrados((ParametrosIndoor.UrlPublica, "https://tv.rede.test"), (ParametrosIndoor.AnuncieWhatsApp, "(92) 99999-0000")));
+
+        configuracao.UrlPublica.Should().Be(new Uri("https://tv.rede.test"));
+        configuracao.WhatsAppAnuncie.Should().Be("5592999990000");
+        new ConfiguracaoIndoor(Configuracao(), Cadastrados((ParametrosIndoor.AnuncieWhatsApp, "123"))).WhatsAppAnuncie.Should().BeNull("telefone inválido = sem convite");
+    }
 }
