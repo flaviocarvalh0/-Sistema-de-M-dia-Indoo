@@ -8,6 +8,7 @@ import { ClienteService } from '../services/cliente.service';
 import { LinhaCliente, ClienteDto, SituacaoCliente } from '../models/cliente.model';
 import { CLIENTE_COLUNAS, criarCamposBloqueio, criarCamposCliente } from '../configs/cliente.config';
 import { preencherCampos } from '../../../shared/utils/form.util';
+import { UsoArmazenamentoRedeComponent } from '../components/uso-armazenamento-rede.component';
 
 /** Nome físico da tabela — chave do RBAC no front. */
 const ENTIDADE = 'cliente';
@@ -19,7 +20,7 @@ const ENTIDADE = 'cliente';
 @Component({
   selector: 'app-cliente-list-page',
   standalone: true,
-  imports: [ListagemDinamicaComponent],
+  imports: [ListagemDinamicaComponent, UsoArmazenamentoRedeComponent],
   template: `
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
       <div class="btn-group btn-group-sm" role="group" aria-label="Filtrar por situação">
@@ -36,6 +37,8 @@ const ENTIDADE = 'cliente';
         </button>
       }
     </div>
+
+    <app-uso-armazenamento-rede />
 
     <atlas-listagem-dinamica
       titulo="Clientes"
