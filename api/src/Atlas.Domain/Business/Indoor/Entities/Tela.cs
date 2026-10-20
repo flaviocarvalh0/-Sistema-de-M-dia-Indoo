@@ -144,18 +144,24 @@ public class Tela : BaseAuditableEntity
     }
 
 
+    /// <summary>Sincronizando mas sem exibir por mais que isto = Fora de exibição (ADR-024).</summary>
+    public static readonly TimeSpan ToleranciaForaDeExibicao = TimeSpan.FromMinutes(10);
+
     public SituacaoTela Situacao(DateTimeOffset agora, TimeSpan toleranciaOffline) =>
-        CalcularSituacao(Pareada, Estado?.UltimaSincronizacao, agora, toleranciaOffline);
+        CalcularSituacao(Pareada, Estado?.UltimaSincronizacao, agora, toleranciaOffline, Estado?.ForaDeExibicaoDesde);
 
     /// <summary>A regra da situação, também usada nas consultas que não carregam a entidade.</summary>
     public static SituacaoTela CalcularSituacao(
         bool pareada,
         DateTimeOffset? ultimaSincronizacao,
         DateTimeOffset agora,
-        TimeSpan toleranciaOffline) =>
+        TimeSpan toleranciaOffline,
+        DateTimeOffset? foraDeExibicaoDesde = null) =>
         !pareada
             ? SituacaoTela.AguardandoPareamento
-            : ultimaSincronizacao is { } ultima && agora - ultima <= toleranciaOffline
-                ? SituacaoTela.Online
-                : SituacaoTela.Offline;
+            : ultimaSincronizacao is not { } ultima || agora - ultima > toleranciaOffline
+                ? SituacaoTela.Offline
+                : foraDeExibicaoDesde is { } fora && agora - fora >= ToleranciaForaDeExibicao
+                    ? SituacaoTela.ForaDeExibicao
+                    : SituacaoTela.Online;
 }

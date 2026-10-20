@@ -677,6 +677,30 @@ public class DispositivoTests : IDisposable
             .Should().Be("https://wa.me/5592999990000", "sem endereço público vai o destino direto");
     }
 
+    [Fact]
+    public async Task Sincronizar_HeartbeatGravaReproducaoERelogio()
+    {
+        var midia = Midia("Promo");
+        var credencial = await ParearComGradeAsync((midia, DiasSemana.Todos));
+
+        await Sincronizar(credencial, new GetSincronizacaoQuery
+        {
+            Reproducao = ModoReproducao.Anuncio, ReproducaoDesde = Agora.AddMinutes(-20), DuracaoItem = 15,
+            MidiaAtual = midia.Id, PrimeiroPlano = true, ItensHoje = 1, Relogio = Agora.AddSeconds(30),
+        });
+
+        var estado = await _context.EstadosTela.SingleAsync();
+        estado.Should().BeEquivalentTo(new
+        {
+            ModoReproducao = ModoReproducao.Anuncio, MidiaAtualId = midia.Id, DesvioRelogioSegundos = 30,
+            MotivoForaDeExibicao = MotivoForaDeExibicao.ReproducaoTravada, ForaDeExibicaoDesde = Agora,
+        });
+
+        // App antigo (sem heartbeat) não mexe no que já estava.
+        await Sincronizar(credencial, new GetSincronizacaoQuery());
+        (await _context.EstadosTela.SingleAsync()).ForaDeExibicaoDesde.Should().Be(Agora);
+    }
+
     // ---------- Exibições (prova de veiculação) ----------
 
     [Fact]

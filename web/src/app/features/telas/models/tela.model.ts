@@ -2,7 +2,10 @@
  * Contratos das telas (backend: Atlas.Application/Business/Rede/Telas e Indoor/Telas).
  * Enums chegam como NOME (JsonStringEnumConverter).
  */
-export type SituacaoTela = 'AguardandoPareamento' | 'Online' | 'Offline';
+export type SituacaoTela = 'AguardandoPareamento' | 'Online' | 'Offline' | 'ForaDeExibicao';
+
+/** Por que a TV sincroniza mas não exibe (heartbeat, ADR-024). */
+export type MotivoForaDeExibicao = 'AppForaDaTela' | 'ReproducaoTravada' | 'EsperaComAnuncios';
 
 /**
  * A tela como a operadora (Rede → Telas) e o cliente (Onde meus anúncios passam)
@@ -26,6 +29,12 @@ export interface TelaDto {
   versaoApp?: string | null;
   /** versionCode do app informado na última sincronização (nulo = app sem atualização automática). */
   versaoCodigoApp?: number | null;
+  /** Só com a situação ForaDeExibicao. */
+  motivoForaDeExibicao?: MotivoForaDeExibicao | null;
+  /** Desde quando sincroniza sem exibir (vira Fora de exibição aos 10 min). */
+  foraDeExibicaoDesde?: string | null;
+  /** Relógio da TV menos o do servidor (s). */
+  desvioRelogioSegundos?: number | null;
   /** Recebe as versões do app liberadas só para teste (ADR-021). */
   tvDeTeste?: boolean;
   /** Código ainda válido para parear (some ao parear ou ao expirar). Só na visão da operadora. */
@@ -57,4 +66,4 @@ export interface CodigoDiretorio {
   version: number;
 }
 
-export type LinhaTela = TelaDto & { situacaoRotulo: string; playlist: string; vistaPorUltimo: string; diretorio: string; versaoAppRotulo: string };
+export type LinhaTela = TelaDto & { situacaoRotulo: string; playlist: string; vistaPorUltimo: string; diretorio: string; versaoAppRotulo: string; atencao: string };

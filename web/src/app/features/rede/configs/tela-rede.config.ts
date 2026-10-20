@@ -9,6 +9,7 @@ export const TELA_REDE_COLUNAS: ColunaDef[] = [
   { campo: 'playlist', titulo: 'Playlist', tipo: 'texto' },
   { campo: 'situacaoRotulo', titulo: 'Conexão', tipo: 'badge', badgeMap: SITUACAO_TELA_BADGE },
   { campo: 'vistaPorUltimo', titulo: 'Última sincronização', tipo: 'texto' },
+  { campo: 'atencao', titulo: 'Atenção', tipo: 'texto' },
   { campo: 'diretorio', titulo: 'Diretório', tipo: 'texto' },
   { campo: 'versaoAppRotulo', titulo: 'App', tipo: 'texto' },
   { campo: 'ativo', titulo: 'Situação', tipo: 'status' },

@@ -1,6 +1,7 @@
 using Atlas.Application.Business.Dispositivo.Autenticacao;
 using Atlas.Application.Business.Dispositivo.Exibicoes;
 using Atlas.Application.Business.Dispositivo.Sincronizacao;
+using Atlas.Domain.Business.Indoor.Enums;
 using Atlas.Infrastructure.Business.Dispositivo;
 using Atlas.Web.Business;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -56,7 +57,7 @@ public class DispositivoTv : IEndpointGroup
     }
 
     [EndpointSummary("Sincronizar a grade")]
-    [EndpointDescription("Grade da tela com URLs de download, hash, dias e período de cada item, mais a composição da fila, as notícias e o clima. Com a versaoGrade atual, responde alterada=false sem itens; com a versaoNoticias atual, noticias vem nulo. 401: token revogado (parear de novo). 403: tela inativa (continuar no que já baixou).")]
+    [EndpointDescription("Grade da tela com URLs de download, hash, dias e período de cada item, mais a composição da fila, as notícias e o clima. Os parâmetros reproducao, reproducaoDesde, duracaoItem, midiaAtual, primeiroPlano, itensHoje e relogio são o heartbeat de reprodução (o que está na tela agora). Com a versaoGrade atual, responde alterada=false sem itens; com a versaoNoticias atual, noticias vem nulo. 401: token revogado (parear de novo). 403: tela inativa (continuar no que já baixou).")]
     public static async Task<Ok<SincronizacaoDto>> Sincronizar(
         ISender sender,
         [FromQuery] string? versaoGrade,
@@ -64,6 +65,13 @@ public class DispositivoTv : IEndpointGroup
         [FromQuery] string? versaoApp,
         [FromQuery] int? versaoCodigoApp,
         [FromQuery] int? itensProntos,
+        [FromQuery] ModoReproducao? reproducao,
+        [FromQuery] DateTimeOffset? reproducaoDesde,
+        [FromQuery] int? duracaoItem,
+        [FromQuery] long? midiaAtual,
+        [FromQuery] bool? primeiroPlano,
+        [FromQuery] int? itensHoje,
+        [FromQuery] DateTimeOffset? relogio,
         CancellationToken cancellationToken)
     {
         return TypedResults.Ok(await sender.Send(new GetSincronizacaoQuery
@@ -73,6 +81,13 @@ public class DispositivoTv : IEndpointGroup
             VersaoApp = versaoApp,
             VersaoCodigoApp = versaoCodigoApp,
             ItensProntos = itensProntos,
+            Reproducao = reproducao,
+            ReproducaoDesde = reproducaoDesde,
+            DuracaoItem = duracaoItem,
+            MidiaAtual = midiaAtual,
+            PrimeiroPlano = primeiroPlano,
+            ItensHoje = itensHoje,
+            Relogio = relogio,
         }, cancellationToken));
     }
 }

@@ -29,7 +29,29 @@ export const SITUACAO_TELA_ROTULO: Record<SituacaoTela, string> = {
   AguardandoPareamento: 'Aguardando pareamento',
   Online: 'Online',
   Offline: 'Offline',
+  ForaDeExibicao: 'Fora de exibição',
 };
+
+export const MOTIVO_FORA_DE_EXIBICAO: Record<string, string> = {
+  AppForaDaTela: 'App fora da tela',
+  ReproducaoTravada: 'Reprodução travada',
+  EsperaComAnuncios: 'Na espera com anúncios para hoje',
+};
+
+/** Relógio da TV fora de ±5 min (o filtro do dia pode errar). */
+export function relogioErrado(t: { desvioRelogioSegundos?: number | null }): boolean {
+  return t.desvioRelogioSegundos != null && Math.abs(t.desvioRelogioSegundos) > 300;
+}
+
+function atencao(t: TelaDto): string {
+  const partes: string[] = [];
+  if (t.situacao === 'ForaDeExibicao' && t.motivoForaDeExibicao) partes.push(MOTIVO_FORA_DE_EXIBICAO[t.motivoForaDeExibicao] ?? t.motivoForaDeExibicao);
+  if (relogioErrado(t)) {
+    const min = Math.round(t.desvioRelogioSegundos! / 60);
+    partes.push(`Relógio ${min > 0 ? 'adiantado' : 'atrasado'} ${Math.abs(min)} min`);
+  }
+  return partes.join(' · ') || '—';
+}
 
 /** "agora", "há 5 min", "há 3 h", "há 2 dias" ou "nunca". */
 export function tempoDesde(iso: string | null | undefined, agora = Date.now()): string {
@@ -52,6 +74,7 @@ export function paraLinhaTela(t: TelaDto): LinhaTela {
     // Sem TV pareada, a última sincronização é da TV anterior (desvinculada): não vale mostrar.
     vistaPorUltimo: t.situacao === 'AguardandoPareamento' ? '—' : tempoDesde(t.ultimaSincronizacao),
     diretorio: t.diretorioAtivo ? 'Ligado' : '—',
+    atencao: atencao(t),
     versaoAppRotulo: !t.versaoApp ? '—'
       : `${t.versaoApp}${t.versaoCodigoApp ? ` (${t.versaoCodigoApp})` : ''}${t.tvDeTeste ? ' · teste' : ''}`,
   };

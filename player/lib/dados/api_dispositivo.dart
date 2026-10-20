@@ -91,10 +91,12 @@ class ApiDispositivo {
     String? versaoApp,
     int? versaoCodigoApp,
     int? itensProntos,
+    EstadoReproducao? reproducao,
   }) async {
     final resposta = await _enviar(() => _dio.get<Map<String, dynamic>>(
           '/sincronizacao',
           queryParameters: {
+            ...?reproducao?.paraConsulta(DateTime.now()),
             if (versaoGrade != null) 'versaoGrade': versaoGrade,
             if (versaoNoticias != null) 'versaoNoticias': versaoNoticias,
             if (versaoApp != null) 'versaoApp': versaoApp,

@@ -34,6 +34,15 @@ public sealed record TelaDto : IDtoAuditavel
     /// <summary>O <c>versionCode</c> do app na TV; nulo em app sem atualização automática.</summary>
     public int? VersaoCodigoApp { get; init; }
 
+    /// <summary>Por que está Fora de exibição (só com essa situação).</summary>
+    public MotivoForaDeExibicao? MotivoForaDeExibicao { get; init; }
+
+    /// <summary>Desde quando a TV sincroniza sem exibir (antes de virar Fora de exibição, aos 10 min).</summary>
+    public DateTimeOffset? ForaDeExibicaoDesde { get; init; }
+
+    /// <summary>Relógio da TV menos o do servidor (s); fora de ±5 min o filtro do dia pode errar.</summary>
+    public int? DesvioRelogioSegundos { get; init; }
+
     /// <summary>Recebe as versões do app em teste.</summary>
     public bool TvDeTeste { get; init; }
 
@@ -87,6 +96,7 @@ public static class TelaProjecao
     public static IQueryable<TelaDto> ParaDto(this IQueryable<Tela> query, DateTimeOffset agora, bool comPareamento)
     {
         var limiteOnline = agora - Tela.ToleranciaOffline;
+        var limiteForaDeExibicao = agora - Tela.ToleranciaForaDeExibicao;
 
         return query.Select(t => new TelaDto
         {
@@ -101,9 +111,16 @@ public static class TelaProjecao
             Ativo = t.Ativo,
             Situacao = t.DispositivoId == null
                 ? SituacaoTela.AguardandoPareamento
-                : t.Estado != null && t.Estado.UltimaSincronizacao >= limiteOnline
-                    ? SituacaoTela.Online
-                    : SituacaoTela.Offline,
+                : t.Estado == null || t.Estado.UltimaSincronizacao < limiteOnline
+                    ? SituacaoTela.Offline
+                    : t.Estado.ForaDeExibicaoDesde != null && t.Estado.ForaDeExibicaoDesde <= limiteForaDeExibicao
+                        ? SituacaoTela.ForaDeExibicao
+                        : SituacaoTela.Online,
+            MotivoForaDeExibicao = t.Estado != null && t.Estado.ForaDeExibicaoDesde != null && t.Estado.ForaDeExibicaoDesde <= limiteForaDeExibicao
+                ? t.Estado.MotivoForaDeExibicao
+                : null,
+            ForaDeExibicaoDesde = t.Estado != null ? t.Estado.ForaDeExibicaoDesde : null,
+            DesvioRelogioSegundos = t.Estado != null ? t.Estado.DesvioRelogioSegundos : null,
             PareadaEm = t.PareadaEm,
             UltimaSincronizacao = t.Estado != null ? t.Estado.UltimaSincronizacao : null,
             VersaoApp = t.Estado != null ? t.Estado.VersaoApp : null,

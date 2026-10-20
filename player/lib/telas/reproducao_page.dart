@@ -32,7 +32,10 @@ class ReproducaoPage extends StatefulWidget {
   State<ReproducaoPage> createState() => _ReproducaoPageState();
 }
 
-class _ReproducaoPageState extends State<ReproducaoPage> {
+class _ReproducaoPageState extends State<ReproducaoPage> with WidgetsBindingObserver {
+  /// O app está em primeiro plano (heartbeat, ADR-024).
+  bool _primeiroPlano = true;
+
   /// Depois de download incompleto, tenta logo (URL nova, rede de volta).
   static const _tentarDeNovo = Duration(minutes: 1);
 
@@ -64,6 +67,8 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
     super.initState();
     _loop.addListener(_redesenhar);
     _sync.situacao.addListener(_aoMudarSituacao);
+    WidgetsBinding.instance.addObserver(this);
+    _sync.lerReproducao = _estadoReproducao;
     _sync.carregar().then((_) {
       if (_saindo) return;
       _loop.iniciar();
@@ -74,12 +79,32 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   @override
   void dispose() {
     _saindo = true;
+    WidgetsBinding.instance.removeObserver(this);
+    if (_sync.lerReproducao == _estadoReproducao) _sync.lerReproducao = null;
     _sync.situacao.removeListener(_aoMudarSituacao);
     _loop.removeListener(_redesenhar);
     _loop.dispose();
     _timerSync?.cancel();
     _timerInfo?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // "inactive" é passageiro (um aviso por cima): ainda conta como na tela.
+    _primeiroPlano = state == AppLifecycleState.resumed || state == AppLifecycleState.inactive;
+  }
+
+  EstadoReproducao _estadoReproducao() {
+    final r = _loop.reproducao;
+    return EstadoReproducao(
+      modo: r.modo,
+      desde: r.desde,
+      duracaoSegundos: r.duracaoSegundos,
+      midiaId: r.midiaId,
+      itensHoje: _itensDeHoje().length,
+      primeiroPlano: _primeiroPlano,
+    );
   }
 
   void _redesenhar() {

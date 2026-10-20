@@ -53,6 +53,21 @@ class ControladorReproducao extends ChangeNotifier {
 
   final DateTime Function() _agora;
 
+  /// Desde quando o passo atual (ou a espera) está na tela.
+  DateTime _desde = DateTime.now();
+
+  /// Heartbeat (ADR-024): o que está na tela e desde quando.
+  ({ModoReproducao modo, DateTime desde, int? duracaoSegundos, int? midiaId}) get reproducao {
+    final e = _entrada;
+    if (e == null) return (modo: ModoReproducao.espera, desde: _desde, duracaoSegundos: null, midiaId: null);
+    return (
+      modo: e.anuncio != null ? ModoReproducao.anuncio : ModoReproducao.informativo,
+      desde: _desde,
+      duracaoSegundos: e.duracaoSegundos,
+      midiaId: e.anuncio?.midiaId,
+    );
+  }
+
   /// O anúncio na tela agora e quando ele apareceu (nulo fora de anúncio).
   ({ItemGrade anuncio, DateTime inicio, int geracao})? _naTela;
 
@@ -127,6 +142,7 @@ class ControladorReproducao extends ChangeNotifier {
       _fila = const [];
       _indice = -1;
       await _trocarVideo(null);
+      if (_entrada != null) _desde = _agora();
       _entrada = null;
       notifyListeners();
       _timer = Timer(reavaliarEspera, () => _seAtual(geracao, _tocarProximo));
@@ -138,7 +154,8 @@ class ControladorReproducao extends ChangeNotifier {
       await _trocarVideo(null);
       if (geracao != _geracao) return;
       _entrada = proxima;
-      if (anuncio != null) _naTela = (anuncio: anuncio, inicio: _agora(), geracao: geracao);
+      _desde = _agora();
+      if (anuncio != null) _naTela = (anuncio: anuncio, inicio: _desde, geracao: geracao);
       notifyListeners();
       _timer = Timer(Duration(seconds: proxima.duracaoSegundos), () => _terminar(geracao));
       return;
@@ -166,6 +183,7 @@ class ControladorReproducao extends ChangeNotifier {
     video.aoFalhar = () => _falhar(geracao);
     await _trocarVideo(video);
     _entrada = proxima;
+    _desde = _agora();
     notifyListeners();
     await video.tocar();
     if (geracao == _geracao) _naTela = (anuncio: anuncio, inicio: _agora(), geracao: geracao);

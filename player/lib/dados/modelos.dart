@@ -473,6 +473,51 @@ class DiretorioTv {
 }
 
 /// Resposta de `GET /sincronizacao`.
+/// O que está na tela agora (heartbeat de reprodução, ADR-024).
+enum ModoReproducao { anuncio, informativo, espera }
+
+/// Vai em cada sincronização: com isso a API percebe a TV que sincroniza mas
+/// não exibe (app fora da tela, vídeo travado, espera com anúncios para hoje).
+class EstadoReproducao {
+  const EstadoReproducao({
+    required this.modo,
+    required this.desde,
+    required this.itensHoje,
+    required this.primeiroPlano,
+    this.duracaoSegundos,
+    this.midiaId,
+  });
+
+  final ModoReproducao modo;
+
+  /// Desde quando o item atual (ou a espera) está na tela.
+  final DateTime desde;
+
+  /// Tempo previsto do item; nulo na espera.
+  final int? duracaoSegundos;
+  final int? midiaId;
+
+  /// Anúncios que dá para tocar hoje (filtrados e baixados).
+  final int itensHoje;
+
+  /// O app está em primeiro plano.
+  final bool primeiroPlano;
+
+  Map<String, Object> paraConsulta(DateTime agora) => {
+        'reproducao': switch (modo) {
+          ModoReproducao.anuncio => 'Anuncio',
+          ModoReproducao.informativo => 'Informativo',
+          ModoReproducao.espera => 'Espera',
+        },
+        'reproducaoDesde': desde.toUtc().toIso8601String(),
+        if (duracaoSegundos != null) 'duracaoItem': duracaoSegundos!,
+        if (midiaId != null) 'midiaAtual': midiaId!,
+        'primeiroPlano': primeiroPlano,
+        'itensHoje': itensHoje,
+        'relogio': agora.toUtc().toIso8601String(),
+      };
+}
+
 /// Um anúncio que esteve na tela (prova de veiculação, ADR-023). Gravado no
 /// banco local e enviado em lote; o [id] (UUID) torna o reenvio idempotente.
 class Exibicao {

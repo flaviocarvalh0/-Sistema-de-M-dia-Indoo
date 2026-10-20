@@ -4,6 +4,7 @@ export const SITUACAO_TELA_BADGE: Record<string, string> = {
   'Aguardando pareamento': 'bg-secondary',
   Online: 'bg-success',
   Offline: 'bg-danger',
+  'Fora de exibição': 'bg-warning text-dark',
 };
 
 /** "Onde meus anúncios passam" (cliente, somente leitura). */

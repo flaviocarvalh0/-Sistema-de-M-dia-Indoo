@@ -1,5 +1,6 @@
 using Atlas.Application.Business.Rede.Telas.Alertas;
 using Atlas.Domain.Business.Indoor.Entities;
+using Atlas.Domain.Business.Indoor.Enums;
 using Atlas.Domain.Business.Parceiros.Entities;
 using Atlas.Infrastructure.Data;
 using Atlas.Infrastructure.UnitTests.Business.Indoor;
@@ -92,6 +93,31 @@ public class AlertaTelasOfflineTests : IDisposable
 
         (await Verificar()).Cairam.Should().ContainSingle();
         _emails.Enfileirados.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task TvSincronizandoSemExibir_AlertaDepoisDaTolerancia_EAvisoQuandoVoltaAExibir()
+    {
+        var tela = Tela("Recepção", ultima: Agora.AddMinutes(-1));
+        // App fora da tela desde 12 min atrás.
+        tela.Estado!.RegistrarReproducao(Agora.AddMinutes(-12), ModoReproducao.Anuncio, Agora.AddMinutes(-12), 15, 1, primeiroPlano: false, 3, Agora.AddMinutes(-12));
+        var recente = Tela("Balcão", ultima: Agora.AddMinutes(-1));
+        recente.Estado!.RegistrarReproducao(Agora.AddMinutes(-3), ModoReproducao.Espera, Agora.AddMinutes(-3), null, null, true, 2, Agora.AddMinutes(-3));
+        await _context.SaveChangesAsync();
+
+        var primeira = await Verificar();
+        primeira.PararamDeExibir.Select(t => t.Nome).Should().Equal(["Recepção"], "o Balcão ainda está dentro dos 10 min");
+        primeira.PararamDeExibir[0].Detalhe.Should().Contain("app saiu da tela");
+        primeira.Cairam.Should().BeEmpty("ela sincroniza");
+        _emails.Enfileirados.Single().Subject.Should().Be("1 TV(s) sem exibir");
+
+        (await Verificar()).PararamDeExibir.Should().BeEmpty("o alerta em aberto não se repete");
+
+        tela.Estado.RegistrarReproducao(Agora, ModoReproducao.Anuncio, Agora, 15, 1, true, 3, Agora);
+        await _context.SaveChangesAsync();
+        var volta = await Verificar();
+        volta.VoltaramAExibir.Select(t => t.Nome).Should().Equal("Recepção");
+        _emails.Enfileirados.Last().Subject.Should().Contain("exibindo de novo");
     }
 
     private Task<VerificadorTelasOffline.Resultado> Verificar() =>

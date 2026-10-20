@@ -45,6 +45,26 @@ public record GetSincronizacaoQuery : IRequest<SincronizacaoDto>
 
     /// <summary>Quantas mídias a TV tem baixadas e conferidas (aparece no painel).</summary>
     public int? ItensProntos { get; init; }
+
+    // Heartbeat de reprodução (ADR-024): o que está na tela agora. App antigo não manda.
+
+    public ModoReproducao? Reproducao { get; init; }
+
+    /// <summary>Desde quando o item atual (ou a espera) está na tela, pelo relógio da TV.</summary>
+    public DateTimeOffset? ReproducaoDesde { get; init; }
+
+    /// <summary>Tempo previsto do item atual (s).</summary>
+    public int? DuracaoItem { get; init; }
+
+    public long? MidiaAtual { get; init; }
+
+    public bool? PrimeiroPlano { get; init; }
+
+    /// <summary>Anúncios para hoje, filtrados e baixados.</summary>
+    public int? ItensHoje { get; init; }
+
+    /// <summary>A hora da TV no momento do envio (para medir o desvio do relógio).</summary>
+    public DateTimeOffset? Relogio { get; init; }
 }
 
 public sealed record SincronizacaoDto
@@ -615,6 +635,13 @@ public class GetSincronizacaoQueryHandler(
             estado.VersaoCodigoApp = codigoApp;
         }
 
+        if (request is { Reproducao: { } modo, ReproducaoDesde: { } desde, Relogio: { } relogio })
+        {
+            estado.RegistrarReproducao(
+                agora, modo, desde, request.DuracaoItem, request.MidiaAtual,
+                request.PrimeiroPlano ?? true, request.ItensHoje ?? 0, relogio);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
     }
 
@@ -704,5 +731,8 @@ public class GetSincronizacaoQueryValidator : AbstractValidator<GetSincronizacao
         RuleFor(x => x.VersaoApp).MaximumLength(30).WithMessage("A versão do app deve ter no máximo 30 caracteres.");
         RuleFor(x => x.ItensProntos).GreaterThanOrEqualTo(0).When(x => x.ItensProntos is not null);
         RuleFor(x => x.VersaoCodigoApp).GreaterThan(0).When(x => x.VersaoCodigoApp is not null);
+        RuleFor(x => x.Reproducao).IsInEnum().When(x => x.Reproducao is not null);
+        RuleFor(x => x.DuracaoItem).InclusiveBetween(0, 86_400).When(x => x.DuracaoItem is not null);
+        RuleFor(x => x.ItensHoje).GreaterThanOrEqualTo(0).When(x => x.ItensHoje is not null);
     }
 }

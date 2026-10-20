@@ -112,6 +112,10 @@ class Sincronizador {
   /// Prova de veiculação (ADR-023): envia as exibições guardadas; nulo nos testes que não a usam.
   final RegistradorExibicoes? registrador;
 
+  /// Heartbeat (ADR-024): a tela de reprodução informa o que está tocando;
+  /// nulo fora dela (pareamento) — aí a sincronização vai sem heartbeat.
+  EstadoReproducao? Function()? lerReproducao;
+
   /// A última sincronização não chegou à API (a TV toca do que já baixou).
   bool get semConexao => _ultimo == ResultadoCiclo.semConexao;
 
@@ -180,6 +184,7 @@ class Sincronizador {
         versaoApp: versaoApp,
         versaoCodigoApp: versaoCodigoApp,
         itensProntos: atual.where(baixador.pronto).length,
+        reproducao: lerReproducao?.call(),
       );
     } on CredencialRevogada {
       // Mantém grade e arquivos: a TV segue tocando até parear de novo.

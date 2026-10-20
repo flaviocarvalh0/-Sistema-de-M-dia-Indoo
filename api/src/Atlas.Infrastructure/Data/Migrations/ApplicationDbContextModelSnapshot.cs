@@ -545,13 +545,53 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("tela_id");
 
+                    b.Property<DateTimeOffset?>("AlertaForaDeExibicaoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alerta_fora_de_exibicao_em");
+
                     b.Property<DateTimeOffset?>("AlertaOfflineEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("alerta_offline_em");
 
+                    b.Property<int?>("DesvioRelogioSegundos")
+                        .HasColumnType("integer")
+                        .HasColumnName("desvio_relogio_segundos");
+
+                    b.Property<int?>("DuracaoItemSegundos")
+                        .HasColumnType("integer")
+                        .HasColumnName("duracao_item_segundos");
+
+                    b.Property<DateTimeOffset?>("ForaDeExibicaoDesde")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fora_de_exibicao_desde");
+
+                    b.Property<int?>("ItensHoje")
+                        .HasColumnType("integer")
+                        .HasColumnName("itens_hoje");
+
                     b.Property<int?>("ItensProntos")
                         .HasColumnType("integer")
                         .HasColumnName("itens_prontos");
+
+                    b.Property<long?>("MidiaAtualId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("midia_atual_id");
+
+                    b.Property<int?>("ModoReproducao")
+                        .HasColumnType("integer")
+                        .HasColumnName("modo_reproducao");
+
+                    b.Property<int?>("MotivoForaDeExibicao")
+                        .HasColumnType("integer")
+                        .HasColumnName("motivo_fora_de_exibicao");
+
+                    b.Property<bool?>("PrimeiroPlano")
+                        .HasColumnType("boolean")
+                        .HasColumnName("primeiro_plano");
+
+                    b.Property<DateTimeOffset?>("ReproducaoDesde")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reproducao_desde");
 
                     b.Property<DateTimeOffset>("UltimaSincronizacao")
                         .HasColumnType("timestamp with time zone")

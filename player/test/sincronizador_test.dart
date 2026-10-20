@@ -427,6 +427,32 @@ void main() {
     await sync.sincronizar();
     expect(servidor.ultimaQuery.containsKey('versaoCodigoApp'), isFalse);
   });
+
+  test('heartbeat: manda o que está na tela, desde quando e a hora da TV', () async {
+    sync.lerReproducao = () => EstadoReproducao(
+          modo: ModoReproducao.anuncio,
+          desde: DateTime.utc(2026, 10, 20, 15),
+          duracaoSegundos: 15,
+          midiaId: 7,
+          itensHoje: 2,
+          primeiroPlano: false,
+        );
+    await sync.sincronizar();
+
+    final q = servidor.ultimaQuery;
+    expect(q['reproducao'], 'Anuncio');
+    expect(q['reproducaoDesde'], '2026-10-20T15:00:00.000Z');
+    expect(q['duracaoItem'], '15');
+    expect(q['midiaAtual'], '7');
+    expect(q['itensHoje'], '2');
+    expect(q['primeiroPlano'], 'false');
+    expect(DateTime.parse(q['relogio']!).difference(DateTime.now()).abs(), lessThan(const Duration(minutes: 1)));
+  });
+
+  test('sem tela de reprodução, a sincronização vai sem heartbeat', () async {
+    await sync.sincronizar();
+    expect(servidor.ultimaQuery.containsKey('reproducao'), isFalse);
+  });
 }
 
 class _InstaladorNada implements InstaladorApk {

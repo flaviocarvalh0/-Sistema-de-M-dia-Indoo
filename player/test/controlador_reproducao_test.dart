@@ -497,4 +497,27 @@ void main() {
       });
     });
   });
+
+  test('heartbeat: informa modo, desde quando e a mídia na tela', () {
+    fakeAsync((async) {
+      var relogio = DateTime.utc(2026, 10, 20, 15);
+      grade = [item(0, duracao: 10)];
+      loop = ControladorReproducao(
+        itensDeHoje: () => grade,
+        arquivoDe: (i) => File(i.hash),
+        criarVideo: (a) => VideoFalso(a.path),
+        agora: () => relogio,
+      )..iniciar();
+      async.flushMicrotasks();
+
+      expect(loop.reproducao, (modo: ModoReproducao.anuncio, desde: DateTime.utc(2026, 10, 20, 15), duracaoSegundos: 10, midiaId: 0));
+
+      grade = [];
+      relogio = relogio.add(const Duration(seconds: 10));
+      async.elapse(const Duration(seconds: 10));
+      expect(loop.reproducao.modo, ModoReproducao.espera);
+      expect(loop.reproducao.desde, relogio);
+      loop.dispose();
+    });
+  });
 }
