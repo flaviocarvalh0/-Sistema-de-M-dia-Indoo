@@ -285,8 +285,9 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
       **Instalar**. Recusou? Ela tenta de novo em 1 h.
 9. **Alerta de TV fora do ar** (ADR-020): com `Indoor:Alertas:Emails` e o
    SMTP configurados (e, para testar rápido, `Indoor:Alertas:TvOfflineMinutos`
-   = 1), feche o app da TV: em até 5 min chega "1 TV(s) fora do ar"; abra de
-   novo e chega "de volta ao ar". Fora do horário (7 h–22 h no fuso do
+   = 5, o mínimo), feche o app da TV: em até 10 min chega "1 TV(s) fora do ar"
+   (5 de tolerância + a varredura, que roda a cada 5 min); abra de novo e chega
+   "de volta ao ar". Fora do horário (7 h–22 h no fuso do
    estabelecimento) não há alerta.
 10. **Prova de veiculação e QR rastreado** (ADR-023): com `Indoor:UrlPublica`
     configurada e uma mídia com QR de WhatsApp na grade, deixe a TV tocar
