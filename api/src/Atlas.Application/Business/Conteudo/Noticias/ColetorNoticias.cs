@@ -25,7 +25,8 @@ public sealed class ColetorNoticias(
     IArmazenamentoMidias armazenamento,
     IClienteConteudoExterno cliente,
     TimeProvider timeProvider,
-    ILogger<ColetorNoticias> logger)
+    ILogger<ColetorNoticias> logger,
+    TetoArmazenamento? teto = null)
 {
     public const long TamanhoMaximoFeedBytes = 5L * 1024 * 1024;
 
@@ -187,6 +188,13 @@ public sealed class ColetorNoticias(
 
             var hash = Convert.ToHexStringLower(SHA256.HashData(imagem.Bytes));
             var chave = $"noticias/{noticia.FonteNoticiaId}/{hash}{TiposArquivoMidia.ExtensaoImagem(tipo)}";
+
+            // Teto da rede (ADR-025): imagem de notícia é dispensável; perto do teto, a notícia vai sem foto.
+            if (teto is not null && !await teto.CabeConteudoAutomaticoAsync(imagem.Bytes.Length, cancellationToken))
+            {
+                logger.LogWarning("Imagem da notícia {Titulo} não gravada: armazenamento da rede perto do teto.", noticia.Titulo);
+                return false;
+            }
 
             await armazenamento.GravarAsync(chave, imagem.Bytes, tipo, cancellationToken);
 

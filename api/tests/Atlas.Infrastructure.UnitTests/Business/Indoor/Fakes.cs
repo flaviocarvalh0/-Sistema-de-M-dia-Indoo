@@ -21,13 +21,19 @@ internal sealed class ClienteAtualFake(long clienteId) : IClienteAtual
 }
 
 /// <summary>Storage em memória: o teste põe o arquivo como se o navegador tivesse enviado.</summary>
-internal sealed class ArmazenamentoFake : IArmazenamentoMidias
+internal class ArmazenamentoFake : IArmazenamentoMidias
 {
     public Dictionary<string, byte[]> Arquivos { get; } = [];
     public List<string> Removidos { get; } = [];
 
-    public Task<EnvioPreparado> PrepararEnvioAsync(string chave, CancellationToken cancellationToken) =>
-        Task.FromResult(new EnvioPreparado(new Uri($"https://storage.test/envio/{chave}"), DateTimeOffset.UnixEpoch));
+    /// <summary>Tipo e tamanho que foram para a assinatura de cada envio preparado.</summary>
+    public Dictionary<string, (string Tipo, long Tamanho)> EnviosPreparados { get; } = [];
+
+    public Task<EnvioPreparado> PrepararEnvioAsync(string chave, string tipoConteudo, long tamanhoBytes, CancellationToken cancellationToken)
+    {
+        EnviosPreparados[chave] = (tipoConteudo, tamanhoBytes);
+        return Task.FromResult(new EnvioPreparado(new Uri($"https://storage.test/envio/{chave}"), DateTimeOffset.UnixEpoch));
+    }
 
     public Task<Uri> GerarUrlLeituraAsync(string chave, TimeSpan validade, CancellationToken cancellationToken) =>
         Task.FromResult(new Uri($"https://storage.test/leitura/{chave}?s={(int)validade.TotalSeconds}"));
@@ -95,6 +101,23 @@ internal sealed class RelogioFixo(DateTimeOffset agora) : TimeProvider
     public override DateTimeOffset GetUtcNow() => Agora;
 }
 
+/// <summary>A reserva que o preparo do envio criaria (o recebimento exige uma, ADR-025).</summary>
+internal static class Reservas
+{
+    public static void Criar(Atlas.Infrastructure.Data.ApplicationDbContext context, string chave, long tamanhoBytes, DateTimeOffset? agora = null)
+    {
+        var criada = agora ?? DateTimeOffset.UtcNow;
+        context.ReservasEnvio.Add(new Atlas.Domain.Business.Indoor.Entities.ReservaEnvio
+        {
+            Chave = chave,
+            TamanhoBytes = tamanhoBytes,
+            CriadaEm = criada,
+            ExpiraEm = criada + TimeSpan.FromHours(2),
+        });
+        context.SaveChanges();
+    }
+}
+
 internal static class Arquivos
 {
     public static byte[] Mp4(int tamanho = 4_000) => ComInicio(tamanho, [0, 0, 0, 0x20, (byte)'f', (byte)'t', (byte)'y', (byte)'p', (byte)'i', (byte)'s', (byte)'o', (byte)'m']);
@@ -116,6 +139,7 @@ internal sealed class ConfiguracaoIndoorFake : IConfiguracaoIndoor
     public Uri? UrlPublica { get; set; } = new("https://tv.indoor.test");
     public IReadOnlyList<string> EmailsOperadora { get; set; } = ["operadora@rede.test"];
     public TimeSpan ToleranciaAlertaOffline => TimeSpan.FromMinutes(15);
+    public long LimiteArmazenamentoBytes { get; set; } = 9216L * 1024 * 1024;
     public (int Inicio, int Fim) HorarioAlertas => (7, 22);
     public TimeSpan IntervaloSincronizacao => TimeSpan.FromMinutes(5);
     public TimeSpan ValidadeTokenDispositivo => TimeSpan.FromDays(30);

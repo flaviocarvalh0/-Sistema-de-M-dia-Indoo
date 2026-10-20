@@ -22,6 +22,10 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfig
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+    /// <summary>Nunca acima de 10 GB (o grátis do R2), mesmo que a configuração peça.</summary>
+    public long LimiteArmazenamentoBytes =>
+        Math.Clamp(Inteiro("Indoor:Armazenamento:LimiteTotalMb", padrao: 9216, minimo: 100), 100, 10240) * 1024L * 1024L;
+
     public TimeSpan ToleranciaAlertaOffline =>
         TimeSpan.FromMinutes(Inteiro("Indoor:Alertas:TvOfflineMinutos", padrao: 15, minimo: 5));
 

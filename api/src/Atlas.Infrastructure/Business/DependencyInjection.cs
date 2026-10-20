@@ -14,6 +14,7 @@ using Atlas.Infrastructure.Business.Conteudo;
 using Atlas.Infrastructure.Business.Dispositivo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -49,41 +50,77 @@ public static class DependencyInjection
         services.AddScoped<ColetorCotacoes>();
         services.AddHostedService<ColetorConteudoExterno>();
         services.AddScoped<Atlas.Application.Business.Rede.Telas.Alertas.VerificadorTelasOffline>();
+        services.AddScoped<TetoArmazenamento>();
+        services.AddScoped<InventarioArmazenamentoServico>();
         services.AddHostedService<MonitorTelas>();
+        services.AddHostedService<MonitorArmazenamento>();
     }
 
     /// <summary>
-    /// Storage das mídias (Supabase). Sem <c>Indoor:Armazenamento:Supabase</c>
-    /// configurado, a API sobe e só o que mexe em arquivo responde com erro.
+    /// Storage das mídias: Cloudflare R2 se <c>Indoor:Armazenamento:R2</c>
+    /// estiver configurado (ADR-025), senão o Supabase. Sem nenhum, a API sobe
+    /// e só o que mexe em arquivo responde com erro.
     /// </summary>
+    /// <remarks>
+    /// Com os dois configurados e <c>Indoor:Armazenamento:CopiarDoSupabase</c>
+    /// ligado, a subida copia para o R2 o que ainda só está no Supabase.
+    /// </remarks>
     private static void AddArmazenamentoMidias(this IHostApplicationBuilder builder)
     {
-        var opcoes = OpcoesSupabase.Ler(builder.Configuration);
+        var r2 = OpcoesR2.Ler(builder.Configuration);
+        var supabase = OpcoesSupabase.Ler(builder.Configuration);
 
-        if (opcoes is null)
+        if (r2 is null && supabase is null)
         {
             builder.Services.AddSingleton<IArmazenamentoMidias, ArmazenamentoNaoConfigurado>();
             return;
         }
 
-        builder.Services.AddSingleton(opcoes);
+        var copiar = r2 is not null && supabase is not null
+            && builder.Configuration.GetValue<bool>("Indoor:Armazenamento:CopiarDoSupabase");
 
-        // Um HttpClient só, com conexões renovadas para acompanhar mudanças de DNS.
-        builder.Services.AddSingleton(sp => new ArmazenamentoSupabase(
-            new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(15) })
-            {
-                Timeout = TimeSpan.FromSeconds(60),
-            },
-            opcoes,
-            sp.GetRequiredService<TimeProvider>(),
-            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ArmazenamentoSupabase>>()));
-        builder.Services.AddSingleton<IArmazenamentoMidias>(sp => sp.GetRequiredService<ArmazenamentoSupabase>());
-
-        if (opcoes.CriarBucket)
+        if (supabase is not null && (r2 is null || copiar))
         {
-            builder.Services.AddHostedService<InicializadorBucket>();
+            builder.Services.AddSingleton(supabase);
+            builder.Services.AddSingleton(sp => new ArmazenamentoSupabase(
+                CriarHttpClient(),
+                supabase,
+                sp.GetRequiredService<TimeProvider>(),
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ArmazenamentoSupabase>>()));
         }
+
+        if (r2 is null)
+        {
+            builder.Services.AddSingleton<IArmazenamentoMidias>(sp => sp.GetRequiredService<ArmazenamentoSupabase>());
+            if (supabase!.CriarBucket)
+            {
+                builder.Services.AddHostedService<InicializadorBucket>();
+            }
+
+            return;
+        }
+
+        builder.Services.AddSingleton(r2);
+        builder.Services.AddSingleton(sp => new ArmazenamentoR2(
+            CriarHttpClient(),
+            r2,
+            sp.GetRequiredService<TimeProvider>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ArmazenamentoR2>>()));
+        builder.Services.AddSingleton<IArmazenamentoMidias>(sp => sp.GetRequiredService<ArmazenamentoR2>());
+        builder.Services.AddHostedService(sp => new InicializadorR2(
+            sp.GetRequiredService<ArmazenamentoR2>(),
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetRequiredService<IConfiguracaoIndoor>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<InicializadorR2>>(),
+            copiar ? sp.GetRequiredService<ArmazenamentoSupabase>() : null));
     }
+
+    /// <summary>Um HttpClient por storage, com conexões renovadas para acompanhar mudanças de DNS.</summary>
+    private static HttpClient CriarHttpClient() =>
+        new(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(15) })
+        {
+            Timeout = TimeSpan.FromSeconds(60),
+        };
 
     /// <summary>
     /// Registra uma política por chave de <see cref="BusinessPermissionKeys"/>.

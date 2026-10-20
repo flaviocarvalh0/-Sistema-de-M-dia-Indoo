@@ -40,7 +40,7 @@ public class ArmazenamentoSupabaseContratoTests
         try
         {
             // 1. O painel pede a URL e envia direto ao storage, sem credencial.
-            var envio = await armazenamento.PrepararEnvioAsync(chave, CancellationToken.None);
+            var envio = await armazenamento.PrepararEnvioAsync(chave, TiposArquivoMidia.Png, arquivo.Length, CancellationToken.None);
             using (var navegador = new HttpClient())
             {
                 var corpo = new ByteArrayContent(arquivo);

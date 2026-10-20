@@ -140,7 +140,7 @@ public class ArmazenamentoSupabaseTests
     {
         _supabase.Responder(HttpStatusCode.OK, """{"url":"/object/upload/sign/midias/clientes/7/midias/x.mp4?token=abc","token":"abc"}""");
 
-        var envio = await Armazenamento().PrepararEnvioAsync(Chave, CancellationToken.None);
+        var envio = await Armazenamento().PrepararEnvioAsync(Chave, TiposArquivoMidia.Mp4, 1000, CancellationToken.None);
 
         var requisicao = _supabase.Requisicoes.Single();
         requisicao.Metodo.Should().Be(HttpMethod.Post);
@@ -225,7 +225,7 @@ public class ArmazenamentoSupabaseTests
     {
         _supabase.Responder(HttpStatusCode.InternalServerError, """{"message":"internal"}""");
 
-        var acao = () => Armazenamento().PrepararEnvioAsync(Chave, CancellationToken.None);
+        var acao = () => Armazenamento().PrepararEnvioAsync(Chave, TiposArquivoMidia.Mp4, 1000, CancellationToken.None);
 
         (await acao.Should().ThrowAsync<ArmazenamentoIndisponivelException>())
             .Which.Message.Should().Contain("500").And.NotContain("chave-servico");
@@ -340,7 +340,7 @@ public class ArmazenamentoSupabaseTests
     [Fact]
     public async Task NaoConfigurado_DeveRecusarComMensagemClara()
     {
-        var acao = () => new ArmazenamentoNaoConfigurado().PrepararEnvioAsync(Chave, CancellationToken.None);
+        var acao = () => new ArmazenamentoNaoConfigurado().PrepararEnvioAsync(Chave, TiposArquivoMidia.Mp4, 1000, CancellationToken.None);
 
         (await acao.Should().ThrowAsync<ArmazenamentoIndisponivelException>())
             .Which.Message.Should().Contain("Indoor:Armazenamento:Supabase");

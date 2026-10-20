@@ -80,6 +80,18 @@ internal static class RecebimentoArquivo
                 CotaArmazenamento.Mensagem(usado - bytesQueSaem, cota), cancellationToken);
         }
 
+        // Teto da rede (ADR-025): o arquivo tem de caber no espaço reservado ao
+        // preparar o envio. Maior que o declarado (ou envio vencido) é apagado.
+        var reserva = await context.ReservasEnvio.FirstOrDefaultAsync(r => r.Chave == chave, cancellationToken);
+        if (reserva is null || arquivo.TamanhoBytes > reserva.TamanhoBytes)
+        {
+            await RecusarAsync(armazenamento, logger, chave, "Chave",
+                reserva is null
+                    ? "O envio expirou. Envie o arquivo de novo."
+                    : "O arquivo enviado é maior que o informado. Envie de novo.", cancellationToken);
+        }
+
+        context.ReservasEnvio.Remove(reserva!);
         return arquivo;
     }
 

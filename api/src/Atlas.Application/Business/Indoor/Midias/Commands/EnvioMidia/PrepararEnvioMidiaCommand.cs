@@ -25,7 +25,8 @@ public record PrepararEnvioMidiaCommand : IRequest<EnvioMidiaDto>
 public class PrepararEnvioMidiaCommandHandler(
     IApplicationDbContext context,
     IClienteAtual clienteAtual,
-    IArmazenamentoMidias armazenamento)
+    IArmazenamentoMidias armazenamento,
+    TetoArmazenamento teto)
     : IRequestHandler<PrepararEnvioMidiaCommand, EnvioMidiaDto>
 {
     public async Task<EnvioMidiaDto> Handle(PrepararEnvioMidiaCommand request, CancellationToken cancellationToken)
@@ -39,7 +40,9 @@ public class PrepararEnvioMidiaCommandHandler(
         }
 
         var chave = ChavesArmazenamento.Gerar(cliente.ClienteId, request.TipoConteudo);
-        var envio = await armazenamento.PrepararEnvioAsync(chave, cancellationToken);
+        // Teto da rede (ADR-025): só sai URL se couber, contando os envios em andamento.
+        await teto.ReservarAsync(chave, request.TamanhoBytes, nameof(request.TamanhoBytes), cancellationToken);
+        var envio = await armazenamento.PrepararEnvioAsync(chave, request.TipoConteudo, request.TamanhoBytes, cancellationToken);
 
         return new EnvioMidiaDto(chave, envio.Url, envio.ExpiraEm);
     }

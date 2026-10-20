@@ -29,6 +29,13 @@ public interface IConfiguracaoIndoor
     /// </summary>
     (int Inicio, int Fim) HorarioAlertas { get; }
 
+    /// <summary>
+    /// Teto de armazenamento da rede inteira (<c>Indoor:Armazenamento:LimiteTotalMb</c>,
+    /// padrão 9.216 MB = 9 GB, máximo 10.240 MB): os 10 GB grátis do R2 com folga.
+    /// Nenhum envio é liberado se ultrapassar (ADR-025).
+    /// </summary>
+    long LimiteArmazenamentoBytes { get; }
+
     /// <summary>De quanto em quanto tempo a TV consulta a grade (<c>Indoor:Dispositivo:IntervaloSincronizacaoSegundos</c>, padrão 60).</summary>
     TimeSpan IntervaloSincronizacao { get; }
 

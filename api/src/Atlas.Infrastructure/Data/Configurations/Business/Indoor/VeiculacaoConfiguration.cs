@@ -34,3 +34,23 @@ public class LeituraQrConfiguration : IEntityTypeConfiguration<LeituraQr>
         builder.HasIndex(l => new { l.MidiaId, l.Momento });
     }
 }
+
+public class ReservaEnvioConfiguration : IEntityTypeConfiguration<ReservaEnvio>
+{
+    public void Configure(EntityTypeBuilder<ReservaEnvio> builder)
+    {
+        builder.ToTable("reserva_envio", "indoor", t => t.HasCheckConstraint("ck_reserva_envio_tamanho", "tamanho_bytes > 0"));
+        builder.Property(r => r.Chave).HasMaxLength(300).IsRequired();
+        builder.HasIndex(r => r.Chave).IsUnique();
+        builder.HasIndex(r => r.ExpiraEm);
+    }
+}
+
+public class InventarioArmazenamentoConfiguration : IEntityTypeConfiguration<InventarioArmazenamento>
+{
+    public void Configure(EntityTypeBuilder<InventarioArmazenamento> builder)
+    {
+        builder.ToTable("inventario_armazenamento", "indoor", t => t.HasCheckConstraint("ck_inventario_armazenamento_unico", "id = 1"));
+        builder.Property(i => i.Id).ValueGeneratedNever();
+    }
+}

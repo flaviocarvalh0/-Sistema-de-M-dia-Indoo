@@ -91,13 +91,14 @@ public sealed record VersaoAppDto
     public uint Version { get; init; }
 }
 
-public class PrepararEnvioApkCommandHandler(IArmazenamentoMidias armazenamento)
+public class PrepararEnvioApkCommandHandler(IArmazenamentoMidias armazenamento, TetoArmazenamento teto)
     : IRequestHandler<PrepararEnvioApkCommand, EnvioApkDto>
 {
     public async Task<EnvioApkDto> Handle(PrepararEnvioApkCommand request, CancellationToken cancellationToken)
     {
         var chave = ArquivoApk.NovaChave();
-        var envio = await armazenamento.PrepararEnvioAsync(chave, cancellationToken);
+        await teto.ReservarAsync(chave, request.TamanhoBytes, nameof(request.TamanhoBytes), cancellationToken);
+        var envio = await armazenamento.PrepararEnvioAsync(chave, ArquivoApk.TipoConteudo, request.TamanhoBytes, cancellationToken);
         return new EnvioApkDto(chave, envio.Url, envio.ExpiraEm, ArquivoApk.TipoConteudo);
     }
 }
@@ -135,6 +136,7 @@ public class CriarVersaoAppCommandHandler(
             Hash = hash,
         };
         context.VersoesApp.Add(versao);
+        await TetoArmazenamento.ConfirmarAsync(context, request.Chave, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         return versao.Id;
     }
@@ -145,7 +147,12 @@ public class CriarVersaoAppCommandHandler(
         var objeto = await armazenamento.ObterAsync(request.Chave, cancellationToken)
             ?? throw new ValidationException(nameof(request.Chave), ["O APK não chegou ao storage. Envie de novo."]);
 
-        string? erro = objeto.TamanhoBytes > VersaoApp.TamanhoMaximoBytes ? "O APK passa do limite de 50 MB." : null;
+        // Teto da rede (ADR-025): tem de caber no espaço reservado ao preparar o envio.
+        var reserva = await context.ReservasEnvio.FirstOrDefaultAsync(r => r.Chave == request.Chave, cancellationToken);
+        string? erro = objeto.TamanhoBytes > VersaoApp.TamanhoMaximoBytes ? "O APK passa do limite de 50 MB."
+            : reserva is null ? "O envio expirou. Envie o APK de novo."
+            : objeto.TamanhoBytes > reserva.TamanhoBytes ? "O APK enviado é maior que o informado. Envie de novo."
+            : null;
         string hash = string.Empty;
 
         if (erro is null)

@@ -35,6 +35,7 @@ public class PainelIndoorTests : IDisposable
     private readonly RelogioFixo _relogio = new(Agora);
     private readonly ClienteAtualFake _clienteAtual;
     private readonly EmailsFake _emails = new();
+    private readonly ConfiguracaoIndoorFake _configuracao = new();
     private readonly long _clienteA;
     private readonly long _clienteB;
 
@@ -51,12 +52,14 @@ public class PainelIndoorTests : IDisposable
 
     public void Dispose() => _context.Dispose();
 
+    private TetoArmazenamento Teto() => new(_context, _configuracao, _relogio);
+
     // ---------- Mídias: envio ----------
 
     [Fact]
     public async Task PrepararEnvio_DeveGerarChaveDoCliente()
     {
-        var envio = await new PrepararEnvioMidiaCommandHandler(_context, _clienteAtual, _armazenamento)
+        var envio = await new PrepararEnvioMidiaCommandHandler(_context, _clienteAtual, _armazenamento, Teto())
             .Handle(new PrepararEnvioMidiaCommand { TipoConteudo = TiposArquivoMidia.Mp4, TamanhoBytes = 1000 }, CancellationToken.None);
 
         ChavesArmazenamento.Valida(envio.Chave, _clienteA, TiposArquivoMidia.Mp4).Should().BeTrue();
@@ -69,7 +72,7 @@ public class PainelIndoorTests : IDisposable
         // Cota de 1 MB, com 600 KB já usados.
         await CriarMidiaNoBancoAsync(_clienteA, tamanho: 600 * 1024);
 
-        var acao = () => new PrepararEnvioMidiaCommandHandler(_context, _clienteAtual, _armazenamento)
+        var acao = () => new PrepararEnvioMidiaCommandHandler(_context, _clienteAtual, _armazenamento, Teto())
             .Handle(new PrepararEnvioMidiaCommand { TipoConteudo = TiposArquivoMidia.Mp4, TamanhoBytes = 500 * 1024 }, CancellationToken.None);
 
         (await acao.Should().ThrowAsync<ValidationException>()).Which.Errors.Should().ContainKey("TamanhoBytes");
@@ -532,6 +535,7 @@ public class PainelIndoorTests : IDisposable
     {
         var chave = ChavesArmazenamento.Gerar(_clienteA, tipo);
         _armazenamento.Arquivos[chave] = arquivo;
+        Reservas.Criar(_context, chave, arquivo.Length, Agora);
         return chave;
     }
 

@@ -620,6 +620,51 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.ToTable("estado_tela", "indoor");
                 });
 
+            modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.InventarioArmazenamento", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<long>("BytesNoBucket")
+                        .HasColumnType("bigint")
+                        .HasColumnName("bytes_no_bucket");
+
+                    b.Property<long>("BytesOrfaosRemovidos")
+                        .HasColumnType("bigint")
+                        .HasColumnName("bytes_orfaos_removidos");
+
+                    b.Property<int>("NivelAlertaAvisado")
+                        .HasColumnType("integer")
+                        .HasColumnName("nivel_alerta_avisado");
+
+                    b.Property<int?>("Objetos")
+                        .HasColumnType("integer")
+                        .HasColumnName("objetos");
+
+                    b.Property<int>("OrfaosRemovidos")
+                        .HasColumnType("integer")
+                        .HasColumnName("orfaos_removidos");
+
+                    b.Property<DateTimeOffset>("VerificadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verificado_em");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventario_armazenamento");
+
+                    b.ToTable("inventario_armazenamento", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_inventario_armazenamento_unico", "id = 1");
+                        });
+                });
+
             modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.ItemPlaylist", b =>
                 {
                     b.Property<long>("Id")
@@ -1096,6 +1141,55 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.ToTable("registro_exibicao", "indoor", t =>
                         {
                             t.HasCheckConstraint("ck_registro_exibicao_duracao", "duracao_ms BETWEEN 0 AND 7200000");
+                        });
+                });
+
+            modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.ReservaEnvio", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("chave");
+
+                    b.Property<DateTimeOffset>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<DateTimeOffset>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expira_em");
+
+                    b.Property<long>("TamanhoBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tamanho_bytes");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reserva_envio");
+
+                    b.HasIndex("Chave")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reserva_envio_chave");
+
+                    b.HasIndex("ExpiraEm")
+                        .HasDatabaseName("ix_reserva_envio_expira_em");
+
+                    b.ToTable("reserva_envio", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_reserva_envio_tamanho", "tamanho_bytes > 0");
                         });
                 });
 

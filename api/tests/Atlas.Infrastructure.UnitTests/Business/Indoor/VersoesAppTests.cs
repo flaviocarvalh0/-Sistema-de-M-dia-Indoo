@@ -32,6 +32,7 @@ public class VersoesAppTests : IDisposable
     {
         var chave = ArquivoApk.NovaChave();
         _armazenamento.Arquivos[chave] = dados;
+        Reservas.Criar(_context, chave, dados.Length);
         return chave;
     }
 

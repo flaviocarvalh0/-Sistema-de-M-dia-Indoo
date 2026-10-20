@@ -57,6 +57,10 @@ public class ApplicationDbContext
     // Prova de veiculação (ADR-023)
     public DbSet<RegistroExibicao> RegistrosExibicao => Set<RegistroExibicao>();
     public DbSet<LeituraQr> LeiturasQr => Set<LeituraQr>();
+
+    // Teto de armazenamento (ADR-025)
+    public DbSet<ReservaEnvio> ReservasEnvio => Set<ReservaEnvio>();
+    public DbSet<InventarioArmazenamento> InventariosArmazenamento => Set<InventarioArmazenamento>();
     public DbSet<Midia> Midias => Set<Midia>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<ItemPlaylist> ItensPlaylist => Set<ItemPlaylist>();

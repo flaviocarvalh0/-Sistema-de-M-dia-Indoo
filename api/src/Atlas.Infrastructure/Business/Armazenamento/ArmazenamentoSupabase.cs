@@ -36,7 +36,7 @@ internal sealed class ArmazenamentoSupabase(
     /// <summary>Validade das URLs de envio assinadas pelo Supabase (padrão do serviço).</summary>
     public static readonly TimeSpan ValidadeEnvio = TimeSpan.FromHours(2);
 
-    public async Task<EnvioPreparado> PrepararEnvioAsync(string chave, CancellationToken cancellationToken)
+    public async Task<EnvioPreparado> PrepararEnvioAsync(string chave, string tipoConteudo, long tamanhoBytes, CancellationToken cancellationToken)
     {
         var resposta = await EnviarAsync(HttpMethod.Post, $"object/upload/sign/{Caminho(chave)}", corpo: null, cancellationToken);
         var assinatura = await LerJsonAsync<RespostaUrlAssinada>(resposta, "preparar o envio", cancellationToken);
