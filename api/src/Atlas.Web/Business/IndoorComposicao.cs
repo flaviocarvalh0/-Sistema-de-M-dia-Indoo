@@ -75,6 +75,14 @@ public static class IndoorComposicao
                     ?? httpContext.Connection.RemoteIpAddress?.ToString()
                     ?? "desconhecido", limite: 30, TimeSpan.FromMinutes(1)));
 
+            options.AddPolicy(IndoorRateLimits.Exibicoes, httpContext =>
+                Janela(httpContext.User.FindFirstValue(ClaimsDispositivo.TelaId)
+                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "desconhecido", limite: 20, TimeSpan.FromMinutes(1)));
+
+            options.AddPolicy(IndoorRateLimits.LinkQr, httpContext =>
+                Janela(httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido", limite: 30, TimeSpan.FromMinutes(1)));
+
             options.AddPolicy(IndoorRateLimits.Diretorio, httpContext =>
                 Janela(httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido", limite: 60, TimeSpan.FromMinutes(1)));
         });
@@ -106,4 +114,10 @@ public static class IndoorRateLimits
     /// abre a página usa 1; tentar adivinhar códigos (32¹⁰) esbarra aqui.
     /// </summary>
     public const string Diretorio = "indoor-diretorio";
+
+    /// <summary>Envio de exibições: 20 lotes por tela por minuto (o normal é 1 a cada 15 minutos).</summary>
+    public const string Exibicoes = "indoor-exibicoes";
+
+    /// <summary>QR rastreado (<c>/q/{codigo}</c>): 30 por IP por minuto; quem lê usa 1.</summary>
+    public const string LinkQr = "indoor-link-qr";
 }

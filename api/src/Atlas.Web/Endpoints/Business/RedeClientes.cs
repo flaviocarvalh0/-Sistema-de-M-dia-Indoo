@@ -1,3 +1,4 @@
+using Atlas.Application.Business.Veiculacao;
 using Atlas.Application.Business.Rede.Clientes.Commands.AtualizarCliente;
 using Atlas.Application.Business.Rede.Clientes.Commands.BloqueioCliente;
 using Atlas.Application.Business.Rede.Clientes.Commands.CriarCliente;
@@ -45,6 +46,18 @@ public class RedeClientes : IEndpointGroup
         groupBuilder
             .MapPost(DesbloquearCliente, "{id:long}/desbloquear")
             .RequireAuthorization(BusinessPermissionKeys.Clientes.Update);
+
+        groupBuilder
+            .MapGet(GetRelatorioCliente, "{id:long}/relatorio")
+            .RequireAuthorization(BusinessPermissionKeys.Clientes.View);
+    }
+
+    [EndpointSummary("Relatório de veiculação do cliente")]
+    [EndpointDescription("O mesmo relatório que o cliente vê no painel dele. Sem datas: do dia 1 do mês até hoje.")]
+    public static async Task<Ok<RelatorioVeiculacaoDto>> GetRelatorioCliente(
+        ISender sender, long id, [FromQuery] DateOnly? de, [FromQuery] DateOnly? ate, CancellationToken cancellationToken)
+    {
+        return TypedResults.Ok(await sender.Send(new GetRelatorioVeiculacaoClienteQuery(id, de, ate), cancellationToken));
     }
 
     [EndpointSummary("Listar clientes")]

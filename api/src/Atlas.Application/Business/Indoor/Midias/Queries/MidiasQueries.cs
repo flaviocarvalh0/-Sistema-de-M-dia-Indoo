@@ -1,3 +1,4 @@
+using Atlas.Application.Business.Veiculacao;
 using Atlas.Application.Business.Common;
 using Atlas.Application.Business.Indoor.Armazenamento;
 using Atlas.Application.Business.Indoor.Midias.Common;
@@ -20,7 +21,8 @@ public record GetMidiasQuery : IRequest<PaginatedList<MidiaDto>>
     public TipoMidia? Tipo { get; init; }
 }
 
-public class GetMidiasQueryHandler(IApplicationDbContext context, IClienteAtual clienteAtual, IIdentityService identityService)
+public class GetMidiasQueryHandler(
+    IApplicationDbContext context, IClienteAtual clienteAtual, IIdentityService identityService, IConfiguracaoIndoor configuracao)
     : IRequestHandler<GetMidiasQuery, PaginatedList<MidiaDto>>
 {
     public async Task<PaginatedList<MidiaDto>> Handle(GetMidiasQuery request, CancellationToken cancellationToken)
@@ -52,6 +54,11 @@ public class GetMidiasQueryHandler(IApplicationDbContext context, IClienteAtual 
 
         await identityService.PreencherNomesAsync(pagina.Items, cancellationToken);
 
+        foreach (var item in pagina.Items)
+        {
+            item.QrUrlRastreada = LinkQr.Montar(configuracao, item.CodigoQr);
+        }
+
         return pagina;
     }
 }
@@ -64,7 +71,8 @@ public class GetMidiaByIdQueryHandler(
     IApplicationDbContext context,
     IClienteAtual clienteAtual,
     IIdentityService identityService,
-    IArmazenamentoMidias armazenamento)
+    IArmazenamentoMidias armazenamento,
+    IConfiguracaoIndoor configuracao)
     : IRequestHandler<GetMidiaByIdQuery, MidiaDto>
 {
     public static readonly TimeSpan ValidadeVisualizacao = TimeSpan.FromHours(1);
@@ -92,6 +100,7 @@ public class GetMidiaByIdQueryHandler(
         return dto with
         {
             UrlVisualizacao = await armazenamento.GerarUrlLeituraAsync(midia.ChaveArmazenamento, ValidadeVisualizacao, cancellationToken),
+            QrUrlRastreada = LinkQr.Montar(configuracao, dto.CodigoQr),
         };
     }
 }

@@ -2,6 +2,7 @@ using Atlas.Domain.Business.Indoor.Enums;
 using Atlas.Application.Business.Indoor.Common;
 using Atlas.Application.Business.Indoor.Midias.Common;
 using Atlas.Application.Business.Clientes.Common;
+using Atlas.Application.Business.Veiculacao;
 using Atlas.Domain.Business.Constants;
 
 namespace Atlas.Application.Business.Indoor.Midias.Commands.AtualizarMidia;
@@ -58,6 +59,8 @@ public class AtualizarMidiaCommandHandler(IApplicationDbContext context, IClient
         {
             midia.DefinirQrCode(qrCode);
         }
+
+        await LinkQr.AtualizarCodigoAsync(context, midia, cancellationToken);
 
         return await context.SalvarAsync(midia, cancellationToken);
     }

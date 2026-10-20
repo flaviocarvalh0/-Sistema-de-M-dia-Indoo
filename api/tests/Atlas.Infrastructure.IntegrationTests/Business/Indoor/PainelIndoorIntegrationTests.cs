@@ -92,7 +92,7 @@ public class PainelIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
 
         await using (var context = fixture.CreateDbContext())
         {
-            var midias = await new GetMidiasQueryHandler(context, Atual(_clienteA), Identity)
+            var midias = await new GetMidiasQueryHandler(context, Atual(_clienteA), Identity, new ConfiguracaoIndoor(new ConfigurationBuilder().Build()))
                 .Handle(new GetMidiasQuery { PaginationParams = new PaginationParams { PageSize = 50 } }, CancellationToken.None);
             midias.Items.Should().HaveCount(2);
             midias.Items.Single(m => m.Id == video).QuantidadePlaylists.Should().Be(1, "aparece duas vezes, mas numa playlist só");

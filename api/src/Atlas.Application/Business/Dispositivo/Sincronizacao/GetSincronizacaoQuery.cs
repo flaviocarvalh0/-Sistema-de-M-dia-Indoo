@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Atlas.Application.Business.Common;
+using Atlas.Application.Business.Veiculacao;
 using Atlas.Application.Business.Conteudo.Clima;
 using Atlas.Application.Business.Diretorio;
 using Atlas.Application.Business.Dispositivo.Common;
@@ -342,9 +343,16 @@ public class GetSincronizacaoQueryHandler(
                     i.Midia.QrConteudo,
                     i.Midia.QrLegenda,
                     i.Midia.QrPosicao,
-                    i.Midia.QrTamanho))
+                    i.Midia.QrTamanho,
+                    i.Midia.CodigoQr))
                 .ToListAsync(cancellationToken)
             : [];
+
+        // QR rastreado (ADR-023): a TV codifica o link curto da API, que conta a
+        // leitura e redireciona. Sem Indoor:UrlPublica, vai o destino direto.
+        itens = itens
+            .Select(i => LinkQr.Montar(configuracao, i.CodigoQr) is { } rastreado ? i with { QrConteudo = rastreado.AbsoluteUri } : i)
+            .ToList();
 
         var composicao = tela.PlaylistAtiva && tela.Composicao is not null
             ? tela.Composicao
@@ -683,7 +691,8 @@ public class GetSincronizacaoQueryHandler(
         string? QrConteudo = null,
         string? QrLegenda = null,
         PosicaoQrCode? QrPosicao = null,
-        TamanhoQrCode? QrTamanho = null);
+        TamanhoQrCode? QrTamanho = null,
+        string? CodigoQr = null);
 }
 
 public class GetSincronizacaoQueryValidator : AbstractValidator<GetSincronizacaoQuery>

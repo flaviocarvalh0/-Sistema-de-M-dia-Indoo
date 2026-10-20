@@ -10,6 +10,9 @@ public class MidiaConfiguration : IEntityTypeConfiguration<Midia>
         builder.ToTable("midia", "indoor", table =>
         {
             table.HasCheckConstraint("ck_midia_hash", "hash ~ '^[0-9a-f]{64}$'");
+            table.HasCheckConstraint(
+                "ck_midia_codigo_qr",
+                $"codigo_qr IS NULL OR (qr_tipo IS NOT NULL AND codigo_qr ~ '^[A-Z0-9]{{{Midia.TamanhoCodigoQr}}}$')");
 
             table.HasCheckConstraint(
                 "ck_midia_tamanho",
@@ -46,6 +49,8 @@ public class MidiaConfiguration : IEntityTypeConfiguration<Midia>
         builder.Property(m => m.QrCidadeRecebedor).HasMaxLength(15);
         builder.Property(m => m.QrLegenda).HasMaxLength(Midia.TamanhoMaximoLegendaQrCode);
         builder.Property(m => m.QrConteudo).HasMaxLength(Midia.TamanhoMaximoConteudoQrCode);
+        builder.Property(m => m.CodigoQr).HasMaxLength(Midia.TamanhoCodigoQr);
+        builder.HasIndex(m => m.CodigoQr).IsUnique().HasFilter("codigo_qr IS NOT NULL");
 
         builder.Property(m => m.Titulo).HasMaxLength(150).IsRequired();
         builder.Property(m => m.ChaveArmazenamento).HasMaxLength(300).IsRequired();

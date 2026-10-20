@@ -632,6 +632,54 @@ namespace Atlas.Infrastructure.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.LeituraQr", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ClienteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cliente_id");
+
+                    b.Property<long>("MidiaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("midia_id");
+
+                    b.Property<DateTimeOffset>("Momento")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("momento");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Visitante")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("visitante");
+
+                    b.HasKey("Id")
+                        .HasName("pk_leitura_qr");
+
+                    b.HasIndex("ClienteId", "Momento")
+                        .HasDatabaseName("ix_leitura_qr_cliente_id_momento");
+
+                    b.HasIndex("MidiaId", "Momento")
+                        .HasDatabaseName("ix_leitura_qr_midia_id_momento");
+
+                    b.ToTable("leitura_qr", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_leitura_qr_visitante", "visitante ~ '^[0-9a-f]{16}$'");
+                        });
+                });
+
             modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.Midia", b =>
                 {
                     b.Property<long>("Id")
@@ -654,6 +702,11 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.Property<long>("ClienteId")
                         .HasColumnType("bigint")
                         .HasColumnName("cliente_id");
+
+                    b.Property<string>("CodigoQr")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("codigo_qr");
 
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone")
@@ -807,11 +860,18 @@ namespace Atlas.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_midia_chave_armazenamento");
 
+                    b.HasIndex("CodigoQr")
+                        .IsUnique()
+                        .HasDatabaseName("ix_midia_codigo_qr")
+                        .HasFilter("codigo_qr IS NOT NULL");
+
                     b.HasIndex("ClienteId", "Ativo")
                         .HasDatabaseName("ix_midia_cliente_id_ativo");
 
                     b.ToTable("midia", "indoor", t =>
                         {
+                            t.HasCheckConstraint("ck_midia_codigo_qr", "codigo_qr IS NULL OR (qr_tipo IS NOT NULL AND codigo_qr ~ '^[A-Z0-9]{8}$')");
+
                             t.HasCheckConstraint("ck_midia_duracao", "duracao_segundos BETWEEN 1 AND 3600");
 
                             t.HasCheckConstraint("ck_midia_hash", "hash ~ '^[0-9a-f]{64}$'");
@@ -922,6 +982,80 @@ namespace Atlas.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("ck_playlist_duracao_noticia", "duracao_noticia_segundos BETWEEN 5 AND 60");
 
                             t.HasCheckConstraint("ck_playlist_noticia_a_cada", "noticia_a_cada_anuncios BETWEEN 0 AND 20");
+                        });
+                });
+
+            modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.RegistroExibicao", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ClienteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cliente_id");
+
+                    b.Property<bool>("Concluida")
+                        .HasColumnType("boolean")
+                        .HasColumnName("concluida");
+
+                    b.Property<int>("DuracaoMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("duracao_ms");
+
+                    b.Property<Guid>("IdLocal")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id_local");
+
+                    b.Property<DateTimeOffset>("Inicio")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio");
+
+                    b.Property<long>("MidiaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("midia_id");
+
+                    b.Property<long>("ParceiroId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("parceiro_id");
+
+                    b.Property<DateTimeOffset>("RecebidoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recebido_em");
+
+                    b.Property<bool>("SemConexao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sem_conexao");
+
+                    b.Property<long>("TelaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tela_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_registro_exibicao");
+
+                    b.HasIndex("ClienteId", "Inicio")
+                        .HasDatabaseName("ix_registro_exibicao_cliente_id_inicio");
+
+                    b.HasIndex("TelaId", "IdLocal")
+                        .IsUnique()
+                        .HasDatabaseName("ix_registro_exibicao_tela_id_id_local");
+
+                    b.HasIndex("TelaId", "Inicio")
+                        .HasDatabaseName("ix_registro_exibicao_tela_id_inicio");
+
+                    b.ToTable("registro_exibicao", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_registro_exibicao_duracao", "duracao_ms BETWEEN 0 AND 7200000");
                         });
                 });
 

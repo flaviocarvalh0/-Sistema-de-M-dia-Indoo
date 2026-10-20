@@ -40,6 +40,16 @@ public sealed record MidiaDto : IDtoAuditavel
     /// <summary>O texto codificado (link, tel: ou Pix copia e cola), para a prévia no painel.</summary>
     public string? QrConteudo { get; init; }
 
+    /// <summary>Código do link rastreado (só Link, WhatsApp e Instagram).</summary>
+    public string? CodigoQr { get; init; }
+
+    /// <summary>
+    /// O que a TV codifica no QR: o link rastreado <c>/q/{codigo}</c>, que conta a
+    /// leitura e redireciona. Nulo = a TV mostra <see cref="QrConteudo"/> direto
+    /// (telefone, Pix ou API sem <c>Indoor:UrlPublica</c>). Só no painel do cliente.
+    /// </summary>
+    public Uri? QrUrlRastreada { get; set; }
+
     /// <summary>Em quantas playlists a mídia aparece (mídia em uso não pode ser excluída).</summary>
     public int QuantidadePlaylists { get; init; }
 
@@ -116,6 +126,7 @@ public static class MidiaProjecao
             QrPosicao = m.QrPosicao,
             QrTamanho = m.QrTamanho,
             QrConteudo = m.QrConteudo,
+            CodigoQr = m.CodigoQr,
             TrocaPendente = m.PendenteChave != null,
             PendenteTipo = m.PendenteTipo,
             PendenteTamanhoBytes = m.PendenteTamanhoBytes,

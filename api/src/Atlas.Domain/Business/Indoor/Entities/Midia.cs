@@ -85,6 +85,26 @@ public class Midia : BaseAuditableEntity, IDoCliente
     /// <summary>O que vai codificado no QR code (URL, tel: ou o Pix copia e cola).</summary>
     public string? QrConteudo { get; private set; }
 
+    public const int TamanhoCodigoQr = 8;
+
+    /// <summary>
+    /// Código do link rastreado (<c>/q/{codigo}</c>, ADR-023): a TV mostra esse
+    /// endereço curto, a API conta a leitura e redireciona para
+    /// <see cref="QrConteudo"/>. Só nos tipos que abrem um link (Link,
+    /// WhatsApp, Instagram); nulo nos outros (telefone e Pix vão direto).
+    /// </summary>
+    public string? CodigoQr { get; private set; }
+
+    public void DefinirCodigoQr(string? codigo)
+    {
+        if (codigo is not null && codigo.Length != TamanhoCodigoQr)
+        {
+            throw new InvalidOperationException($"O código do QR deve ter {TamanhoCodigoQr} caracteres.");
+        }
+
+        CodigoQr = codigo;
+    }
+
     /// <summary>Define o QR code (já validado e montado pela aplicação).</summary>
     public void DefinirQrCode(QrCodeDaMidia qr)
     {
@@ -103,7 +123,7 @@ public class Midia : BaseAuditableEntity, IDoCliente
     public void RemoverQrCode()
     {
         QrTipo = null;
-        QrDestino = QrMensagem = QrNomeRecebedor = QrCidadeRecebedor = QrLegenda = QrConteudo = null;
+        QrDestino = QrMensagem = QrNomeRecebedor = QrCidadeRecebedor = QrLegenda = QrConteudo = CodigoQr = null;
         QrValor = null;
         QrPosicao = null;
         QrTamanho = null;

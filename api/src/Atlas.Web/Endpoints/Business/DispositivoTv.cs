@@ -1,4 +1,5 @@
 using Atlas.Application.Business.Dispositivo.Autenticacao;
+using Atlas.Application.Business.Dispositivo.Exibicoes;
 using Atlas.Application.Business.Dispositivo.Sincronizacao;
 using Atlas.Infrastructure.Business.Dispositivo;
 using Atlas.Web.Business;
@@ -20,7 +21,7 @@ public class DispositivoTv : IEndpointGroup
     {
         groupBuilder
             .WithTags("Mídia Indoor — Dispositivo (TV)")
-            .WithDescription("Pareamento e sincronização da grade pelo app das TVs.");
+            .WithDescription("Pareamento, sincronização da grade e envio das exibições pelo app das TVs.");
 
         groupBuilder
             .MapPost(Autenticar, "autenticar")
@@ -31,6 +32,19 @@ public class DispositivoTv : IEndpointGroup
             .MapGet(Sincronizar, "sincronizacao")
             .RequireAuthorization(AutenticacaoDispositivo.Politica)
             .RequireRateLimiting(IndoorRateLimits.Sincronizacao);
+
+        groupBuilder
+            .MapPost(RegistrarExibicoes, "exibicoes")
+            .RequireAuthorization(AutenticacaoDispositivo.Politica)
+            .RequireRateLimiting(IndoorRateLimits.Exibicoes);
+    }
+
+    [EndpointSummary("Enviar exibições")]
+    [EndpointDescription("Lote de até 500 exibições de anúncio registradas pela TV (prova de veiculação). Idempotente pelo id de cada exibição: reenviar não duplica. 200 = a TV pode apagar o lote, inclusive as descartadas.")]
+    public static async Task<Ok<RegistroExibicoesDto>> RegistrarExibicoes(
+        ISender sender, RegistrarExibicoesCommand command, CancellationToken cancellationToken)
+    {
+        return TypedResults.Ok(await sender.Send(command, cancellationToken));
     }
 
     [EndpointSummary("Parear a TV")]

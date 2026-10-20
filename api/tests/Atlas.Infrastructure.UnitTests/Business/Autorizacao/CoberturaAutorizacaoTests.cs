@@ -1,3 +1,5 @@
+using Atlas.Application.Business.Dispositivo.Exibicoes;
+using Atlas.Application.Business.Veiculacao;
 using Atlas.Application.Business.Diretorio;
 using System.Reflection;
 using Atlas.Application.Business.Dispositivo.Autenticacao;
@@ -43,6 +45,9 @@ public class CoberturaAutorizacaoTests
         typeof(AutenticarDispositivoCommand),
         typeof(GetSincronizacaoQuery),
         typeof(GetDiretorioPublicoQuery),
+        // TV (token do dispositivo) e leitura anônima do QR rastreado (ADR-023).
+        typeof(RegistrarExibicoesCommand),
+        typeof(RegistrarLeituraQrCommand),
     ];
 
     private static List<Type> Requests() =>

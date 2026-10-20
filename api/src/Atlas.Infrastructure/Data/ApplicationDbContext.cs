@@ -53,6 +53,10 @@ public class ApplicationDbContext
     // Business — Mídia Indoor
     public DbSet<Tela> Telas => Set<Tela>();
     public DbSet<EstadoTela> EstadosTela => Set<EstadoTela>();
+
+    // Prova de veiculação (ADR-023)
+    public DbSet<RegistroExibicao> RegistrosExibicao => Set<RegistroExibicao>();
+    public DbSet<LeituraQr> LeiturasQr => Set<LeituraQr>();
     public DbSet<Midia> Midias => Set<Midia>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<ItemPlaylist> ItensPlaylist => Set<ItemPlaylist>();

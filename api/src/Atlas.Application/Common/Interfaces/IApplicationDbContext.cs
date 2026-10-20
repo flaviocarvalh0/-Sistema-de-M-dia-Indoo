@@ -34,6 +34,10 @@ public interface IApplicationDbContext
     // Business — Mídia Indoor
     DbSet<Tela> Telas { get; }
     DbSet<EstadoTela> EstadosTela { get; }
+
+    // Prova de veiculação (ADR-023)
+    DbSet<RegistroExibicao> RegistrosExibicao { get; }
+    DbSet<LeituraQr> LeiturasQr { get; }
     DbSet<Midia> Midias { get; }
     DbSet<Playlist> Playlists { get; }
     DbSet<ItemPlaylist> ItensPlaylist { get; }

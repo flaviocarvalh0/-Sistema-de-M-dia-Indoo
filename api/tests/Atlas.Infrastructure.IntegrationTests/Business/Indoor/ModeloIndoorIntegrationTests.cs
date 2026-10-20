@@ -316,6 +316,58 @@ public class ModeloIndoorIntegrationTests(DatabaseFixture fixture) : IAsyncLifet
             .ConstraintName.Should().Be(restricao);
     }
 
+    [Fact]
+    public async Task Veiculacao_ReenvioDaMesmaExibicaoEDadosInvalidosSaoRecusadosNoBanco()
+    {
+        var telaFicticia = -Random.Shared.NextInt64(1, long.MaxValue);
+        var idLocal = Guid.NewGuid();
+        RegistroExibicao Registro() => new()
+        {
+            TelaId = telaFicticia, ParceiroId = _parceiroId, MidiaId = 1, ClienteId = _clienteId,
+            IdLocal = idLocal, Inicio = DateTimeOffset.UtcNow, DuracaoMs = 15_000, Concluida = true, RecebidoEm = DateTimeOffset.UtcNow,
+        };
+
+        try
+        {
+            await using (var context = fixture.CreateDbContext())
+            {
+                context.RegistrosExibicao.Add(Registro());
+                await context.SaveChangesAsync();
+            }
+
+            await using (var context = fixture.CreateDbContext())
+            {
+                context.RegistrosExibicao.Add(Registro());
+                var repetido = () => context.SaveChangesAsync();
+                (await repetido.Should().ThrowAsync<DbUpdateException>()).WithInnerException<PostgresException>()
+                    .Which.ConstraintName.Should().Be("ix_registro_exibicao_tela_id_id_local");
+            }
+
+            await using (var context = fixture.CreateDbContext())
+            {
+                context.LeiturasQr.Add(new LeituraQr { MidiaId = 1, ClienteId = _clienteId, Momento = DateTimeOffset.UtcNow, Visitante = "200.1.2.3" });
+                var comIp = () => context.SaveChangesAsync();
+                (await comIp.Should().ThrowAsync<DbUpdateException>()).WithInnerException<PostgresException>()
+                    .Which.ConstraintName.Should().Be("ck_leitura_qr_visitante");
+            }
+
+            await using (var context = fixture.CreateDbContext())
+            {
+                var midia = NovaMidia();
+                midia.DefinirCodigoQr("ABCD2345");
+                context.Midias.Add(midia);
+                var semQr = () => context.SaveChangesAsync();
+                (await semQr.Should().ThrowAsync<DbUpdateException>()).WithInnerException<PostgresException>()
+                    .Which.ConstraintName.Should().Be("ck_midia_codigo_qr");
+            }
+        }
+        finally
+        {
+            await using var context = fixture.CreateDbContext();
+            await context.RegistrosExibicao.Where(r => r.TelaId == telaFicticia).ExecuteDeleteAsync();
+        }
+    }
+
     private async Task<long> CriarMidiaAsync(DateOnly? inicio = null, DateOnly? fim = null)
     {
         await using var context = fixture.CreateDbContext();

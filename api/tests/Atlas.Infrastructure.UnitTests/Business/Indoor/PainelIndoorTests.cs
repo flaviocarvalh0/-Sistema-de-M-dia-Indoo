@@ -198,11 +198,11 @@ public class PainelIndoorTests : IDisposable
     {
         var midiaB = await CriarMidiaNoBancoAsync(_clienteB);
 
-        var lista = await new GetMidiasQueryHandler(_context, _clienteAtual, new IdentityNomesFake())
+        var lista = await new GetMidiasQueryHandler(_context, _clienteAtual, new IdentityNomesFake(), new ConfiguracaoIndoorFake())
             .Handle(new GetMidiasQuery(), CancellationToken.None);
         lista.Items.Should().BeEmpty();
 
-        var obter = () => new GetMidiaByIdQueryHandler(_context, _clienteAtual, new IdentityNomesFake(), _armazenamento)
+        var obter = () => new GetMidiaByIdQueryHandler(_context, _clienteAtual, new IdentityNomesFake(), _armazenamento, new ConfiguracaoIndoorFake())
             .Handle(new GetMidiaByIdQuery(midiaB.Id), CancellationToken.None);
         await obter.Should().ThrowAsync<NotFoundException>();
 
@@ -216,7 +216,7 @@ public class PainelIndoorTests : IDisposable
     {
         var midia = await CriarMidiaNoBancoAsync(_clienteA);
 
-        var dto = await new GetMidiaByIdQueryHandler(_context, _clienteAtual, new IdentityNomesFake(), _armazenamento)
+        var dto = await new GetMidiaByIdQueryHandler(_context, _clienteAtual, new IdentityNomesFake(), _armazenamento, new ConfiguracaoIndoorFake())
             .Handle(new GetMidiaByIdQuery(midia.Id), CancellationToken.None);
 
         dto.UrlVisualizacao!.ToString().Should().Contain(midia.ChaveArmazenamento).And.EndWith("s=3600");

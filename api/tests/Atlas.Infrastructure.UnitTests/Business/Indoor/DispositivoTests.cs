@@ -1,3 +1,4 @@
+using Atlas.Application.Business.Dispositivo.Exibicoes;
 using Atlas.Domain.Business.Parceiros.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using Atlas.Application.Business.Dispositivo.Autenticacao;
@@ -659,6 +660,90 @@ public class DispositivoTests : IDisposable
         await _context.SaveChangesAsync();
         (await Sincronizar(credencial, new GetSincronizacaoQuery { VersaoCodigoApp = 2 })).Atualizacao!.Codigo.Should().Be(3, "TV de teste recebe a de teste");
     }
+
+    [Fact]
+    public async Task Sincronizar_QrRastreadoVaiComOLinkCurtoDaApi()
+    {
+        var midia = Midia("Promo");
+        var credencial = await ParearComGradeAsync((midia, DiasSemana.Todos));
+        midia.DefinirQrCode(MontadorQrCode.Montar(new AtualizarMidiaCommand { QrTipo = TipoQrCode.WhatsApp, QrDestino = "92999990000" })!);
+        midia.DefinirCodigoQr("ABCD2345");
+        await _context.SaveChangesAsync();
+
+        (await Sincronizar(credencial, new GetSincronizacaoQuery())).Itens![0].QrCode!.Conteudo
+            .Should().Be("https://tv.indoor.test/q/ABCD2345", "a TV mostra o link que conta a leitura");
+
+        (await Sincronizar(credencial, new GetSincronizacaoQuery(), new ConfiguracaoIndoorFake { UrlPublica = null })).Itens![0].QrCode!.Conteudo
+            .Should().Be("https://wa.me/5592999990000", "sem endereço público vai o destino direto");
+    }
+
+    // ---------- Exibições (prova de veiculação) ----------
+
+    [Fact]
+    public async Task Exibicoes_GravaComClienteEParceiro_ReenvioNaoDuplica()
+    {
+        var midia = Midia("Promo");
+        var credencial = await ParearComGradeAsync((midia, DiasSemana.Todos));
+        var lote = new RegistrarExibicoesCommand(
+        [
+            new ExibicaoInformada(Guid.NewGuid(), midia.Id, Agora.AddMinutes(-30), 15_000, Concluida: true, SemConexao: false),
+            new ExibicaoInformada(Guid.NewGuid(), midia.Id, Agora.AddMinutes(-10), 4_000, Concluida: false, SemConexao: true),
+        ]);
+
+        (await Exibicoes(credencial, lote)).Should().Be(new RegistroExibicoesDto(2, 0, 0));
+        (await Exibicoes(credencial, lote)).Should().Be(new RegistroExibicoesDto(0, 2, 0), "a TV reenviou o mesmo lote");
+
+        var gravadas = await _context.RegistrosExibicao.OrderBy(r => r.Inicio).ToListAsync();
+        gravadas.Should().HaveCount(2);
+        gravadas.Should().OnlyContain(r => r.TelaId == _tela.Id && r.ParceiroId == _parceiro.Id && r.ClienteId == _cliente.Id && r.RecebidoEm == Agora);
+        gravadas[1].Should().BeEquivalentTo(new { DuracaoMs = 4_000, Concluida = false, SemConexao = true });
+    }
+
+    [Fact]
+    public async Task Exibicoes_DescartaMidiaDesconhecidaDataForaDaJanelaEDuracaoInvalida()
+    {
+        var midia = Midia("Promo");
+        var credencial = await ParearComGradeAsync((midia, DiasSemana.Todos));
+        var repetido = Guid.NewGuid();
+
+        var resultado = await Exibicoes(credencial, new RegistrarExibicoesCommand(
+        [
+            new ExibicaoInformada(Guid.NewGuid(), 999_999, Agora, 1000, true, false),
+            new ExibicaoInformada(Guid.NewGuid(), midia.Id, Agora.AddDays(-40), 1000, true, false),
+            new ExibicaoInformada(Guid.NewGuid(), midia.Id, Agora.AddHours(1), 1000, true, false),
+            new ExibicaoInformada(Guid.NewGuid(), midia.Id, Agora, -1, true, false),
+            new ExibicaoInformada(Guid.NewGuid(), midia.Id, Agora, 3 * 3600 * 1000, true, false),
+            new ExibicaoInformada(Guid.Empty, midia.Id, Agora, 1000, true, false),
+            new ExibicaoInformada(repetido, midia.Id, Agora, 1000, true, false),
+            new ExibicaoInformada(repetido, midia.Id, Agora, 1000, true, false),
+        ]));
+
+        resultado.Should().Be(new RegistroExibicoesDto(Aceitas: 1, JaRecebidas: 1, Descartadas: 6));
+    }
+
+    [Fact]
+    public async Task Exibicoes_LoteGrandeDemaisERecusado()
+    {
+        var itens = Enumerable.Range(0, RegistrarExibicoesCommandValidator.TamanhoMaximoLote + 1)
+            .Select(_ => new ExibicaoInformada(Guid.NewGuid(), 1, Agora, 1, true, false)).ToList();
+
+        (await new RegistrarExibicoesCommandValidator().ValidateAsync(new RegistrarExibicoesCommand(itens))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Exibicoes_TvDesvinculadaRecebe401()
+    {
+        var midia = Midia("Promo");
+        var credencial = await ParearComGradeAsync((midia, DiasSemana.Todos));
+        _tela.Desvincular();
+        await _context.SaveChangesAsync();
+
+        var acao = () => Exibicoes(credencial, new RegistrarExibicoesCommand([]));
+        await acao.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    private Task<RegistroExibicoesDto> Exibicoes(CredencialFake credencial, RegistrarExibicoesCommand comando) =>
+        new RegistrarExibicoesCommandHandler(_context, Atual(credencial), _relogio).Handle(comando, CancellationToken.None);
 
     /// <summary>Pareia a TV e põe a playlist com os itens informados na tela.</summary>
     private async Task<CredencialFake> ParearComGradeAsync(params (Midia Midia, DiasSemana Dias)[] itens)
