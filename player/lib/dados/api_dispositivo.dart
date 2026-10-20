@@ -106,6 +106,16 @@ class ApiDispositivo {
     return RespostaSincronizacao.fromJson(resposta.data!);
   }
 
+  /// Envia um lote de exibições (até 500). Sem exceção = a API gravou (ou já
+  /// tinha, ou descartou as inválidas): o lote pode sair do banco local.
+  Future<void> enviarExibicoes({required String token, required List<Exibicao> exibicoes}) async {
+    await _enviar(() => _dio.post<Map<String, dynamic>>(
+          '/exibicoes',
+          data: {'exibicoes': [for (final e in exibicoes) e.toJson()]},
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        ));
+  }
+
   Future<Response<T>> _enviar<T>(Future<Response<T>> Function() chamada, {bool pareamento = false}) async {
     try {
       return await chamada();

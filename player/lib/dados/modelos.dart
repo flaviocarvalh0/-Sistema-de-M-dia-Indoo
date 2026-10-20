@@ -473,6 +473,59 @@ class DiretorioTv {
 }
 
 /// Resposta de `GET /sincronizacao`.
+/// Um anúncio que esteve na tela (prova de veiculação, ADR-023). Gravado no
+/// banco local e enviado em lote; o [id] (UUID) torna o reenvio idempotente.
+class Exibicao {
+  const Exibicao({
+    required this.id,
+    required this.midiaId,
+    required this.inicio,
+    required this.duracao,
+    required this.concluida,
+    required this.semConexao,
+  });
+
+  factory Exibicao.daLinha(Map<String, Object?> l) => Exibicao(
+        id: l['id'] as String,
+        midiaId: l['midia_id'] as int,
+        inicio: DateTime.parse(l['inicio'] as String),
+        duracao: Duration(milliseconds: l['duracao_ms'] as int),
+        concluida: l['concluida'] == 1,
+        semConexao: l['sem_conexao'] == 1,
+      );
+
+  final String id;
+  final int midiaId;
+
+  /// Quando apareceu (UTC).
+  final DateTime inicio;
+  final Duration duracao;
+
+  /// Foi até o fim (falso = interrompida por erro).
+  final bool concluida;
+
+  /// A TV não estava conseguindo falar com a API quando exibiu.
+  final bool semConexao;
+
+  Map<String, Object?> paraLinha() => {
+        'id': id,
+        'midia_id': midiaId,
+        'inicio': inicio.toUtc().toIso8601String(),
+        'duracao_ms': duracao.inMilliseconds,
+        'concluida': concluida ? 1 : 0,
+        'sem_conexao': semConexao ? 1 : 0,
+      };
+
+  Map<String, Object?> toJson() => {
+        'id': id,
+        'midiaId': midiaId,
+        'inicio': inicio.toUtc().toIso8601String(),
+        'duracaoMs': duracao.inMilliseconds,
+        'concluida': concluida,
+        'semConexao': semConexao,
+      };
+}
+
 class RespostaSincronizacao {
   const RespostaSincronizacao({
     required this.alterada,

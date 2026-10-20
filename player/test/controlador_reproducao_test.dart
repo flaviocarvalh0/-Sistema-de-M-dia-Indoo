@@ -423,4 +423,78 @@ void main() {
       });
     });
   });
+
+  group('prova de veiculação', () {
+    late List<(int, Duration, bool)> exibidos;
+    late DateTime relogio;
+
+    ControladorReproducao criarComRegistro() => ControladorReproducao(
+          itensDeHoje: () => grade,
+          arquivoDe: (i) => File(i.hash),
+          criarVideo: (arquivo) {
+            final nome = arquivo.path;
+            final v = (fabricas[nome] ?? (n) => VideoFalso(n))(nome);
+            videos.add(v);
+            return v;
+          },
+          compor: (anuncios) => [
+            for (final a in anuncios) ...[
+              EntradaFila.anuncio(a),
+              EntradaFila.cartao(TipoCartao.tempo, 5),
+            ],
+          ],
+          agora: () => relogio,
+          aoExibir: (anuncio, inicio, duracao, concluida) => exibidos.add((anuncio.midiaId, duracao, concluida)),
+        );
+
+    setUp(() {
+      exibidos = [];
+      relogio = DateTime.utc(2026, 10, 12, 10);
+    });
+
+    test('registra cada anúncio que saiu da tela, com o tempo; cartões não contam', () {
+      fakeAsync((async) {
+        grade = [item(0), item(1, tipo: TipoMidia.video, duracao: 30)];
+        loop = criarComRegistro()..iniciar();
+        async.flushMicrotasks();
+
+        // Imagem 0 por 10 s.
+        relogio = relogio.add(const Duration(seconds: 10));
+        async.elapse(const Duration(seconds: 10));
+        expect(exibidos, [(0, const Duration(seconds: 10), true)]);
+
+        // Cartão de 5 s não entra.
+        relogio = relogio.add(const Duration(seconds: 5));
+        async.elapse(const Duration(seconds: 5));
+        expect(exibidos, hasLength(1));
+
+        // Vídeo 1 termina em 28 s.
+        relogio = relogio.add(const Duration(seconds: 28));
+        videos.single.terminar();
+        async.flushMicrotasks();
+        expect(exibidos.last, (1, const Duration(seconds: 28), true));
+        loop.dispose();
+      });
+    });
+
+    test('vídeo que falha no meio fica como interrompido; o que nem abre não conta', () {
+      fakeAsync((async) {
+        fabricas['h1'] = (n) => VideoFalso(n, falhaAoAbrir: true);
+        grade = [item(0, tipo: TipoMidia.video, duracao: 30), item(1, tipo: TipoMidia.video, duracao: 30)];
+        loop = criarComRegistro()..iniciar();
+        async.flushMicrotasks();
+
+        relogio = relogio.add(const Duration(seconds: 7));
+        videos.first.falhar();
+        async.flushMicrotasks();
+        expect(exibidos, [(0, const Duration(seconds: 7), false)]);
+
+        // O próximo é o cartão e depois o vídeo 1, que falha ao abrir: nada novo.
+        async.elapse(const Duration(seconds: 6));
+        async.flushMicrotasks();
+        expect(exibidos, hasLength(1));
+        loop.dispose();
+      });
+    });
+  });
 }

@@ -46,6 +46,12 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
     manterVolta: () => _sync.situacao.value?.composicao.carrossel ?? false,
     arquivoDe: widget.servicos.baixador.arquivoDe,
     criarVideo: VideoDoAparelho.new,
+    aoExibir: (anuncio, inicio, duracao, concluida) => widget.servicos.registrador.registrar(
+      midiaId: anuncio.midiaId,
+      inicio: inicio,
+      duracao: duracao,
+      concluida: concluida,
+    ),
   );
 
   Timer? _timerSync;

@@ -19,7 +19,7 @@ class BancoLocal {
     final db = await (fabrica ?? databaseFactory).openDatabase(
       caminho,
       options: OpenDatabaseOptions(
-        version: 3,
+        version: 4,
         onCreate: (db, _) async {
           await db.execute('CREATE TABLE estado (chave TEXT PRIMARY KEY, valor TEXT)');
           await db.execute('''
@@ -38,6 +38,7 @@ class BancoLocal {
             )''');
           await _criarNoticias(db);
           await _criarQrCode(db);
+          await _criarExibicoes(db);
         },
         // v2 (Entrega 4): posição fixa, notícias, composição e clima.
         onUpgrade: (db, de, para) async {
@@ -47,6 +48,8 @@ class BancoLocal {
           }
           // v3: QR code por cima da mídia.
           if (de < 3) await _criarQrCode(db);
+          // v4: exibições registradas para a prova de veiculação (ADR-023).
+          if (de < 4) await _criarExibicoes(db);
         },
       ),
     );
@@ -71,7 +74,44 @@ class BancoLocal {
     }
   }
 
+  static Future<void> _criarExibicoes(DatabaseExecutor db) => db.execute('''
+        CREATE TABLE exibicao (
+          id TEXT PRIMARY KEY,
+          midia_id INTEGER NOT NULL,
+          inicio TEXT NOT NULL,
+          duracao_ms INTEGER NOT NULL,
+          concluida INTEGER NOT NULL,
+          sem_conexao INTEGER NOT NULL
+        )''');
+
   Future<void> fechar() => _db.close();
+
+  /// Guarda uma exibição até ser enviada. Com mais de [maximoExibicoes]
+  /// pendentes (TV semanas sem internet), apaga as mais antigas: a API não
+  /// aceita exibições com mais de 35 dias.
+  Future<void> registrarExibicao(Exibicao e, {int maximoExibicoes = 20000}) => _db.transaction((txn) async {
+        await txn.insert('exibicao', e.paraLinha(), conflictAlgorithm: ConflictAlgorithm.ignore);
+        final total = Sqflite.firstIntValue(await txn.rawQuery('SELECT COUNT(*) FROM exibicao')) ?? 0;
+        if (total > maximoExibicoes) {
+          await txn.rawDelete(
+            'DELETE FROM exibicao WHERE id IN (SELECT id FROM exibicao ORDER BY inicio LIMIT ?)',
+            [total - maximoExibicoes],
+          );
+        }
+      });
+
+  /// As mais antigas primeiro.
+  Future<List<Exibicao>> exibicoesPendentes({int limite = 500}) async =>
+      (await _db.query('exibicao', orderBy: 'inicio', limit: limite)).map(Exibicao.daLinha).toList();
+
+  Future<int> contarExibicoesPendentes() async =>
+      Sqflite.firstIntValue(await _db.rawQuery('SELECT COUNT(*) FROM exibicao')) ?? 0;
+
+  Future<void> apagarExibicoes(Iterable<String> ids) => _db.transaction((txn) async {
+        for (final id in ids) {
+          await txn.delete('exibicao', where: 'id = ?', whereArgs: [id]);
+        }
+      });
 
   Future<EstadoLocal> lerEstado() async {
     final linhas = await _db.query('estado');
@@ -215,6 +255,8 @@ class BancoLocal {
         await txn.delete('item_grade');
         await txn.delete('noticia');
         await txn.delete('estado');
+        // As da tela anterior não podem ir com o token da nova.
+        await txn.delete('exibicao');
       });
 
   static Future<void> _gravar(DatabaseExecutor db, String chave, String valor) =>

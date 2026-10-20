@@ -29,8 +29,11 @@ class ControladorReproducao extends ChangeNotifier {
     required this.criarVideo,
     List<EntradaFila> Function(List<ItemGrade> anuncios)? compor,
     bool Function()? manterVolta,
+    this.aoExibir,
+    DateTime Function()? agora,
   })  : compor = compor ?? ((anuncios) => [for (final a in anuncios) EntradaFila.anuncio(a)]),
-        manterVolta = manterVolta ?? (() => false);
+        manterVolta = manterVolta ?? (() => false),
+        _agora = agora ?? DateTime.now;
 
   /// Anúncios que tocam agora, já filtrados pelo dia e com arquivo baixado.
   final List<ItemGrade> Function() itensDeHoje;
@@ -43,6 +46,15 @@ class ControladorReproducao extends ChangeNotifier {
 
   final File Function(ItemGrade item) arquivoDe;
   final VideoReproducao Function(File arquivo) criarVideo;
+
+  /// Prova de veiculação (ADR-023): chamado quando um anúncio sai da tela,
+  /// com quanto tempo ficou e se foi até o fim. Notícias e cartões não contam.
+  final void Function(ItemGrade anuncio, DateTime inicio, Duration duracao, bool concluida)? aoExibir;
+
+  final DateTime Function() _agora;
+
+  /// O anúncio na tela agora e quando ele apareceu (nulo fora de anúncio).
+  ({ItemGrade anuncio, DateTime inicio, int geracao})? _naTela;
 
   /// Margem além de `duracaoSegundos` antes de considerar o vídeo travado.
   static const folgaVideo = Duration(seconds: 5);
@@ -126,6 +138,7 @@ class ControladorReproducao extends ChangeNotifier {
       await _trocarVideo(null);
       if (geracao != _geracao) return;
       _entrada = proxima;
+      if (anuncio != null) _naTela = (anuncio: anuncio, inicio: _agora(), geracao: geracao);
       notifyListeners();
       _timer = Timer(Duration(seconds: proxima.duracaoSegundos), () => _terminar(geracao));
       return;
@@ -155,6 +168,7 @@ class ControladorReproducao extends ChangeNotifier {
     _entrada = proxima;
     notifyListeners();
     await video.tocar();
+    if (geracao == _geracao) _naTela = (anuncio: anuncio, inicio: _agora(), geracao: geracao);
     _timer = Timer(Duration(seconds: anuncio.duracaoSegundos) + folgaVideo, () => _terminar(geracao));
   }
 
@@ -198,6 +212,7 @@ class ControladorReproducao extends ChangeNotifier {
 
   void _terminar(int geracao) {
     if (geracao != _geracao || _encerrado) return;
+    _registrarSaida(geracao, concluida: true);
     _falhasSeguidas = 0;
     // Já marca a próxima geração: um segundo "fim" deste item cai fora.
     _geracao++;
@@ -207,10 +222,19 @@ class ControladorReproducao extends ChangeNotifier {
   /// Arquivo que não abre é pulado (regra 6 do contrato).
   void _falhar(int geracao) {
     if (geracao != _geracao || _encerrado) return;
+    _registrarSaida(geracao, concluida: false);
     _falhasSeguidas++;
     final nova = ++_geracao;
     _timer?.cancel();
     _timer = Timer(pausaAposFalha, () => _seAtual(nova, _tocarProximo));
+  }
+
+  /// Só registra o que chegou a aparecer: vídeo que nem abriu não conta.
+  void _registrarSaida(int geracao, {required bool concluida}) {
+    final naTela = _naTela;
+    _naTela = null;
+    if (naTela == null || naTela.geracao != geracao) return;
+    aoExibir?.call(naTela.anuncio, naTela.inicio, _agora().difference(naTela.inicio), concluida);
   }
 
   void _seAtual(int geracao, void Function() acao) {

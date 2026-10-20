@@ -8,6 +8,7 @@ import '../dados/banco_local.dart';
 import '../dados/credenciais.dart';
 import '../dados/modelos.dart';
 import 'atualizador_app.dart';
+import 'registrador_exibicoes.dart';
 import 'baixador_midia.dart';
 
 /// Como terminou um ciclo de sincronização.
@@ -90,6 +91,7 @@ class Sincronizador {
     required this.versaoApp,
     this.versaoCodigoApp = 0,
     this.atualizador,
+    this.registrador,
     BaixadorMidia? baixadorNoticias,
   }) : baixadorNoticias = baixadorNoticias ?? BaixadorMidia(Directory(p.join(baixador.pasta.parent.path, 'noticias')));
 
@@ -106,6 +108,12 @@ class Sincronizador {
   final AtualizadorApp? atualizador;
   AtualizacaoApp? _atualizacaoRecebida;
   bool _respondeu = false;
+
+  /// Prova de veiculação (ADR-023): envia as exibições guardadas; nulo nos testes que não a usam.
+  final RegistradorExibicoes? registrador;
+
+  /// A última sincronização não chegou à API (a TV toca do que já baixou).
+  bool get semConexao => _ultimo == ResultadoCiclo.semConexao;
 
   /// Imagens das notícias (`<documentos>/noticias`).
   final BaixadorMidia baixadorNoticias;
@@ -144,7 +152,11 @@ class Sincronizador {
       _respondeu = false;
       _ultimo = await _ciclo();
       // Depois da grade: o APK não disputa a rede com as mídias.
-      if (_respondeu) await atualizador?.verificar(_atualizacaoRecebida);
+      if (_respondeu) {
+        final token = await credenciais.token();
+        if (token != null) await registrador?.enviarSePreciso(api, token);
+        await atualizador?.verificar(_atualizacaoRecebida);
+      }
       return _ultimo!;
     } finally {
       _rodando = false;

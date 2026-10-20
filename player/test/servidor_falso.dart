@@ -34,6 +34,10 @@ class ServidorFalso {
   final codigos = <String, String>{};
   Map<String, dynamic>? ultimoPareamento;
 
+  /// Lotes de exibições recebidos (corpo de cada POST) e o status a responder.
+  final lotesExibicoes = <List<Map<String, dynamic>>>[];
+  int statusExibicoes = 200;
+
   String get url => 'http://127.0.0.1:${_http.port}';
   String urlArquivo(String nome) => '$url/storage/$nome?token=abc';
 
@@ -92,6 +96,15 @@ class ServidorFalso {
           'nomeParceiro': 'Academia Centro',
           'intervaloSincronizacaoSegundos': 300,
         });
+      }
+    } else if (caminho == '/api/v1/dispositivo/exibicoes' && req.method == 'POST') {
+      final corpo = jsonDecode(await utf8.decodeStream(req)) as Map<String, dynamic>;
+      ultimoToken = req.headers.value('authorization');
+      r.statusCode = statusExibicoes;
+      if (statusExibicoes == 200) {
+        final lote = (corpo['exibicoes'] as List).cast<Map<String, dynamic>>();
+        lotesExibicoes.add(lote);
+        _json(r, {'aceitas': lote.length, 'jaRecebidas': 0, 'descartadas': 0});
       }
     } else if (caminho == '/api/v1/dispositivo/sincronizacao') {
       ultimaQuery = req.uri.queryParameters;

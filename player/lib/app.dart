@@ -11,6 +11,7 @@ import 'dados/banco_local.dart';
 import 'dados/credenciais.dart';
 import 'sincronizacao/atualizador_app.dart';
 import 'sincronizacao/baixador_midia.dart';
+import 'sincronizacao/registrador_exibicoes.dart';
 import 'sincronizacao/sincronizador.dart';
 import 'telas/pareamento_page.dart';
 import 'telas/reproducao_page.dart';
@@ -27,6 +28,12 @@ class Servicos {
   final AtualizadorApp atualizador;
   String urlServidor;
   late Sincronizador sincronizador = _novoSincronizador();
+
+  /// Prova de veiculação (ADR-023): o loop grava, o sincronizador envia.
+  late final RegistradorExibicoes registrador = RegistradorExibicoes(
+    banco: banco,
+    semConexao: () => sincronizador.semConexao,
+  );
 
   static Future<Servicos> iniciar() async {
     final documentos = await getApplicationDocumentsDirectory();
@@ -61,6 +68,7 @@ class Servicos {
         versaoApp: VersaoApp.nome,
         versaoCodigoApp: VersaoApp.codigo,
         atualizador: atualizador,
+        registrador: registrador,
       );
 }
 
