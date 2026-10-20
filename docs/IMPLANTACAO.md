@@ -240,11 +240,12 @@ Parceiros (os locais das TVs) não têm acesso ao sistema (ADR-022).
 ```powershell
 cd player
 .\scripts\gerar-apk.ps1 -Modo Release -ApiUrl https://api.suaempresa.com.br
-# player/dist/midia-indoor-1.0.1+2-release.apk (o script já subiu a versão)
+# player/dist/midia-indoor-1.0.1+2-release-armeabi-v7a.apk (o script já subiu a versão)
 ```
 
-O script sobe a versão do `pubspec.yaml`, gera o APK e avisa se passar de
-50 MB (`-PorArquitetura` gera um por arquitetura). Para testar na rede local,
+O script sobe a versão do `pubspec.yaml`, gera um APK por arquitetura (o
+universal passa de 50 MB) e mostra no fim o que preencher em Versões do app:
+envie o `armeabi-v7a`, que roda nas TV box de 32 e de 64 bits. Para testar na rede local,
 sem certificado válido, use `-Modo Profile` (o padrão). Opções:
 `Get-Help .\scripts\gerar-apk.ps1 -Detailed`.
 

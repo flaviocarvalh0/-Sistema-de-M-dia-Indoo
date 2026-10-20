@@ -281,8 +281,9 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
    1. Torne o app device owner (`docs/IMPLANTACAO.md`, 4.2, passo 6). No
       emulador sem conta Google o comando funciona direto.
    2. Gere a versão nova com `.\scripts\gerar-apk.ps1` na pasta `player`
-      (sobe `1.0.0+1` → `1.0.1+2` e gera o APK profile em `player/dist/`) e
-      envie em **Rede → Telas → Versões do app**.
+      (sobe a versão e gera os APKs profile em `player/dist/`); envie o
+      `armeabi-v7a` com o código e o nome que o script mostra, em
+      **Rede → Telas → Versões do app**.
    3. Marque a tela como **TV de teste** e libere **Só TVs de teste**. Em até
       2 min a TV baixa, instala e reabre sozinha; a coluna **App** mostra
       `1.0.1 (2)` e o painel de informações (OK) mostra "em dia".

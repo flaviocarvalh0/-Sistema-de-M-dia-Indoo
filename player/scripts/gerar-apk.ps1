@@ -11,9 +11,14 @@
          depois do "+" e o que a TV compara para se atualizar (ADR-021): ele
          SEMPRE sobe, senao a TV nao instala;
       3. roda o `flutter build apk` com o API_URL;
-      4. copia o APK para player/dist/ com a versao no nome e avisa se passar
-         dos 50 MB aceitos pela pagina Versoes do app;
-      5. opcionalmente instala direto na TV pelo adb (-Instalar).
+      4. copia os APKs para player/dist/ com a versao no nome. Por padrao gera
+         UM POR ARQUITETURA (--split-per-abi): o universal passa dos 50 MB
+         aceitos pela pagina Versoes do app. O armeabi-v7a e o que se envia:
+         roda nas TV box de 32 e de 64 bits;
+      5. imprime o que preencher em Versoes do app (arquivo, codigo, nome e
+         "O que mudou");
+      6. opcionalmente instala direto na TV pelo adb (-Instalar), escolhendo o
+         APK da arquitetura do aparelho.
 
     Se o build falhar, o pubspec.yaml volta para a versao de antes: nada de
     numero queimado sem APK.
@@ -51,13 +56,18 @@
       Codigo           1.0.0+1 -> 1.0.0+2 (so o codigo)
       Nenhum           gera de novo a mesma versao (a TV NAO se atualiza)
 
-.PARAMETER PorArquitetura
-    Gera um APK por arquitetura (--split-per-abi), menores. Envie o
-    armeabi-v7a (TV box comuns) ou o arm64-v8a, conforme o aparelho.
+.PARAMETER Universal
+    Gera um APK so, com todas as arquiteturas (sem --split-per-abi). Fica
+    acima de 50 MB: serve para instalar a mao (-Instalar), nao para enviar
+    em Versoes do app.
+
+.PARAMETER Notas
+    Texto do campo "O que mudou" em Versoes do app. Opcional: o script so
+    repete no resumo final, pronto para copiar.
 
 .PARAMETER Instalar
-    Instala o APK gerado pelo adb (adb install -r). Com -PorArquitetura,
-    instala o armeabi-v7a.
+    Instala o APK gerado pelo adb (adb install -r): o da arquitetura do
+    aparelho (adb shell getprop ro.product.cpu.abi), ou o armeabi-v7a.
 
 .PARAMETER Aparelho
     Serial ou IP:porta do aparelho para o adb (adb -s). Ex.: 192.168.1.50:5555.
@@ -92,7 +102,9 @@ param(
     [ValidateSet('Patch', 'Minor', 'Major', 'Codigo', 'Nenhum')]
     [string]$Subir = 'Patch',
 
-    [switch]$PorArquitetura,
+    [switch]$Universal,
+
+    [string]$Notas,
 
     [switch]$Instalar,
 
@@ -213,7 +225,7 @@ function Restaurar {
 # ---------- Build ----------
 
 $argumentos = @('build', 'apk', "--$($Modo.ToLowerInvariant())", "--dart-define=API_URL=$ApiUrl")
-if ($PorArquitetura) { $argumentos += '--split-per-abi' }
+if (-not $Universal) { $argumentos += '--split-per-abi' }
 
 Push-Location $Player
 try {
@@ -239,7 +251,7 @@ if ($saida -ne 0) {
 $modoMinusculo = $Modo.ToLowerInvariant()
 $pastaBuild = Join-Path $Player 'build/app/outputs/flutter-apk'
 $gerados = @(Get-ChildItem -Path $pastaBuild -Filter "app*-$modoMinusculo.apk" -ErrorAction SilentlyContinue |
-    Where-Object { $PorArquitetura -or $_.Name -eq "app-$modoMinusculo.apk" })
+    Where-Object { if ($Universal) { $_.Name -eq "app-$modoMinusculo.apk" } else { $_.Name -ne "app-$modoMinusculo.apk" } })
 if ($gerados.Count -eq 0) {
     Restaurar
     Falhar "Nenhum APK encontrado em $pastaBuild."
@@ -264,21 +276,29 @@ foreach ($arquivo in $copiados) {
     $cor = if ($mb -gt $LimiteMb) { 'Yellow' } else { 'Green' }
     Escrever ("  {0}  ({1} MB)" -f $arquivo.FullName, $mb) $cor
     if ($mb -gt $LimiteMb) {
-        Escrever "  Passa de $LimiteMb MB: Versoes do app recusa. Gere de novo com -PorArquitetura (e -Subir Nenhum para manter $nova)." 'Yellow'
+        Escrever "  Passa de $LimiteMb MB: Versoes do app recusa. Gere de novo sem -Universal (e -Subir Nenhum para manter $nova)." 'Yellow'
     }
 }
 
 # ---------- Instalacao (opcional) ----------
 
-if ($Instalar) {
-    $alvo = $copiados | Where-Object { $_.Name -like '*armeabi-v7a*' } | Select-Object -First 1
-    if (-not $alvo) { $alvo = $copiados | Select-Object -First 1 }
+# O que se envia em Versoes do app: o armeabi-v7a roda em TV de 32 e de 64 bits.
+$paraEnviar = $copiados | Where-Object { $_.Name -like '*armeabi-v7a*' } | Select-Object -First 1
+if (-not $paraEnviar) { $paraEnviar = $copiados | Select-Object -First 1 }
 
+if ($Instalar) {
     $adb = @()
     if ($Aparelho) {
         if ($Aparelho -match ':\d+$') { & adb connect $Aparelho | Out-Host }
         $adb += @('-s', $Aparelho)
     }
+
+    # O APK da arquitetura do aparelho, se houver; senao o armeabi-v7a.
+    $abiAparelho = (& adb @adb shell getprop ro.product.cpu.abi 2>$null | Out-String).Trim()
+    $alvo = $copiados | Where-Object { $abiAparelho -and $_.Name -like "*-$abiAparelho.apk" } | Select-Object -First 1
+    if (-not $alvo) { $alvo = $paraEnviar }
+    if ($abiAparelho) { Escrever "Aparelho: $abiAparelho" 'DarkGray' }
+
     $adb += @('install', '-r', $alvo.FullName)
 
     Escrever ''
@@ -292,8 +312,14 @@ if ($Instalar) {
 # ---------- Proximos passos ----------
 
 Escrever ''
-Escrever 'Proximos passos:' 'Cyan'
-Escrever "  1. Painel: Rede -> Telas -> Versoes do app -> envie o APK (codigo $codigo, nome $nome)."
-Escrever '  2. Marque a tela como "TV de teste" e libere "So TVs de teste". Em 1-2 min a TV instala.'
-Escrever '  3. Deu certo? Mude para "Todas as TVs".'
-if ($alterado) { Escrever "  4. Faca o commit do pubspec.yaml ($nova) para a proxima versao partir dela." }
+Escrever 'Em Rede -> Telas -> Versoes do app, preencha:' 'Cyan'
+Escrever ("  Arquivo APK       " + $paraEnviar.FullName) 'White'
+Escrever ("  Codigo da versao  $codigo") 'White'
+Escrever ("  Nome              $nome") 'White'
+Escrever ("  O que mudou       " + $(if ($Notas) { $Notas } else { '(opcional) o que a TV ganhou nesta versao' })) 'White'
+if ($Universal) { Escrever '  (APK universal: acima de 50 MB a pagina recusa)' 'Yellow' }
+Escrever ''
+Escrever 'Depois:' 'Cyan'
+Escrever '  1. Marque a tela como "TV de teste" e libere "So TVs de teste". Em 1-2 min a TV instala.'
+Escrever '  2. Deu certo? Mude para "Todas as TVs".'
+if ($alterado) { Escrever "  3. Faca o commit do pubspec.yaml ($nova): git add player/pubspec.yaml; git commit -m `"chore(player): versao $nova`"" }

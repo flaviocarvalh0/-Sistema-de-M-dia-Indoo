@@ -63,8 +63,12 @@ Get-Help .\scripts\gerar-apk.ps1 -Detailed       # todas as opções
 - **Release**: produção. Só aceita certificado HTTPS válido (domínio ou túnel);
   o script recusa IP e `localhost`.
 - **Debug**: depuração; o APK costuma passar dos 50 MB de Versões do app.
-- `-Subir Patch|Minor|Major|Codigo|Nenhum` (padrão `Patch`), `-PorArquitetura`
-  (APKs menores), `-Instalar` (adb). Se o build falhar, o `pubspec.yaml` volta.
+- Gera **um APK por arquitetura** (o universal passa dos 50 MB de Versões do
+  app) e, no fim, mostra o que preencher na página: o arquivo (`armeabi-v7a`,
+  que roda em TV de 32 e de 64 bits), o código, o nome e `-Notas` (O que mudou).
+- `-Subir Patch|Minor|Major|Codigo|Nenhum` (padrão `Patch`), `-Universal` (um APK
+  só, para instalar à mão), `-Instalar` (adb, escolhe o APK da arquitetura da
+  TV). Se o build falhar, o `pubspec.yaml` volta.
 - Bloqueado pela política de execução do Windows? Rode
   `powershell -ExecutionPolicy Bypass -File .\scripts\gerar-apk.ps1`.
 
