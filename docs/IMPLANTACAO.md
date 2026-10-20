@@ -89,21 +89,31 @@ Linux, use o `Environment=` do serviço systemd.
 | `Indoor__Armazenamento__R2__ChaveAcesso` | sim (R2) | Access Key ID do token do bucket |
 | `Indoor__Armazenamento__R2__SegredoAcesso` | sim (R2) | Secret Access Key. **Segredo crítico**: nunca no painel nem nas TVs |
 | `Indoor__Armazenamento__R2__Bucket` | não | Padrão `midias` |
-| `Indoor__Armazenamento__LimiteTotalMb` | não | Teto do storage da rede. Padrão `9216` (9 GB); valores acima de `10240` viram 10 GB. Acima do teto, envios são recusados |
 | `Indoor__Armazenamento__Supabase__Url` | sem R2 | `https://<projeto>.supabase.co` |
 | `Indoor__Armazenamento__Supabase__ChaveServico` | sem R2 | Chave `service_role`. **Segredo crítico** |
 | `Indoor__Armazenamento__CopiarDoSupabase` | migração | `true` com R2 **e** Supabase configurados: na subida, copia para o R2 o que só está no Supabase (ver 2.7) |
 | `Indoor__ProxiesConfiaveis__0` | atrás de proxy | IP do proxy reverso (ex.: `127.0.0.1` com nginx na mesma máquina). Sem ele, os limites por IP (pareamento e diretório) veem só o IP do proxy. No IIS *in-process* não é necessário |
-| `Indoor__Dispositivo__IntervaloSincronizacaoSegundos` | não | Padrão `60` (mínimo 30). A TV aparece Offline depois de 5 min sem sincronizar |
-| `Indoor__Dispositivo__ValidadeTokenDias` | não | Padrão `30` |
-| `Indoor__Dispositivo__ValidadeUrlDownloadHoras` | não | Padrão `24` |
-| `Indoor__Coleta__Ativa` | não | Padrão `true`. Liga a coleta de notícias e clima em segundo plano |
-| `Indoor__Coleta__NoticiasMinutos` | não | Padrão `60` (mínimo 15) |
-| `Indoor__Coleta__ClimaMinutos` | não | Padrão `30` (mínimo 15) |
-| `Indoor__Coleta__CotacoesMinutos` | não | Padrão `30` (mínimo 15). Cotações do dólar e do euro (PTAX) |
-| `Indoor__Alertas__Emails__0` (`__1`, …) | recomendado | E-mails da operadora: trocas de arquivo para aprovar e TVs fora do ar (ADR-020). Vazio: só registra no log |
-| `Indoor__Alertas__TvOfflineMinutos` | não | Padrão `15`. Minutos sem sincronizar até o alerta |
-| `Indoor__Alertas__HoraInicio` / `Indoor__Alertas__HoraFim` | não | Padrão `7` e `22`. Só alerta nesse horário, no fuso do estabelecimento |
+
+**Parâmetros operacionais (ADR-026):** e-mails de alerta, horário e tempo
+dos alertas, teto do storage, intervalos das TVs e das coletas **não são
+variáveis de ambiente**. Ficam em **Atlas Studio → Parâmetros**, grupo
+"Mídia Indoor", e valem em até 1 min, sem reiniciar:
+
+| Parâmetro | Padrão | O que é |
+|---|---|---|
+| `INDOOR.ALERTAS.EMAILS` | `[]` | E-mails da operadora (lista JSON). Vazio: só registra no log |
+| `INDOOR.ALERTAS.TV_OFFLINE_MINUTOS` | `15` | Minutos sem sincronizar até o alerta (mínimo 5) |
+| `INDOOR.ALERTAS.HORA_INICIO` / `HORA_FIM` | `7` / `22` | Só alerta nesse horário, no fuso do local da TV |
+| `INDOOR.ARMAZENAMENTO.LIMITE_TOTAL_MB` | `9216` | Teto do storage da rede; acima de `10240` vale 10 GB |
+| `INDOOR.DISPOSITIVO.INTERVALO_SINCRONIZACAO_SEGUNDOS` | `60` | Mínimo 30 |
+| `INDOOR.DISPOSITIVO.VALIDADE_TOKEN_DIAS` | `30` | Token da TV |
+| `INDOOR.DISPOSITIVO.VALIDADE_URL_DOWNLOAD_HORAS` | `24` | Links de download das TVs |
+| `INDOOR.COLETA.ATIVA` | `true` | Coleta de notícias, clima e cotações |
+| `INDOOR.COLETA.NOTICIAS_MINUTOS` / `CLIMA_MINUTOS` / `COTACOES_MINUTOS` | `60` / `30` / `30` | Mínimo 15 |
+
+Na primeira subida, a API cadastra os que faltam com o valor que estiver na
+configuração antiga (`Indoor:Alertas:Emails`, etc.) ou com o padrão. Depois
+disso, vale o que está no painel.
 
 Com o R2 configurado, ele é o storage (mesmo com o Supabase também
 configurado). Sem nenhum dos dois, a API sobe, mas as rotas de mídia
@@ -313,7 +323,7 @@ aviso da página: precisam de uma instalação manual (4.2), uma vez.
 - [ ] Backup do PostgreSQL agendado. As mídias ficam no R2, fora do backup do
       banco.
 - [ ] APK assinado com chave própria e guardada em lugar seguro.
-- [ ] `Indoor:Alertas:Emails` com o e-mail da operadora; desligar uma TV de
+- [ ] `INDOOR.ALERTAS.EMAILS` (Atlas Studio → Parâmetros) com o e-mail da operadora; desligar uma TV de
       teste e receber o alerta (15 min) e o "de volta ao ar".
 - [ ] TVs como device owner (4.2, passo 6) e uma versão de teste instalada
       sozinha pela página **Versões do app** (4.3).
@@ -332,7 +342,7 @@ aviso da página: precisam de uma instalação manual (4.2), uma vez.
   `/openapi` em qualquer ambiente. Se não quiser expor, bloqueie esses
   caminhos no proxy ou no IIS.
 - **Teto do storage (ADR-025):** a rede inteira cabe em
-  `Indoor:Armazenamento:LimiteTotalMb` (padrão 9 GB, nunca mais que os 10 GB
+  `INDOOR.ARMAZENAMENTO.LIMITE_TOTAL_MB` em Parâmetros (padrão 9 GB, nunca mais que os 10 GB
   gratuitos do R2). A cota de cada cliente é definida no cadastro (padrão
   200 MB); a soma das cotas pode passar do teto, mas o teto é o que vale:
   envio que não cabe é recusado. A operadora recebe e-mail a 70%, 85% e 95%.

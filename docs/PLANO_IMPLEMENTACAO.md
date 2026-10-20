@@ -368,3 +368,11 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
 - [ ] Criar a conta e o bucket na Cloudflare e rodar o teste de contrato
   (`INDOOR_R2_*`).
 - [ ] Backup do PostgreSQL (aguardando servidor na nuvem).
+
+### Parâmetros operacionais no painel ✅
+
+- [x] E-mails e horário dos alertas, teto do storage, intervalos das TVs e das
+  coletas em Atlas Studio → Parâmetros (grupo "Mídia Indoor"), valendo em até
+  1 min sem reiniciar
+  ([ADR-026](../api/docs/decisions/ADR-026-Parametros-Operacionais-no-Painel.md)).
+- [x] Cadastro automático na subida, com o valor da configuração antiga.

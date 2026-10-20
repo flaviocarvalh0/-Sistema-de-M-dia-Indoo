@@ -41,7 +41,8 @@ R2 cobra, e a cobrança vai no cartão sem aviso.
 
 ### Teto (as travas, da primeira à última)
 
-1. **Limite configurado**: `Indoor:Armazenamento:LimiteTotalMb`, padrão **9216**
+1. **Limite configurado**: parâmetro `INDOOR.ARMAZENAMENTO.LIMITE_TOTAL_MB`
+   (Atlas Studio → Parâmetros, ADR-026), padrão **9216**
    (9 GB), **nunca acima de 10240** (o código corta). O 1 GB de folga cobre o que
    o banco não sabe.
 2. **Reserva antes da URL** (`TetoArmazenamento.ReservarAsync`): o envio de mídia

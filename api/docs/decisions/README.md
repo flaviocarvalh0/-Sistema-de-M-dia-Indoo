@@ -40,6 +40,7 @@ Cada ADR registra uma decisão arquitetural relevante, seu contexto, as alternat
 | [ADR-023](ADR-023-Prova-de-Veiculacao-e-QR-Rastreado.md) | Prova de Veiculação e QR Rastreado | Aceito |
 | [ADR-024](ADR-024-Heartbeat-de-Reproducao.md) | Heartbeat de Reprodução | Aceito |
 | [ADR-025](ADR-025-Cloudflare-R2-e-Teto-de-Armazenamento.md) | Cloudflare R2 e Teto de 10 GB | Aceito |
+| [ADR-026](ADR-026-Parametros-Operacionais-no-Painel.md) | Parâmetros Operacionais no Painel | Aceito |
 ## Como criar um ADR
 
 1. Copie o arquivo [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md).

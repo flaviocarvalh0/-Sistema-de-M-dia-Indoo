@@ -33,7 +33,9 @@ Pré-requisitos: .NET SDK 9 e PostgreSQL.
    `docs/scripts/aplicar-script.ps1` (pede a senha do banco no prompt). Cria os
    módulos, os menus e os grupos `Operadora` e `Cliente`.
 5. **Configuração:** `Indoor:UrlPainel` no appsettings é o endereço do painel
-   usado nos e-mails de boas-vindas.
+   usado nos e-mails de boas-vindas. Os ajustes do dia a dia (e-mails de
+   alerta, horários, teto do storage, intervalos) ficam em **Atlas Studio →
+   Parâmetros**, grupo "Mídia Indoor" (ADR-026); User Secrets só para segredo.
 6. **Storage das mídias (Cloudflare R2, ADR-025):** crie um bucket privado
    `midias` no R2 e um token com **Object Read & Write** só nele. O segredo é
    segredo (ADR-008):
@@ -44,7 +46,8 @@ Pré-requisitos: .NET SDK 9 e PostgreSQL.
    dotnet user-secrets set "Indoor:Armazenamento:R2:SegredoAcesso" "<Secret Access Key>" --project src/Atlas.Web
    ```
 
-   O storage da rede inteira tem teto: `Indoor:Armazenamento:LimiteTotalMb`
+   O storage da rede inteira tem teto: o parâmetro
+   `INDOOR.ARMAZENAMENTO.LIMITE_TOTAL_MB` em Atlas Studio → Parâmetros
    (padrão 9216, nunca acima de 10240 — os 10 GB gratuitos do R2). Envio que
    não cabe é recusado antes de sair a URL. O Supabase continua suportado
    (`Indoor:Armazenamento:Supabase:Url` e `:ChaveServico`) e é usado só sem o

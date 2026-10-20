@@ -283,9 +283,10 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
       `1.0.1 (2)` e o painel de informações (OK) mostra "em dia".
    4. Sem device owner: a TV mostra a confirmação do Android; aperte
       **Instalar**. Recusou? Ela tenta de novo em 1 h.
-9. **Alerta de TV fora do ar** (ADR-020): com `Indoor:Alertas:Emails` e o
-   SMTP configurados (e, para testar rápido, `Indoor:Alertas:TvOfflineMinutos`
-   = 5, o mínimo), feche o app da TV: em até 10 min chega "1 TV(s) fora do ar"
+9. **Alerta de TV fora do ar** (ADR-020): em **Atlas Studio → Parâmetros**,
+   ponha seu e-mail em `INDOOR.ALERTAS.EMAILS` (ex.: `["voce@gmail.com"]`) e,
+   para testar rápido, `INDOOR.ALERTAS.TV_OFFLINE_MINUTOS` = 5 (o mínimo); em
+   **Atlas Studio → Servidor SMTP**, configure e envie o teste. Feche o app da TV: em até 10 min chega "1 TV(s) fora do ar"
    (5 de tolerância + a varredura, que roda a cada 5 min); abra de novo e chega
    "de volta ao ar". Fora do horário (7 h–22 h no fuso do
    estabelecimento) não há alerta.
