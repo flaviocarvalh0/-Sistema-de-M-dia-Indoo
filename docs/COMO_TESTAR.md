@@ -105,6 +105,12 @@ usam o cookie.
 - Com a cidade do parceiro (local da TV) preenchida (ex.: "Manaus" ou "São José - SC"), em até
   30 min a sincronização traz `clima`.
 - Salvar com uma `version` antiga devolve 409.
+- `POST /dispositivo/exibicoes` com o token da TV grava o lote; reenviar o mesmo
+  lote responde `jaRecebidas` e não duplica. Mídia desconhecida conta em
+  `descartadas`.
+- Com `Indoor:UrlPublica` configurada, uma mídia com QR de WhatsApp ganha
+  `codigoQr`; `GET /q/{codigo}` responde 302 para o `wa.me` e grava uma linha em
+  `indoor.leitura_qr` (sem IP).
 - O `admin` não enxerga o painel do cliente (403): ele não pertence a um cliente.
 - Desvincular a TV no painel faz a sincronização dela responder 401; inativar
   a tela, 403. Bloquear o cliente tira as mídias dele da grade; a TV continua.
@@ -261,6 +267,16 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
    = 1), feche o app da TV: em até 5 min chega "1 TV(s) fora do ar"; abra de
    novo e chega "de volta ao ar". Fora do horário (7 h–22 h no fuso do
    estabelecimento) não há alerta.
+10. **Prova de veiculação e QR rastreado** (ADR-023): com `Indoor:UrlPublica`
+    configurada e uma mídia com QR de WhatsApp na grade, deixe a TV tocar
+    alguns minutos. Em até 15 min (ou na próxima sincronização depois de
+    reabrir o app) as exibições sobem. Leia o QR com o celular: abre o WhatsApp
+    e conta uma leitura. Em **Mídias → Relatório de veiculação** (dono) ou na
+    ação **Relatório de veiculação** da lista de Clientes (operadora) aparecem
+    as exibições, o tempo na tela, as leituras e o horário de pico.
+    **Copiar resumo para o WhatsApp** põe o texto na área de transferência.
+    Desligue a internet da TV: ela continua gravando e, quando voltar, envia
+    as exibições marcadas como "sem internet".
 
 TV de verdade na rede: veja `player/README.md` (API ouvindo em `*` — não em `0.0.0.0`, que deixa o painel lento —,
 endereço `https://<IP do PC>:7216`).

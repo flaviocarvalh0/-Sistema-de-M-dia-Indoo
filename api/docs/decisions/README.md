@@ -37,6 +37,7 @@ Cada ADR registra uma decisão arquitetural relevante, seu contexto, as alternat
 | [ADR-020](ADR-020-Aprovacao-de-Troca-e-Alerta-de-TV-Offline.md) | Aprovação da Troca de Arquivo e Alerta de TV Fora do Ar | Aceito |
 | [ADR-021](ADR-021-Atualizacao-Automatica-do-App-das-TVs.md) | Atualização Automática do App das TVs | Aceito |
 | [ADR-022](ADR-022-Parceiro-e-Cliente.md) | Parceiro (Local da TV) e Cliente (Anunciante) | Aceito |
+| [ADR-023](ADR-023-Prova-de-Veiculacao-e-QR-Rastreado.md) | Prova de Veiculação e QR Rastreado | Aceito |
 ## Como criar um ADR
 
 1. Copie o arquivo [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md).

@@ -55,6 +55,8 @@ liberada no CORS da API.
 | `/indoor/midia` | Cliente | Biblioteca: título, duração, período, ativar/inativar dentro do plano ("Mídias ativas: x de y"), substituir arquivo, pré-visualizar, espaço usado |
 | `/indoor/midia/enviar` | Cliente | Envio de vídeo MP4 ou imagem JPG/PNG direto ao storage, com SHA-256 e progresso; com `?substituir={id}`, troca o arquivo de uma mídia |
 | `/indoor/tela` | Cliente | **Onde meus anúncios passam**: TVs com mídia ativa dele, somente leitura |
+| `/indoor/midia/relatorio` | Cliente | **Relatório de veiculação**: exibições, tempo na tela, leituras do QR, por hora, TV, anúncio e dia; copiar resumo para o WhatsApp (ADR-023) |
+| `/rede/cliente/:id/relatorio` | Operadora | O mesmo relatório, para qualquer cliente (ação na lista de Clientes) |
 
 O cliente só vê as próprias mídias: o isolamento é feito pela API.
 

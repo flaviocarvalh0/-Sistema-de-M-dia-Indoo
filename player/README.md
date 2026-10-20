@@ -90,6 +90,7 @@ lib/
     baixador_midia.dart           .part → SHA-256 em blocos → renomeia; 3 tentativas (mídias e imagens das notícias)
     sincronizador.dart            um ciclo: pergunta, baixa, troca grade e notícias de uma vez, limpa
     atualizador_app.dart          baixa a versão nova do app e chama o instalador nativo (ADR-021)
+    registrador_exibicoes.dart    grava cada anúncio exibido e envia em lotes (prova de veiculação, ADR-023)
   reproducao/filtro_do_dia.dart   "hoje" no fuso do parceiro (local da TV), dias da semana e período
   reproducao/composicao_fila.dart          a fila de cada volta: embaralhar (fixos no lugar) e notícia a cada N
   reproducao/controlador_reproducao.dart   o loop sem tela: próximo passo da fila, fim, falha, espera
@@ -136,6 +137,11 @@ lib/
 - **Relógio e clima:** no canto, por cima de tudo. A hora é a do fuso do
   estabelecimento; o clima guardado vale até 6 h (com o crédito do
   Open-Meteo).
+- **Prova de veiculação:** cada anúncio que sai da tela vira uma linha na
+  tabela `exibicao` (mídia, início, duração, se foi até o fim, se a TV estava
+  sem conexão), com um UUID. Depois de uma sincronização que respondeu, as
+  pendentes sobem em lotes de 500 (`POST /exibicoes`), no máximo a cada
+  15 min. Sem internet ficam guardadas (até 20 mil).
 - **Atualização automática:** a TV manda o código da versão (o `+N` do
   pubspec) e, quando o servidor libera uma maior, baixa o APK em `app/`
   (hash conferido) e entrega ao `PackageInstaller` (`android/.../Instalador.kt`,

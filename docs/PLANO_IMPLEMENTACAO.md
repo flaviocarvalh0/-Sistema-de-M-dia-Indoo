@@ -336,3 +336,20 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   telas, mídias e os logins antigos).
 - [x] Studio: grupo **Cliente** (renomeia o "Proprietário de Parceiro"),
   permissões `Clientes.*` e menus Parceiros e Clientes.
+
+### Prova de veiculação e QR rastreado ✅
+
+- [x] Player grava cada anúncio exibido (concluído ou interrompido, com ou sem
+  conexão) e envia em lotes de até 500 a cada 15 min, sem perder nada offline
+  ([ADR-023](../api/docs/decisions/ADR-023-Prova-de-Veiculacao-e-QR-Rastreado.md)).
+- [x] API: `POST /dispositivo/exibicoes` idempotente; `indoor.registro_exibicao` sem FKs.
+- [x] QR de link, WhatsApp e Instagram via `/q/{codigo}`: conta a leitura (hash
+  diário, sem IP) e redireciona; telefone e Pix seguem diretos.
+- [x] Relatório por cliente e período (por TV, anúncio, dia e hora local),
+  no painel do cliente e da operadora, com "Copiar resumo para o WhatsApp".
+- [ ] Detectar TV desligada ou na entrada errada (HDMI-CEC / captura de tela) —
+  até lá, o relatório avisa que não mede isso.
+- [ ] Heartbeat de reprodução com alerta "sincroniza mas não exibe" e
+  verificação do relógio da TV.
+- [ ] Validar numa TV real: exibições sobem depois de uma queda de internet.
+

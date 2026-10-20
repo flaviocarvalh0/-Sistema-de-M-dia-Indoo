@@ -70,7 +70,7 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
       "diasSemana": 127,
       "posicaoFixa": false,
       "qrCode": {
-        "conteudo": "https://wa.me/5592999990000?text=Quero%20o%20caf%C3%A9",
+        "conteudo": "https://tv.suaempresa.com.br/q/K7M2Q9XH",
         "legenda": "Fale no WhatsApp",
         "posicao": "InferiorDireito",
         "tamanho": "Medio"
@@ -157,7 +157,10 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
   `codigo` maior que o `versaoCodigoApp` enviado; nulo caso contrário. Não
   entra na `versaoGrade`. A `url` vale 24 h, como a das mídias.
 - `qrCode` do item é nulo quando a mídia não tem QR code. `conteudo` é o
-  texto a codificar, já pronto (link, `tel:` ou Pix copia e cola);
+  texto a codificar, já pronto. Nos QR de link, WhatsApp e Instagram é o
+  **link rastreado** `{UrlPublica}/q/{codigo}`, que conta a leitura e
+  redireciona (ADR-023). Sem endereço público configurado, e sempre em
+  telefone (`tel:`) e Pix (copia e cola), vai o destino direto;
   `posicao` é `InferiorDireito`, `InferiorEsquerdo`, `SuperiorDireito` ou
   `SuperiorEsquerdo`; `tamanho` é `Pequeno`, `Medio` ou `Grande`. Mudar o
   QR code muda a `versaoGrade`.
@@ -173,6 +176,35 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
 | `401` | Credencial revogada (TV desvinculada ou outra pareada no lugar): apagar o token e voltar à tela de pareamento. **Manter os arquivos e continuar tocando** até parear. |
 | `403` | Tela inativa: manter tudo e continuar tocando o que já tem; tentar de novo no próximo ciclo. Host ou anunciante bloqueado não dá 403: as mídias de anunciante bloqueado só deixam de vir nos `itens`. |
 | `429`, `5xx`, sem rede | Manter tudo; tentar de novo no próximo ciclo. |
+
+## 2b. Exibições — `POST /exibicoes`
+
+Cabeçalho `Authorization: Bearer <token>`. Prova de veiculação (ADR-023): os
+anúncios que estiveram na tela, em lotes de **até 500**.
+
+```json
+{
+  "exibicoes": [
+    {
+      "id": "3f2a9c1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f",
+      "midiaId": 42,
+      "inicio": "2026-10-12T11:00:00.000Z",
+      "duracaoMs": 15000,
+      "concluida": true,
+      "semConexao": false
+    }
+  ]
+}
+```
+
+- `id`: UUID gerado na TV. Reenviar o mesmo id não duplica.
+- `concluida`: foi até o fim (falso = saiu por erro ao tocar).
+- `semConexao`: a última sincronização antes da exibição não chegou à API.
+
+`200` com `{ "aceitas": 1, "jaRecebidas": 0, "descartadas": 0 }`: **apagar o lote
+do banco local**, inclusive as descartadas (mídia desconhecida, início com mais
+de 35 dias ou mais de 10 min no futuro, duração fora de 0 a 2 h). `401`/`403`:
+como na sincronização. `429`, `5xx` ou sem rede: manter e tentar depois.
 
 ## 3. Regras do player
 
@@ -259,3 +291,10 @@ Cabeçalho `Authorization: Bearer <token>`. Parâmetros opcionais:
     (download, instalação, confirmação recusada)? Tentar a mesma versão de
     novo só depois de 1 hora. A atualização não interrompe nada até o Android
     instalar; depois o app reabre sozinho (`MY_PACKAGE_REPLACED`).
+17. **Prova de veiculação** (ADR-023): ao tirar um **anúncio** da tela, gravar
+    a exibição no banco local (mídia, início em UTC, duração, se foi até o fim
+    e se a TV estava sem conexão). Notícias e cartões não contam; vídeo que nem
+    abriu não é registrado. Depois de uma sincronização que respondeu, enviar
+    as pendentes em lotes (seção 2b), no máximo a cada 15 min, ou já com 300
+    pendentes. Guardar no máximo 20 mil (apagar as mais antigas). Parear com
+    outra tela apaga as pendentes.

@@ -29,7 +29,8 @@ certificado válido:
 O **diretório das TVs** (ADR-018) é uma página servida pela própria API em
 `/d/{codigo}`: quem lê o QR code da TV abre no celular, pelo 4G. Por isso a
 **API precisa estar na internet com HTTPS** (o painel pode ficar restrito).
-O endereço vai em `Indoor__UrlPublica`. Prefira um endereço curto
+O mesmo endereço serve o **QR rastreado** dos anúncios (`/q/{codigo}`, ADR-023),
+que conta as leituras e redireciona. O endereço vai em `Indoor__UrlPublica`. Prefira um endereço curto
 (ex.: `https://tv.suaempresa.com.br`, apontando para a mesma API): quanto
 mais curto, menos denso o QR code e mais longe ele é lido.
 
@@ -78,7 +79,7 @@ Linux, use o `Environment=` do serviço systemd.
 | `Jwt__Key` | sim | Frase aleatória com 64 caracteres ou mais. **Diferente** da de desenvolvimento. Trocar depois exige parear todas as TVs de novo |
 | `PlatformSettings__InitialAdminPassword` | 1ª subida | Senha inicial do `admin` (ver 2.4) |
 | `Indoor__UrlPainel` | sim | `https://painel.suaempresa.com.br`. Vai nos e-mails e é a origem liberada no CORS |
-| `Indoor__UrlPublica` | para o diretório | Endereço HTTPS da API na internet, ex.: `https://tv.suaempresa.com.br`. Base do QR code do diretório (`/d/{codigo}`). Vazio: as TVs não mostram o QR do diretório e o painel avisa |
+| `Indoor__UrlPublica` | para o diretório e o QR rastreado | Endereço HTTPS da API na internet, ex.: `https://tv.suaempresa.com.br`. Base do QR code do diretório (`/d/{codigo}`) e do QR rastreado dos anúncios (`/q/{codigo}`). Vazio: as TVs não mostram o QR do diretório, os QR dos anúncios vão direto ao destino e as leituras não são contadas |
 | `Indoor__Armazenamento__Supabase__Url` | sim | `https://<projeto>.supabase.co` |
 | `Indoor__Armazenamento__Supabase__ChaveServico` | sim | Chave `service_role`. **Segredo crítico**: nunca no painel nem nas TVs |
 | `Indoor__ProxiesConfiaveis__0` | atrás de proxy | IP do proxy reverso (ex.: `127.0.0.1` com nginx na mesma máquina). Sem ele, os limites por IP (pareamento e diretório) veem só o IP do proxy. No IIS *in-process* não é necessário |

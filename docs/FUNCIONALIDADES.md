@@ -46,7 +46,7 @@ O que o produto faz hoje, por quem usa. Recursos herdados da plataforma
 | Ativar / inativar | Inativa sai do loop das TVs, mas continua nas grades. Mídia nova nasce ativa se o plano tiver vaga e inativa se estiver completo; ativar além do plano é recusado com a explicação |
 | Plano | "Mídias ativas: x de y" na lista, com aviso de plano completo também na página de envio |
 | Substituir arquivo | Troca o vídeo/imagem de uma mídia sem mudar a situação. Fora das grades, troca na hora. **Em grade, vai para a aprovação da operadora** (ADR-020): as TVs seguem com o atual até aprovar; a lista mostra "Aguardando aprovação" ou o motivo da recusa, que também chega por e-mail. Aprovada, as TVs baixam o novo pelo hash e o antigo sai do storage |
-| QR code | Opcional, na aba "QR code" da edição. O formulário pede só o que o tipo precisa: **Link** (endereço), **WhatsApp** (telefone e mensagem inicial), **Instagram** (usuário), **Telefone** (número) ou **Pix** (chave, nome e cidade de quem recebe e valor opcional — vira um Pix copia e cola do Banco Central). Legenda, canto da tela e tamanho escolhidos pelo cliente. "Ver QR code" mostra a prévia para testar com o celular |
+| QR code | Opcional, na aba "QR code" da edição. O formulário pede só o que o tipo precisa: **Link** (endereço), **WhatsApp** (telefone e mensagem inicial), **Instagram** (usuário), **Telefone** (número) ou **Pix** (chave, nome e cidade de quem recebe e valor opcional — vira um Pix copia e cola do Banco Central). Legenda, canto da tela e tamanho escolhidos pelo cliente. "Ver QR code" mostra a prévia para testar com o celular. Link, WhatsApp e Instagram passam pelo link rastreado, que conta as leituras |
 | Diretório das TVs | Cartão no topo de Mídias: **Aparecer no diretório** (aceite do dono, desligado por padrão) com categoria, descrição, WhatsApp, Instagram e site. A página mostra só esses contatos (os QR codes dos anúncios não entram) |
 | Pré-visualizar | Link temporário de 1 h |
 | Excluir | Só mídia fora das grades; o arquivo sai do storage |
@@ -111,6 +111,17 @@ escolhe a playlist.
 |---|---|
 | Lista | Somente leitura: as TVs ativas cuja playlist tem uma mídia ativa do cliente, com nome, local, parceiro, conexão e última sincronização |
 
+## Relatório de veiculação (cliente em Mídias; operadora na lista de Clientes)
+
+| Funcionalidade | Detalhe |
+|---|---|
+| Exibições | O que as TVs registraram que exibiram: total, concluídas, interrompidas e quantas foram com a TV sem internet (tocou do que já tinha), com o tempo na tela (ADR-023) |
+| Leituras do QR | QR de link, WhatsApp e Instagram passam por um link curto da API que conta a leitura e redireciona. Leituras e leitores únicos por dia, sem guardar IP. Telefone e Pix vão direto (não são contados) |
+| Quebras | Por horário (hora local de cada TV, com o horário de pico), por TV, por anúncio e por dia |
+| Período | Este mês, mês passado, últimos 7 dias ou datas livres (até 93 dias) |
+| Resumo para o WhatsApp | Copia um texto curto com exibições, leituras e horário de pico para mandar ao anunciante |
+| Aviso | O relatório ainda não sabe se a TV estava ligada e na entrada certa |
+
 ## App das TVs
 
 | Funcionalidade | Detalhe |
@@ -127,6 +138,7 @@ escolhe a playlist.
 | Relógio e clima | No canto da tela: hora do estabelecimento e temperatura da cidade dele (Open-Meteo, com crédito). O clima some depois de 6 h sem atualizar |
 | Cartões | Previsão do tempo com ícones e cotações com seta de alta ou baixa, em tela cheia, com o crédito da fonte. Funcionam offline enquanto o dado valer (tempo 6 h, cotação 4 dias) |
 | QR code | Por cima do anúncio, no canto escolhido, num cartão branco com a legenda; gerado na TV, funciona offline. O médio ocupa 30% da altura da tela |
+| Prova de veiculação | Cada anúncio que sai da tela é gravado na TV (mídia, início, duração, se foi até o fim, se estava sem internet) e enviado em lotes a cada 15 min; sem internet, fica guardado até voltar |
 | QR do diretório | Com o diretório ligado na tela: QR pequeno no canto inferior direito, nos anúncios sem QR próprio e na tela de espera |
 | Tela de espera | Sem nada para hoje, mostra o nome da tela |
 | Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, notícias, clima, servidor, versão e estado da atualização |
@@ -149,6 +161,10 @@ escolhe a playlist.
   cache de 60 s. Mostra só quem aceitou e só os dados do perfil público e
   dos QR codes; fora dos buscadores (`noindex`) e sem dizer ao site do
   anunciante de qual TV veio a visita.
+- QR rastreado (ADR-023): `/q/{codigo}` anônimo, código aleatório de 8
+  caracteres, 30 leituras por minuto por IP, sem cache e sem `Referer`. A
+  leitura guarda só um hash diário (não reversível) para contar únicos; o
+  envio de exibições aceita no máximo 500 por lote e 20 lotes por minuto por tela.
 
 ## Fora do escopo atual
 
@@ -156,8 +172,9 @@ escolhe a playlist.
 - Equipe do cliente com permissões diferentes do dono (o papel "Equipe"
   existe no modelo, sem tela).
 - Operadora acessar o painel de um cliente ("acessar como").
-- Relatório de exibições (prova de veiculação).
-- Contagem de leituras do QR code (o QR é estático e leva direto ao destino).
+- Saber se a TV estava ligada e na entrada certa (HDMI-CEC ou captura de tela).
+- Envio automático do relatório ao anunciante (hoje: copiar o resumo no painel).
+- Contagem de leituras do QR de telefone e Pix.
 - Diretório: contagem de acessos e de cliques por anunciante, e o logo no
   cartão (fase 2 da Entrega 5).
 - Fontes de notícias por playlist (hoje as fontes ativas valem para toda a rede).
