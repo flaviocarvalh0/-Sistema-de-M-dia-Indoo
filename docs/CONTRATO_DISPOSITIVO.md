@@ -144,7 +144,8 @@ na tela há mais que a duração + 2 min, ou espera com anúncios), o painel mos
   ],
   "diretorio": {
     "url": "https://tv.suaempresa.com.br/d/K7M2Q9XHAB",
-    "legenda": "Contatos dos anunciantes"
+    "legenda": "Contatos dos anunciantes",
+    "convite": "Quer anunciar aqui?"
   },
   "atualizacao": {
     "codigo": 7,

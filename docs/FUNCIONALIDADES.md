@@ -141,7 +141,8 @@ escolhe a playlist.
 | Cartões | Previsão do tempo com ícones e cotações com seta de alta ou baixa, em tela cheia, com o crédito da fonte. Funcionam offline enquanto o dado valer (tempo 6 h, cotação 4 dias) |
 | QR code | Por cima do anúncio, no canto escolhido, num cartão branco com a legenda; gerado na TV, funciona offline. O médio ocupa 30% da altura da tela |
 | Prova de veiculação | Cada anúncio que sai da tela é gravado na TV (mídia, início, duração, se foi até o fim, se estava sem internet) e enviado em lotes a cada 15 min; sem internet, fica guardado até voltar |
-| QR do diretório | Com o diretório ligado na tela: QR pequeno no canto inferior direito, nos anúncios sem QR próprio e na tela de espera |
+| QR do diretório | Com o diretório ligado na tela: QR pequeno no canto inferior direito, nos anúncios sem QR próprio e na tela de espera. Com o WhatsApp da operadora cadastrado (`INDOOR.ANUNCIE.WHATSAPP`), o cartão convida "Quer anunciar aqui?" e a página tem o botão **Clique aqui e fale com a gente** |
+| Visual do QR | Cartão escuro com o QR num quadro branco (a margem que o leitor precisa) e a legenda em branco, para não brigar com o anúncio |
 | Tela de espera | Sem nada para hoje, mostra o nome da tela |
 | Informações | Botão OK do controle: conexão, última sincronização, itens de hoje, notícias, clima, servidor, versão e estado da atualização |
 | Atualização automática | Baixa a versão nova liberada (hash conferido), instala e reabre sozinha. Sem confirmação com o app como device owner; senão pede "Instalar" no controle. Falhou, tenta de novo em 1 h |

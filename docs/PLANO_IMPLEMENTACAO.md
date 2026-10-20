@@ -287,7 +287,7 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   no topo de Mídias; coluna "Diretório das TVs" em Parceiros.
 - [x] Player: `diretorio` na sincronização (regra 15), QR fixo pequeno que
   some quando o anúncio tem QR próprio.
-- [x] `Indoor:UrlPublica` e a API com HTTPS na internet (IMPLANTACAO.md).
+- [x] `INDOOR.URL_PUBLICA` (antes `Indoor:UrlPublica`) e a API com HTTPS na internet (IMPLANTACAO.md).
 - [ ] Fase 2: contagem de acessos e cliques por anunciante, logo no cartão.
 
 ### Carrossel com cursor na fila da TV ✅
@@ -376,3 +376,12 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   1 min sem reiniciar
   ([ADR-026](../api/docs/decisions/ADR-026-Parametros-Operacionais-no-Painel.md)).
 - [x] Cadastro automático na subida, com o valor da configuração antiga.
+
+### QR na TV: visual novo e "Quer anunciar aqui?" ✅
+
+- [x] Cartão escuro com o QR num quadro branco (anúncio e diretório).
+- [x] Parâmetro `INDOOR.ANUNCIE.WHATSAPP`: convite no QR do diretório e botão
+  na página `/d/{codigo}`, com o nome do local na mensagem.
+- [x] `INDOOR.URL_PUBLICA` como parâmetro; `localhost` ignorado (o QR rastreado
+  com `localhost` nunca contava leitura).
+- [ ] Contar os cliques nos contatos da página do diretório.

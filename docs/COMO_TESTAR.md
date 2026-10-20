@@ -119,7 +119,7 @@ usam o cookie.
 - `POST /dispositivo/exibicoes` com o token da TV grava o lote; reenviar o mesmo
   lote responde `jaRecebidas` e não duplica. Mídia desconhecida conta em
   `descartadas`.
-- Com `Indoor:UrlPublica` configurada, uma mídia com QR de WhatsApp ganha
+- Com o parâmetro `INDOOR.URL_PUBLICA` (ou `Indoor:UrlPublica`) configurado, uma mídia com QR de WhatsApp ganha
   `codigoQr`; `GET /q/{codigo}` responde 302 para o `wa.me` e grava uma linha em
   `indoor.leitura_qr` (sem IP).
 - O `admin` não enxerga o painel do cliente (403): ele não pertence a um cliente.
@@ -235,9 +235,13 @@ da API).
     da linha (**Diretório de anunciantes**) mostra o QR code e o endereço.
     **Abrir página** mostra o que o celular vê: o cliente ligado ao parceiro primeiro e
     só quem aceitou. Para ler com o celular de verdade, a API precisa de um
-    endereço que o celular alcance em `Indoor:UrlPublica` (em
-    desenvolvimento, `https://localhost:7216` só abre no próprio PC; na rede
-    local use `http://<IP do PC>:5366` com o celular no mesmo Wi-Fi).
+    endereço que o celular alcance no parâmetro `INDOOR.URL_PUBLICA` (Atlas
+    Studio → Parâmetros). `localhost` é ignorado (o celular abriria a si
+    mesmo): na rede local use `http://<IP do PC>:5366` com o celular no mesmo
+    Wi-Fi, ou o endereço do túnel. Com `INDOOR.ANUNCIE.WHATSAPP` preenchido, a
+    TV mostra "Quer anunciar aqui?" no cartão do QR e a página ganha o botão
+    **Clique aqui e fale com a gente**, que abre o seu WhatsApp já dizendo de
+    qual local veio o interesse.
 
 15. **Carrossel:** em **Rede → Playlists → editar**, ponha **Tamanho da
     volta** = 30 numa grade com 6 imagens de 10 s (e **Embaralhar** ligado).
@@ -290,8 +294,9 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216   # emulador
    (5 de tolerância + a varredura, que roda a cada 5 min); abra de novo e chega
    "de volta ao ar". Fora do horário (7 h–22 h no fuso do
    estabelecimento) não há alerta.
-10. **Prova de veiculação e QR rastreado** (ADR-023): com `Indoor:UrlPublica`
-    configurada e uma mídia com QR de WhatsApp na grade, deixe a TV tocar
+10. **Prova de veiculação e QR rastreado** (ADR-023): com `INDOOR.URL_PUBLICA`
+    num endereço que o celular alcance (não `localhost`: aí o QR vai direto ao
+    destino e a leitura não é contada) e uma mídia com QR de WhatsApp na grade, deixe a TV tocar
     alguns minutos. Em até 15 min (ou na próxima sincronização depois de
     reabrir o app) as exibições sobem. Leia o QR com o celular: abre o WhatsApp
     e conta uma leitura. Em **Mídias → Relatório de veiculação** (dono) ou na

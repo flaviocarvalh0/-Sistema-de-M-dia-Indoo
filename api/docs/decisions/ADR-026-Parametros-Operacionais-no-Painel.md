@@ -40,7 +40,11 @@ histórico e permissão própria (`Parameters.*`).
   - **Segredos** (ADR-008): conexão do banco, chave do JWT, senha inicial do
     admin, chaves do R2 e do Supabase.
   - **Endereços da implantação:** `Indoor:UrlPainel` (o CORS é montado na
-    subida), `Indoor:UrlPublica`, URLs das APIs de clima e cotações.
+    subida) e as URLs das APIs de clima e cotações. A `Indoor:UrlPublica` virou
+    o parâmetro `INDOOR.URL_PUBLICA`: muda com o túnel ou o domínio, e um
+    endereço `localhost` é ignorado (o celular que lê o QR não chegaria à API).
+  - O WhatsApp da operadora para "Quer anunciar aqui?" é o parâmetro
+    `INDOOR.ANUNCIE.WHATSAPP`.
   - **Chaves de subida:** `Indoor:Armazenamento:CopiarDoSupabase`.
 - O SMTP já era cadastrado pelo painel (Atlas Studio → Servidor SMTP).
 

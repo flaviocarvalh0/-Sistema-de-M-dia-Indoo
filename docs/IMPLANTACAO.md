@@ -30,7 +30,7 @@ O **diretório das TVs** (ADR-018) é uma página servida pela própria API em
 `/d/{codigo}`: quem lê o QR code da TV abre no celular, pelo 4G. Por isso a
 **API precisa estar na internet com HTTPS** (o painel pode ficar restrito).
 O mesmo endereço serve o **QR rastreado** dos anúncios (`/q/{codigo}`, ADR-023),
-que conta as leituras e redireciona. O endereço vai em `Indoor__UrlPublica`. Prefira um endereço curto
+que conta as leituras e redireciona. O endereço vai no parâmetro `INDOOR.URL_PUBLICA` (Atlas Studio → Parâmetros; `Indoor__UrlPublica` só como valor inicial). Prefira um endereço curto
 (ex.: `https://tv.suaempresa.com.br`, apontando para a mesma API): quanto
 mais curto, menos denso o QR code e mais longe ele é lido.
 
@@ -84,7 +84,6 @@ Linux, use o `Environment=` do serviço systemd.
 | `Jwt__Key` | sim | Frase aleatória com 64 caracteres ou mais. **Diferente** da de desenvolvimento. Trocar depois exige parear todas as TVs de novo |
 | `PlatformSettings__InitialAdminPassword` | 1ª subida | Senha inicial do `admin` (ver 2.4) |
 | `Indoor__UrlPainel` | sim | `https://painel.suaempresa.com.br`. Vai nos e-mails e é a origem liberada no CORS |
-| `Indoor__UrlPublica` | para o diretório e o QR rastreado | Endereço HTTPS da API na internet, ex.: `https://tv.suaempresa.com.br`. Base do QR code do diretório (`/d/{codigo}`) e do QR rastreado dos anúncios (`/q/{codigo}`). Vazio: as TVs não mostram o QR do diretório, os QR dos anúncios vão direto ao destino e as leituras não são contadas |
 | `Indoor__Armazenamento__R2__Conta` | sim (R2) | Account ID da Cloudflare |
 | `Indoor__Armazenamento__R2__ChaveAcesso` | sim (R2) | Access Key ID do token do bucket |
 | `Indoor__Armazenamento__R2__SegredoAcesso` | sim (R2) | Secret Access Key. **Segredo crítico**: nunca no painel nem nas TVs |
@@ -101,6 +100,8 @@ variáveis de ambiente**. Ficam em **Atlas Studio → Parâmetros**, grupo
 
 | Parâmetro | Padrão | O que é |
 |---|---|---|
+| `INDOOR.URL_PUBLICA` | vazio | Endereço HTTPS da API na internet (ex.: `https://tv.suaempresa.com.br`), base do QR do diretório (`/d`) e do QR rastreado (`/q`). Vazio ou `localhost`: sem QR do diretório, QR dos anúncios direto ao destino e leituras não contadas |
+| `INDOOR.ANUNCIE.WHATSAPP` | vazio | Seu WhatsApp para quem quer anunciar. Preenchido: "Quer anunciar aqui?" no QR da TV e botão na página do diretório |
 | `INDOOR.ALERTAS.EMAILS` | `[]` | E-mails da operadora (lista JSON). Vazio: só registra no log |
 | `INDOOR.ALERTAS.TV_OFFLINE_MINUTOS` | `15` | Minutos sem sincronizar até o alerta (mínimo 5) |
 | `INDOOR.ALERTAS.HORA_INICIO` / `HORA_FIM` | `7` / `22` | Só alerta nesse horário, no fuso do local da TV |
@@ -312,7 +313,7 @@ aviso da página: precisam de uma instalação manual (4.2), uma vez.
       ambiente (nada em `appsettings`).
 - [ ] `Jwt:Key` e senha do `admin` diferentes das de desenvolvimento.
 - [ ] `Indoor:UrlPainel` com o endereço real do painel.
-- [ ] `Indoor:UrlPublica` com o endereço HTTPS da API na internet. Teste no
+- [ ] `INDOOR.URL_PUBLICA` (Parâmetros) com o endereço HTTPS da API na internet. Teste no
       celular **pelo 4G** (Wi-Fi desligado): ligue o diretório numa tela, abra
       **Diretório de anunciantes** em Rede → Telas e leia o QR code.
 - [ ] Admin e ícones criados (2.4) e `studio-indoor.sql` aplicado (2.5).
