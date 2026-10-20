@@ -37,6 +37,10 @@ export interface MidiaDto {
   qrTamanho?: TamanhoQrCode | null;
   /** O texto codificado (link, tel: ou Pix copia e cola). */
   qrConteudo?: string | null;
+  /** Código do link rastreado (Link, WhatsApp e Instagram; ADR-023). */
+  codigoQr?: string | null;
+  /** O que a TV codifica: o link rastreado, que conta a leitura e redireciona. Nulo = vai o conteúdo direto. */
+  qrUrlRastreada?: string | null;
   /** Arquivo novo aguardando a aprovação da operadora (as TVs seguem com o atual). */
   trocaPendente?: boolean;
   pendenteTipo?: TipoMidia | null;

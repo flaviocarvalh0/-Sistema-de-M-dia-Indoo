@@ -107,6 +107,15 @@ export const routes: Routes = [
                 .then(m => m.MidiaListPageComponent)
           },
           {
+            // Relatório de veiculação do próprio cliente (ADR-023).
+            path: 'midia/relatorio',
+            canActivate: [atlasPermissionGuard],
+            data: { entity: 'midia', action: 'View' },
+            loadComponent: () =>
+              import('./features/relatorio/relatorio-veiculacao-page.component')
+                .then(m => m.RelatorioVeiculacaoPageComponent)
+          },
+          {
             path: 'midia/enviar',
             canActivate: [atlasPermissionGuard],
             data: { entity: 'midia', action: 'Create' },
@@ -131,6 +140,15 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/rede/pages/parceiro-list-page.component')
                 .then(m => m.ParceiroListPageComponent)
+          },
+          {
+            // Relatório de veiculação de um cliente, na visão da operadora.
+            path: 'cliente/:id/relatorio',
+            canActivate: [atlasPermissionGuard],
+            data: { entity: 'cliente', action: 'View' },
+            loadComponent: () =>
+              import('./features/relatorio/relatorio-veiculacao-page.component')
+                .then(m => m.RelatorioVeiculacaoPageComponent)
           },
           {
             // Anunciantes: têm acesso ao painel (módulo Mídia Indoor).

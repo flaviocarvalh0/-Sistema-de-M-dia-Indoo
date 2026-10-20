@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { QRCodeComponent } from 'angularx-qrcode';
 import {
   AcaoLinha, AtlasAuthService, ConfirmModalService, EventoFiltro, EventoPaginacao, FormItemConfig,
@@ -25,7 +25,7 @@ const ENTIDADE = 'midia';
 @Component({
   selector: 'app-midia-list-page',
   standalone: true,
-  imports: [ListagemDinamicaComponent, QRCodeComponent],
+  imports: [ListagemDinamicaComponent, QRCodeComponent, RouterLink],
   template: `
     @if (uso(); as u) {
       <div class="card mb-3">
@@ -91,8 +91,11 @@ const ENTIDADE = 'midia';
                   (click)="filtrarAtivo(f.valor)">{{ f.rotulo }}</button>
         }
       </div>
+      <a routerLink="/indoor/midia/relatorio" class="btn btn-sm btn-outline-primary ms-auto" data-teste="abrir-relatorio">
+        <i class="bi bi-graph-up me-1"></i>Relatório de veiculação
+      </a>
       @if (podeCriar) {
-        <button type="button" class="btn btn-sm btn-primary ms-auto" (click)="onEnviar()">
+        <button type="button" class="btn btn-sm btn-primary" (click)="onEnviar()">
           <i class="bi bi-cloud-arrow-up me-1"></i>Enviar mídia
         </button>
       }
@@ -129,12 +132,21 @@ const ENTIDADE = 'midia';
         </div>
         <div class="card-body d-flex flex-wrap gap-4 align-items-center">
           <div class="text-center">
-            <qrcode [qrdata]="m.qrConteudo!" [width]="220" [margin]="2" errorCorrectionLevel="M" />
+            <qrcode [qrdata]="m.qrUrlRastreada || m.qrConteudo!" [width]="220" [margin]="2" errorCorrectionLevel="M" />
             <div class="small fw-semibold mt-1">{{ m.qrLegenda || legendaPadrao(m) }}</div>
           </div>
           <div class="small flex-grow-1" style="min-width: 240px">
             <div><span class="text-muted">Tipo:</span> {{ rotuloQr(m) }}</div>
             <div class="text-break"><span class="text-muted">Abre:</span> {{ m.qrConteudo }}</div>
+            @if (m.qrUrlRastreada) {
+              <div class="text-break" data-teste="qr-rastreado">
+                <span class="badge text-bg-success me-1"><i class="bi bi-graph-up me-1"></i>Leituras contadas</span>
+                passa por <span class="font-monospace">{{ m.qrUrlRastreada }}</span>, que conta a leitura e leva ao destino.
+                Testar aqui também conta.
+              </div>
+            } @else {
+              <div class="text-muted">Este tipo de QR vai direto ao destino: as leituras não são contadas.</div>
+            }
             <div class="mt-2 text-muted">
               Aponte a câmera do celular para conferir antes de ir para as TVs. Na TV ele aparece no
               {{ posicaoTexto(m) }}, por cima da mídia.

@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   AcaoLinha, AtlasAuthService, ConfirmModalService, EventoFiltro, EventoPaginacao, FormItemConfig,
   FormModalService, ListagemDinamicaComponent, QueryParams, ToastService,
@@ -64,6 +65,7 @@ export class ClienteListPageComponent implements OnInit {
   private confirmModal = inject(ConfirmModalService);
   private toast = inject(ToastService);
   private atlasAuth = inject(AtlasAuthService);
+  private router = inject(Router);
 
   readonly colunas = CLIENTE_COLUNAS;
   /**
@@ -85,6 +87,7 @@ export class ClienteListPageComponent implements OnInit {
   private query: QueryParams = { pageIndex: 0, pageSize: 10 };
 
   acoesLinha: AcaoLinha[] = [
+    { id: 'relatorio', label: 'Relatório de veiculação', icone: 'bi bi-graph-up', classe: 'btn-outline-primary' },
     {
       id: 'bloquear', label: 'Bloquear', icone: 'bi bi-lock', classe: 'btn-outline-danger',
       visivel: (p: LinhaCliente) => p.situacao !== 'Bloqueado' && this.podeAtualizar(),
@@ -139,6 +142,7 @@ export class ClienteListPageComponent implements OnInit {
   }
 
   onAcaoLinha(ev: { acaoId: string; item: LinhaCliente }): void {
+    if (ev.acaoId === 'relatorio') this.router.navigate(['/rede/cliente', ev.item.id, 'relatorio']);
     if (ev.acaoId === 'bloquear') this.bloquear(ev.item);
     if (ev.acaoId === 'desbloquear') this.desbloquear(ev.item);
   }
