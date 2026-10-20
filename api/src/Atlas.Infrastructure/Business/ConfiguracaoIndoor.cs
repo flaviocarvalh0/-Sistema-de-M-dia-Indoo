@@ -1,10 +1,16 @@
 using Atlas.Application.Business.Common;
+using Atlas.Infrastructure.Business.Parametros;
 using Microsoft.Extensions.Configuration;
 
 namespace Atlas.Infrastructure.Business;
 
-/// <summary>Lê a seção <c>Indoor</c> do appsettings.</summary>
-internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfiguracaoIndoor
+/// <summary>
+/// Configurações da Mídia Indoor. O que é operacional vem primeiro dos
+/// parâmetros cadastrados (Atlas Studio → Parâmetros, ADR-026); sem eles, da
+/// seção <c>Indoor</c> do appsettings; sem ela, do padrão. Endereços e
+/// segredos ficam só na configuração.
+/// </summary>
+internal sealed class ConfiguracaoIndoor(IConfiguration configuration, ParametrosIndoor? parametros = null) : IConfiguracaoIndoor
 {
     public string UrlPainel =>
         configuration["Indoor:UrlPainel"]
@@ -16,7 +22,9 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfig
             : null;
 
     public IReadOnlyList<string> EmailsOperadora =>
-        (configuration.GetSection("Indoor:Alertas:Emails").Get<string[]>() ?? [])
+        (parametros?.Lista(ParametrosIndoor.AlertasEmails)
+            ?? configuration.GetSection("Indoor:Alertas:Emails").Get<string[]>()
+            ?? [])
             .Select(e => e.Trim())
             .Where(e => e.Contains('@'))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -24,35 +32,36 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfig
 
     /// <summary>Nunca acima de 10 GB (o grátis do R2), mesmo que a configuração peça.</summary>
     public long LimiteArmazenamentoBytes =>
-        Math.Clamp(Inteiro("Indoor:Armazenamento:LimiteTotalMb", padrao: 9216, minimo: 100), 100, 10240) * 1024L * 1024L;
+        Math.Clamp(Inteiro(ParametrosIndoor.ArmazenamentoLimiteMb, padrao: 9216, minimo: 100), 100, 10240) * 1024L * 1024L;
 
     public TimeSpan ToleranciaAlertaOffline =>
-        TimeSpan.FromMinutes(Inteiro("Indoor:Alertas:TvOfflineMinutos", padrao: 15, minimo: 5));
+        TimeSpan.FromMinutes(Inteiro(ParametrosIndoor.AlertasTvOfflineMinutos, padrao: 15, minimo: 5));
 
     public (int Inicio, int Fim) HorarioAlertas =>
-        (Math.Clamp(Inteiro("Indoor:Alertas:HoraInicio", padrao: 7, minimo: 0), 0, 23),
-         Math.Clamp(Inteiro("Indoor:Alertas:HoraFim", padrao: 22, minimo: 1), 1, 24));
+        (Math.Clamp(Inteiro(ParametrosIndoor.AlertasHoraInicio, padrao: 7, minimo: 0), 0, 23),
+         Math.Clamp(Inteiro(ParametrosIndoor.AlertasHoraFim, padrao: 22, minimo: 1), 1, 24));
 
     public TimeSpan IntervaloSincronizacao =>
-        TimeSpan.FromSeconds(Inteiro("Indoor:Dispositivo:IntervaloSincronizacaoSegundos", padrao: 60, minimo: 30));
+        TimeSpan.FromSeconds(Inteiro(ParametrosIndoor.DispositivoIntervaloSegundos, padrao: 60, minimo: 30));
 
     public TimeSpan ValidadeTokenDispositivo =>
-        TimeSpan.FromDays(Inteiro("Indoor:Dispositivo:ValidadeTokenDias", padrao: 30, minimo: 1));
+        TimeSpan.FromDays(Inteiro(ParametrosIndoor.DispositivoValidadeTokenDias, padrao: 30, minimo: 1));
 
     public TimeSpan ValidadeUrlDownload =>
-        TimeSpan.FromHours(Inteiro("Indoor:Dispositivo:ValidadeUrlDownloadHoras", padrao: 24, minimo: 1));
+        TimeSpan.FromHours(Inteiro(ParametrosIndoor.DispositivoValidadeUrlHoras, padrao: 24, minimo: 1));
 
     public bool ColetaAutomatica =>
-        !bool.TryParse(configuration["Indoor:Coleta:Ativa"], out var ativa) || ativa;
+        parametros?.Logico(ParametrosIndoor.ColetaAtiva)
+        ?? (!bool.TryParse(configuration[ParametrosIndoor.ColetaAtiva.ChaveConfiguracao], out var ativa) || ativa);
 
     public TimeSpan IntervaloColetaNoticias =>
-        TimeSpan.FromMinutes(Inteiro("Indoor:Coleta:NoticiasMinutos", padrao: 60, minimo: 15));
+        TimeSpan.FromMinutes(Inteiro(ParametrosIndoor.ColetaNoticiasMinutos, padrao: 60, minimo: 15));
 
     public TimeSpan IntervaloColetaClima =>
-        TimeSpan.FromMinutes(Inteiro("Indoor:Coleta:ClimaMinutos", padrao: 30, minimo: 15));
+        TimeSpan.FromMinutes(Inteiro(ParametrosIndoor.ColetaClimaMinutos, padrao: 30, minimo: 15));
 
     public TimeSpan IntervaloColetaCotacoes =>
-        TimeSpan.FromMinutes(Inteiro("Indoor:Coleta:CotacoesMinutos", padrao: 30, minimo: 15));
+        TimeSpan.FromMinutes(Inteiro(ParametrosIndoor.ColetaCotacoesMinutos, padrao: 30, minimo: 15));
 
     public Uri UrlPtax =>
         new(configuration["Indoor:Cotacoes:UrlPtax"] ?? "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata");
@@ -63,6 +72,11 @@ internal sealed class ConfiguracaoIndoor(IConfiguration configuration) : IConfig
     public Uri UrlGeocodificacao =>
         new(configuration["Indoor:Clima:UrlGeocodificacao"] ?? "https://geocoding-api.open-meteo.com/v1/search");
 
-    private int Inteiro(string chave, int padrao, int minimo) =>
-        int.TryParse(configuration[chave], out var valor) ? Math.Max(valor, minimo) : padrao;
+    /// <summary>Parâmetro cadastrado, senão a configuração, senão o padrão; nunca abaixo do mínimo.</summary>
+    private int Inteiro(DefinicaoParametro definicao, int padrao, int minimo)
+    {
+        var valor = parametros?.Inteiro(definicao)
+            ?? (int.TryParse(configuration[definicao.ChaveConfiguracao], out var configurado) ? configurado : padrao);
+        return Math.Max(valor, minimo);
+    }
 }

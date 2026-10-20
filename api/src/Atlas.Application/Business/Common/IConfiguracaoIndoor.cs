@@ -1,6 +1,11 @@
 namespace Atlas.Application.Business.Common;
 
-/// <summary>Configurações do produto que não são segredo (seção <c>Indoor</c>).</summary>
+/// <summary>
+/// Configurações do produto que não são segredo. As operacionais (alertas,
+/// teto, intervalos) vêm de Atlas Studio → Parâmetros, grupo "Mídia Indoor"
+/// (ADR-026); as chaves <c>Indoor:…</c> citadas abaixo valem só se o parâmetro
+/// não existir. Endereços vêm da seção <c>Indoor</c> do appsettings.
+/// </summary>
 public interface IConfiguracaoIndoor
 {
     /// <summary>Endereço do painel (pasta <c>web/</c>), usado nos e-mails.</summary>

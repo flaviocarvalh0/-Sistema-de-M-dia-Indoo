@@ -12,6 +12,7 @@ using Atlas.Domain.Constants;
 using Atlas.Infrastructure.Business.Armazenamento;
 using Atlas.Infrastructure.Business.Conteudo;
 using Atlas.Infrastructure.Business.Dispositivo;
+using Atlas.Infrastructure.Business.Parametros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -31,7 +32,10 @@ public static class DependencyInjection
     public static void AddBusinessServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<IClienteAtual, ClienteAtual>();
-        builder.Services.AddSingleton<IConfiguracaoIndoor, ConfiguracaoIndoor>();
+        builder.Services.AddSingleton<ParametrosIndoor>();
+        builder.Services.AddSingleton<IConfiguracaoIndoor>(sp =>
+            new ConfiguracaoIndoor(sp.GetRequiredService<IConfiguration>(), sp.GetRequiredService<ParametrosIndoor>()));
+        builder.Services.AddHostedService<SincronizadorParametrosIndoor>();
         builder.AddArmazenamentoMidias();
         builder.Services.AddAutenticacaoDispositivo(builder.Configuration);
         builder.Services.AddBusinessAuthorization();
