@@ -239,9 +239,14 @@ Parceiros (os locais das TVs) não têm acesso ao sistema (ADR-022).
 
 ```powershell
 cd player
-flutter build apk --release --dart-define=API_URL=https://api.suaempresa.com.br
-# build/app/outputs/flutter-apk/app-release.apk
+.\scripts\gerar-apk.ps1 -Modo Release -ApiUrl https://api.suaempresa.com.br
+# player/dist/midia-indoor-1.0.1+2-release.apk (o script já subiu a versão)
 ```
+
+O script sobe a versão do `pubspec.yaml`, gera o APK e avisa se passar de
+50 MB (`-PorArquitetura` gera um por arquitetura). Para testar na rede local,
+sem certificado válido, use `-Modo Profile` (o padrão). Opções:
+`Get-Help .\scripts\gerar-apk.ps1 -Detailed`.
 
 A versão vem do `version` do `pubspec.yaml` (ex.: `1.2.0+7`): `1.2.0` é o
 nome que aparece no painel e `7` é o **código**, usado pela atualização
@@ -291,8 +296,10 @@ APK só instalam por cima se forem assinadas com a mesma chave.
 
 ### 4.3 Atualizar as TVs (ADR-021)
 
-1. Aumente o código em `player/pubspec.yaml` (`1.2.0+7` → `1.2.1+8`) e gere o
-   APK (4.1), **assinado com a mesma chave** das versões anteriores.
+1. Gere o APK com `player/scripts/gerar-apk.ps1` (4.1): ele aumenta o código
+   do `pubspec.yaml` (`1.2.0+7` → `1.2.1+8`). O APK tem de ser **assinado com
+   a mesma chave** das versões anteriores (gere sempre na mesma máquina até
+   configurar uma chave própria). Faça o commit do `pubspec.yaml`.
 2. Em **Rede → Telas → Versões do app**, escolha o APK, confira código e nome
    e envie. A versão entra **suspensa**.
 3. Marque uma ou mais telas como **TV de teste** (Editar tela) e mude a

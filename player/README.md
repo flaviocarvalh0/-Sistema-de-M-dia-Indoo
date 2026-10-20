@@ -46,12 +46,31 @@ flutter run --dart-define=API_URL=https://10.0.2.2:7216
 - O endereço também pode ser trocado na própria TV, na tela de pareamento
   ("Servidor: … · alterar"); fica gravado.
 
-Para gerar o instalável:
+Para gerar o instalável, use o script, que já sobe a versão do
+`pubspec.yaml` (o código depois do `+`, que a TV compara para se atualizar) e
+põe o APK em `player/dist/` com a versão no nome:
 
 ```powershell
-flutter build apk --release --dart-define=API_URL=https://api.suaempresa.com.br
-# build/app/outputs/flutter-apk/app-release.apk  →  adb install -r <apk>
+cd player
+.\scripts\gerar-apk.ps1                         # Profile, rede local: 1.0.0+1 -> 1.0.1+2
+.\scripts\gerar-apk.ps1 -Modo Release -ApiUrl https://api.suaempresa.com.br
+.\scripts\gerar-apk.ps1 -Modo Debug -Instalar -Aparelho 192.168.1.50:5555
+Get-Help .\scripts\gerar-apk.ps1 -Detailed       # todas as opções
 ```
+
+- **Profile** (padrão): para testar na rede local. Aceita o certificado de
+  desenvolvimento (`https://<IP do PC>:7216`, detectado sozinho).
+- **Release**: produção. Só aceita certificado HTTPS válido (domínio ou túnel);
+  o script recusa IP e `localhost`.
+- **Debug**: depuração; o APK costuma passar dos 50 MB de Versões do app.
+- `-Subir Patch|Minor|Major|Codigo|Nenhum` (padrão `Patch`), `-PorArquitetura`
+  (APKs menores), `-Instalar` (adb). Se o build falhar, o `pubspec.yaml` volta.
+- Bloqueado pela política de execução do Windows? Rode
+  `powershell -ExecutionPolicy Bypass -File .\scripts\gerar-apk.ps1`.
+
+Na mão, o equivalente é
+`flutter build apk --release --dart-define=API_URL=https://api.suaempresa.com.br`
+(`build/app/outputs/flutter-apk/app-release.apk`), subindo o `version` antes.
 
 ## Uso na TV
 
