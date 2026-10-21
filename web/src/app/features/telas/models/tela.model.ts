@@ -60,6 +60,18 @@ export interface CodigoPareamento {
 }
 
 /** Endereço novo do diretório ("Trocar endereço"). */
+/** Uso da página do diretório de uma TV (ADR-027). */
+export interface UsoDiretorio {
+  dias: number;
+  /** Vezes que a página foi aberta (QR lido). */
+  acessos: number;
+  /** Pessoas diferentes por dia, somadas. */
+  pessoas: number;
+  toquesContatos: number;
+  toquesAnuncie: number;
+  porAnunciante: { clienteId: number; nome: string; toques: number }[];
+}
+
 export interface CodigoDiretorio {
   codigo: string;
   url?: string | null;

@@ -14,11 +14,17 @@ export interface RelatorioVeiculacaoDto {
   segundosNaTela: number;
   leiturasQr: number;
   leitoresUnicosQr: number;
+  /** Toques nos contatos do cliente na página do diretório das TVs (ADR-027). */
+  toquesDiretorio: number;
+  /** Pessoas diferentes por dia que tocaram, somadas. */
+  pessoasDiretorio: number;
+  /** Por contato (rótulo: WhatsApp, Instagram, Site), do mais tocado. */
+  toquesPorContato: { tipo: string; rotulo: string; toques: number }[];
   /** Falso por enquanto: o registro não sabe se a TV estava ligada. */
   medeTelaLigada: boolean;
   porTela: { telaId: number; nome: string; parceiro?: string | null; exibicoes: number; segundosNaTela: number }[];
   porMidia: { midiaId: number; titulo: string; exibicoes: number; leiturasQr: number; leitoresUnicosQr: number; qrRastreado: boolean }[];
-  porDia: { data: string; exibicoes: number; leiturasQr: number }[];
+  porDia: { data: string; exibicoes: number; leiturasQr: number; toquesDiretorio: number }[];
   /** 24 posições (0 a 23 h), na hora local de cada TV. */
   porHora: number[];
 }

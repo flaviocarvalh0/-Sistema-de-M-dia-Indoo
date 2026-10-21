@@ -12,7 +12,7 @@ import {
 import { TelaRedeService } from '../services/tela-rede.service';
 import { ParceiroService } from '../services/parceiro.service';
 import { PlaylistService } from '../../playlists/services/playlist.service';
-import { LinhaTela, TelaDto } from '../../telas/models/tela.model';
+import { LinhaTela, TelaDto, UsoDiretorio } from '../../telas/models/tela.model';
 import { TELA_REDE_COLUNAS, criarCamposTelaRede } from '../configs/tela-rede.config';
 import { preencherCampos } from '../../../shared/utils/form.util';
 
@@ -85,8 +85,27 @@ interface CodigoExibido {
               </div>
             } @else {
               <div class="alert alert-warning py-2">
-                A API está sem endereço público (<code>Indoor:UrlPublica</code>): sem ele a TV não mostra o QR code.
-                Configure com o endereço HTTPS da API na internet (ver docs/IMPLANTACAO.md).
+                A API está sem endereço público: sem ele a TV não mostra o QR code. Configure o parâmetro
+                <code>INDOOR.URL_PUBLICA</code> (Atlas Studio → Parâmetros) com o endereço HTTPS da API na internet
+                (<code>localhost</code> não vale: o celular não chega nele).
+              </div>
+            }
+            @if (usoDiretorio(); as u) {
+              <div class="border rounded p-2 mb-2 bg-body-tertiary" data-teste="uso-diretorio">
+                <div class="fw-semibold mb-1">Últimos {{ u.dias }} dias</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <span><strong>{{ u.acessos }}</strong> {{ u.acessos === 1 ? 'acesso' : 'acessos' }}
+                    <span class="text-muted">({{ u.pessoas }} {{ u.pessoas === 1 ? 'pessoa' : 'pessoas' }} por dia, somadas)</span></span>
+                  <span><strong>{{ u.toquesContatos }}</strong> {{ u.toquesContatos === 1 ? 'toque' : 'toques' }} em contatos</span>
+                  <span><strong>{{ u.toquesAnuncie }}</strong> em "Quer anunciar aqui?"</span>
+                </div>
+                @if (u.porAnunciante.length) {
+                  <div class="text-muted mt-1">
+                    @for (a of u.porAnunciante; track a.clienteId; let ultimo = $last) {
+                      {{ a.nome }}: {{ a.toques }}@if (!ultimo) { · }
+                    }
+                  </div>
+                }
               </div>
             }
             <p class="text-muted mb-2">
@@ -173,6 +192,7 @@ export class TelaRedeListPageComponent implements OnInit {
   playlists = signal<CampoOption<number>[]>([]);
   codigo = signal<CodigoExibido | null>(null);
   diretorio = signal<TelaDto | null>(null);
+  usoDiretorio = signal<UsoDiretorio | null>(null);
   private agora = signal(Date.now());
 
   restante = computed(() => Math.max(0, Math.floor(((this.codigo()?.expiraEm ?? 0) - this.agora()) / 1000)));
@@ -262,7 +282,12 @@ export class TelaRedeListPageComponent implements OnInit {
   onAcaoLinha(ev: { acaoId: string; item: LinhaTela }): void {
     if (ev.acaoId === 'codigo') this.gerarCodigo(ev.item);
     if (ev.acaoId === 'desvincular') this.desvincular(ev.item);
-    if (ev.acaoId === 'diretorio') this.service.getById(ev.item.id).subscribe(t => this.diretorio.set(t));
+    if (ev.acaoId === 'diretorio') {
+      this.usoDiretorio.set(null);
+      this.service.getById(ev.item.id).subscribe(t => this.diretorio.set(t));
+      // Sem permissão ou falha: o quadro de uso só não aparece.
+      this.service.usoDiretorio(ev.item.id).subscribe({ next: u => this.usoDiretorio.set(u), error: () => this.usoDiretorio.set(null) });
+    }
     if (ev.acaoId === 'ativar') this.definirAtivo(ev.item, true);
     if (ev.acaoId === 'inativar') this.definirAtivo(ev.item, false);
   }

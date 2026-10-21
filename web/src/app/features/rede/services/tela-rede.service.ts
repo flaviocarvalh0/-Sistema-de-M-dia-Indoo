@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { CrudService, Page, PaginatedResponse, QueryParams, comErroLocal } from '@atlas/framework';
-import { CodigoDiretorio, CodigoPareamento, LinhaTela, TelaDto } from '../../telas/models/tela.model';
+import { CodigoDiretorio, CodigoPareamento, LinhaTela, TelaDto, UsoDiretorio } from '../../telas/models/tela.model';
 import { paraLinhaTela } from '../../telas/services/tela.service';
 import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util';
 
@@ -14,6 +14,7 @@ import { paraPage, paramsPaginacao } from '../../../shared/utils/paginacao.util'
  *  - PUT  /api/v1/business/rede/telas/{id}                    → nova versão (host e playlist; a TV continua pareada)
  *  - POST /api/v1/business/rede/telas/{id}/codigo-pareamento?version= → { codigo, expiraEm, version }
  *  - POST /api/v1/business/rede/telas/{id}/codigo-diretorio?version=  → { codigo, url, version } (endereço novo do diretório)
+ *  - GET  /api/v1/business/rede/telas/{id}/diretorio/uso?dias=30       → acessos e toques na página do diretório
  *  - POST /api/v1/business/rede/telas/{id}/desvincular|ativar|inativar?version=
  *  - DELETE /api/v1/business/rede/telas/{id}
  */
@@ -53,6 +54,10 @@ export class TelaRedeService extends CrudService<TelaDto, number> {
 
   gerarCodigo(id: number, version: number): Observable<CodigoPareamento> {
     return this.http.post<CodigoPareamento>(`${this.baseUrl}/${id}/codigo-pareamento`, null, { params: { version } });
+  }
+
+  usoDiretorio(id: number, dias = 30): Observable<UsoDiretorio> {
+    return this.http.get<UsoDiretorio>(`${this.baseUrl}/${id}/diretorio/uso`, { params: { dias } });
   }
 
   trocarCodigoDiretorio(id: number, version: number): Observable<CodigoDiretorio> {

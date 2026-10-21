@@ -44,7 +44,7 @@ type Atalho = 'mes' | 'mesPassado' | 'semana' | 'livre';
 
       <div class="row g-3 mb-3">
         @for (c of cartoes(); track c.rotulo) {
-          <div class="col-6 col-lg-3">
+          <div class="col-6 col-lg">
             <div class="card h-100"><div class="card-body py-2">
               <div class="small text-muted">{{ c.rotulo }}</div>
               <div class="fs-3 fw-semibold" [attr.data-teste]="c.teste">{{ c.valor }}</div>
@@ -60,7 +60,7 @@ type Atalho = 'mes' | 'mesPassado' | 'semana' | 'livre';
         </button>
       </div>
 
-      @if (d.exibicoes === 0 && d.leiturasQr === 0) {
+      @if (d.exibicoes === 0 && d.leiturasQr === 0 && d.toquesDiretorio === 0) {
         <div class="card"><div class="card-body text-muted">Nenhuma exibição registrada neste período.</div></div>
       } @else {
         <div class="card mb-3">
@@ -114,10 +114,10 @@ type Atalho = 'mes' | 'mesPassado' | 'semana' | 'livre';
             <div class="card">
               <div class="card-header"><strong>Por dia</strong></div>
               <div class="table-responsive"><table class="table table-sm mb-0">
-                <thead><tr><th>Dia</th><th class="text-end">Exibições</th><th class="text-end">Leituras do QR</th></tr></thead>
+                <thead><tr><th>Dia</th><th class="text-end">Exibições</th><th class="text-end">Leituras do QR</th><th class="text-end">Toques no diretório</th></tr></thead>
                 <tbody>
                   @for (dia of d.porDia; track dia.data) {
-                    <tr><td>{{ dia.data | date:'EEE, dd/MM':'':'pt-BR' }}</td><td class="text-end">{{ dia.exibicoes | number }}</td><td class="text-end">{{ dia.leiturasQr | number }}</td></tr>
+                    <tr><td>{{ dia.data | date:'EEE, dd/MM':'':'pt-BR' }}</td><td class="text-end">{{ dia.exibicoes | number }}</td><td class="text-end">{{ dia.leiturasQr | number }}</td><td class="text-end">{{ dia.toquesDiretorio | number }}</td></tr>
                   }
                 </tbody>
               </table></div>
@@ -162,6 +162,10 @@ export class RelatorioVeiculacaoPageComponent implements OnInit {
         detalhe: d.semConexao ? `${d.semConexao} sem internet na TV (tocou do que já tinha)` : '' },
       { rotulo: 'Leituras do QR', valor: d.leiturasQr.toLocaleString('pt-BR'), teste: 'leituras-qr',
         detalhe: `${d.leitoresUnicosQr} leitor(es) único(s) por dia` },
+      { rotulo: 'Toques no diretório', valor: d.toquesDiretorio.toLocaleString('pt-BR'), teste: 'toques-diretorio',
+        detalhe: d.toquesPorContato.length
+          ? d.toquesPorContato.map(c => `${c.rotulo} ${c.toques}`).join(' · ')
+          : 'contatos na página do QR da TV' },
       { rotulo: 'Horário de pico', valor: pico == null ? '—' : `${pico}h`, teste: 'pico', detalhe: 'mais exibições' },
     ];
   });
@@ -226,6 +230,9 @@ export class RelatorioVeiculacaoPageComponent implements OnInit {
       `📺 Seu anúncio passou *${d.exibicoes.toLocaleString('pt-BR')} vezes* em ${d.porTela.length} TV(s), ${this.tempo(d.segundosNaTela)} na tela.`,
       d.leiturasQr || d.porMidia.some(m => m.qrRastreado)
         ? `📱 *${d.leiturasQr.toLocaleString('pt-BR')} leituras* do QR code (${d.leitoresUnicosQr} pessoas diferentes por dia).`
+        : '',
+      d.toquesDiretorio
+        ? `👆 *${d.toquesDiretorio.toLocaleString('pt-BR')} toques* nos seus contatos no diretório das TVs (${d.pessoasDiretorio} pessoas diferentes por dia).`
         : '',
       pico == null ? '' : `⏰ Horário com mais exibições: ${pico}h.`,
     ].filter(Boolean);
