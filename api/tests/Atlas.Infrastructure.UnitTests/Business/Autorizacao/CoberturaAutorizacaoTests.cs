@@ -48,6 +48,8 @@ public class CoberturaAutorizacaoTests
         // TV (token do dispositivo) e leitura anônima do QR rastreado (ADR-023).
         typeof(RegistrarExibicoesCommand),
         typeof(RegistrarLeituraQrCommand),
+        // Acessos e toques na página do diretório (ADR-027).
+        typeof(RegistrarInteracaoDiretorioCommand),
     ];
 
     private static List<Type> Requests() =>

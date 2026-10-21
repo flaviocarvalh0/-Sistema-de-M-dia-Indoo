@@ -399,7 +399,101 @@ public class DiretorioTests : IDisposable
     [InlineData("- !", "?")]
     public void Pagina_Iniciais(string nome, string esperado) => PaginaDiretorio.Iniciais(nome).Should().Be(esperado);
 
+    // ---------- Contagem de acessos e toques (ADR-027) ----------
+
+    [Fact]
+    public async Task Toques_SoContaOQueAPaginaOferece()
+    {
+        var loja = Anunciante("Loja", aceitou: true);
+        loja.WhatsappPublico = "5592999990000";
+        var fora = Anunciante("Fora da Grade", aceitou: true);
+        fora.WhatsappPublico = "5592888880000";
+        await Grade(Midia(loja));
+        var diretorio = await Consultar();
+
+        (await Interagir(diretorio, EventoDiretorio.Acesso)).Should().BeTrue();
+        (await Interagir(diretorio, EventoDiretorio.Contato, loja.Id, TipoQrCode.WhatsApp)).Should().BeTrue();
+        (await Interagir(diretorio, EventoDiretorio.Contato, loja.Id, TipoQrCode.Instagram)).Should().BeFalse("a loja não publicou Instagram");
+        (await Interagir(diretorio, EventoDiretorio.Contato, fora.Id, TipoQrCode.WhatsApp)).Should().BeFalse("não está no diretório desta TV");
+        (await Interagir(diretorio, EventoDiretorio.Contato, loja.Id, null)).Should().BeFalse();
+        (await Interagir(diretorio, EventoDiretorio.Anuncie)).Should().BeFalse("sem o WhatsApp da operadora não há o botão");
+        (await Interagir(diretorio with { LinkAnuncie = "https://wa.me/5592999990000" }, EventoDiretorio.Anuncie)).Should().BeTrue();
+
+        var gravados = await _context.InteracoesDiretorio.OrderBy(i => i.Id).ToListAsync();
+        gravados.Select(i => i.Evento).Should().Equal(EventoDiretorio.Acesso, EventoDiretorio.Contato, EventoDiretorio.Anuncie);
+        gravados.Should().OnlyContain(i => i.TelaId == _tela.Id && i.ParceiroId == _local.Id && i.Momento == Agora);
+        gravados[1].ClienteId.Should().Be(loja.Id);
+        gravados[1].Contato.Should().Be(TipoQrCode.WhatsApp);
+        gravados[0].ClienteId.Should().BeNull();
+        gravados.Should().OnlyContain(i => i.Visitante.Length == 16, "hash diário, sem o IP");
+    }
+
+    [Fact]
+    public async Task UsoDoDiretorio_ContaAcessosPessoasEToquesPorAnunciante()
+    {
+        var loja = Anunciante("Loja", aceitou: true);
+        loja.WhatsappPublico = "5592999990000";
+        loja.InstagramPublico = "loja";
+        await Grade(Midia(loja));
+        var diretorio = await Consultar() with { LinkAnuncie = "https://wa.me/5592999990000" };
+
+        await Interagir(diretorio, EventoDiretorio.Acesso, ip: "1.1.1.1");
+        await Interagir(diretorio, EventoDiretorio.Acesso, ip: "1.1.1.1");
+        await Interagir(diretorio, EventoDiretorio.Acesso, ip: "2.2.2.2");
+        await Interagir(diretorio, EventoDiretorio.Contato, loja.Id, TipoQrCode.WhatsApp);
+        await Interagir(diretorio, EventoDiretorio.Contato, loja.Id, TipoQrCode.Instagram);
+        await Interagir(diretorio, EventoDiretorio.Anuncie);
+        _context.InteracoesDiretorio.Add(new InteracaoDiretorio
+        {
+            TelaId = _tela.Id, ParceiroId = _local.Id, Evento = EventoDiretorio.Acesso, Momento = Agora.AddDays(-40), Visitante = new string('a', 16),
+        });
+        await _context.SaveChangesAsync();
+
+        var uso = await new GetUsoDiretorioTelaQueryHandler(_context, _relogio).Handle(new GetUsoDiretorioTelaQuery(_tela.Id), CancellationToken.None);
+
+        uso.Should().BeEquivalentTo(new UsoDiretorioDto(30, 3, 2, 2, 1, [new ToquesAnuncianteDto(loja.Id, "Loja", 2)]),
+            "o acesso de 40 dias atrás fica fora; duas visitas do mesmo celular no dia são uma pessoa");
+
+        var relatorio = await Atlas.Application.Business.Veiculacao.RelatorioVeiculacao.MontarAsync(_context, loja.Id, null, null, Agora, CancellationToken.None);
+        relatorio.ToquesDiretorio.Should().Be(2);
+        relatorio.PessoasDiretorio.Should().Be(1);
+        relatorio.ToquesPorContato.Select(c => c.Rotulo).Should().BeEquivalentTo("WhatsApp", "Instagram");
+        relatorio.PorDia.Single().ToquesDiretorio.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task UsoDoDiretorio_TelaInexistenteDa404()
+    {
+        var acao = () => new GetUsoDiretorioTelaQueryHandler(_context, _relogio).Handle(new GetUsoDiretorioTelaQuery(999_999), CancellationToken.None);
+
+        await acao.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task Pagina_MarcaOsToquesELiberaOEnvioSoParaOProprioSite()
+    {
+        var loja = Anunciante("Loja", aceitou: true);
+        loja.WhatsappPublico = "5592999990000";
+        await Grade(Midia(loja));
+        var diretorio = await Consultar() with { LinkAnuncie = "https://wa.me/5592999990000" };
+
+        var html = PaginaDiretorio.Renderizar(diretorio, "n");
+
+        html.Should().Contain($"data-toque=\"contato\" data-cliente=\"{loja.Id}\" data-tipo=\"WhatsApp\"")
+            .And.Contain("data-toque=\"anuncie\"")
+            .And.Contain("navigator.sendBeacon");
+        PaginaDiretorio.Politica("n").Should().Contain("connect-src 'self'");
+
+        // Os ids internos ficam fora do JSON público.
+        var json = System.Text.Json.JsonSerializer.Serialize(diretorio);
+        json.Should().NotContain("TelaId").And.NotContain("ParceiroId").And.NotContain("ClienteId");
+    }
+
     // ---------- Apoio ----------
+
+    private Task<bool> Interagir(DiretorioPublicoDto diretorio, EventoDiretorio evento, long? clienteId = null, TipoQrCode? contato = null, string ip = "10.0.0.1") =>
+        new RegistrarInteracaoDiretorioCommandHandler(_context, _relogio)
+            .Handle(new RegistrarInteracaoDiretorioCommand(diretorio, evento, clienteId, contato, ip, "Mozilla/5.0"), CancellationToken.None);
 
     private Task<DiretorioPublicoDto> Consultar(string codigo = Codigo) =>
         new GetDiretorioPublicoQueryHandler(_context, _relogio).Handle(new GetDiretorioPublicoQuery(codigo), CancellationToken.None);

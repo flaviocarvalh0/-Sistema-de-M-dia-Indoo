@@ -1,3 +1,4 @@
+using Atlas.Application.Business.Diretorio;
 using Atlas.Application.Business.Indoor.Telas.Dtos;
 using Atlas.Application.Business.Rede.Telas.Commands.EstadoTela;
 using Atlas.Application.Business.Rede.Telas.Commands.Pareamento;
@@ -36,6 +37,7 @@ public class RedeTelas : IEndpointGroup
         groupBuilder.MapPut(AtualizarTela, "{id:long}").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
         groupBuilder.MapPost(GerarCodigoPareamento, "{id:long}/codigo-pareamento").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
         groupBuilder.MapPost(TrocarCodigoDiretorio, "{id:long}/codigo-diretorio").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
+        groupBuilder.MapGet(GetUsoDiretorio, "{id:long}/diretorio/uso").RequireAuthorization(BusinessPermissionKeys.Telas.View);
         groupBuilder.MapPost(DesvincularTela, "{id:long}/desvincular").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
         groupBuilder.MapPost(AtivarTela, "{id:long}/ativar").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
         groupBuilder.MapPost(InativarTela, "{id:long}/inativar").RequireAuthorization(BusinessPermissionKeys.Telas.Update);
@@ -131,5 +133,12 @@ public class RedeTelas : IEndpointGroup
         await sender.Send(new ExcluirTelaCommand(id), cancellationToken);
 
         return TypedResults.NoContent();
+    }
+
+    [EndpointSummary("Uso do diretório da TV")]
+    [EndpointDescription("Acessos à página do diretório (QR lido), pessoas por dia e toques nos contatos e em \"Quer anunciar aqui?\" nos últimos dias (padrão 30, máximo 93).")]
+    public static async Task<Ok<UsoDiretorioDto>> GetUsoDiretorio(ISender sender, long id, [FromQuery] int? dias, CancellationToken cancellationToken)
+    {
+        return TypedResults.Ok(await sender.Send(new GetUsoDiretorioTelaQuery(id, dias ?? 30), cancellationToken));
     }
 }

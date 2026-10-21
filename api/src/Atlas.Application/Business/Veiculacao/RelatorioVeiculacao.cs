@@ -1,5 +1,6 @@
 using Atlas.Application.Business.Clientes.Common;
 using Atlas.Domain.Business.Constants;
+using Atlas.Domain.Business.Indoor.Enums;
 
 namespace Atlas.Application.Business.Veiculacao;
 
@@ -35,6 +36,15 @@ public sealed record RelatorioVeiculacaoDto
     public int LeiturasQr { get; init; }
     public int LeitoresUnicosQr { get; init; }
 
+    /// <summary>Toques nos contatos do cliente na página do diretório das TVs (ADR-027).</summary>
+    public int ToquesDiretorio { get; init; }
+
+    /// <summary>Pessoas diferentes por dia que tocaram, somadas.</summary>
+    public int PessoasDiretorio { get; init; }
+
+    /// <summary>Toques por contato (WhatsApp, Instagram, site), do mais tocado.</summary>
+    public IReadOnlyList<ToquesContatoDto> ToquesPorContato { get; init; } = [];
+
     /// <summary>
     /// Falso por enquanto: o registro diz que o app exibiu, não que a TV estava
     /// ligada e na entrada certa (detecção de tela ligada fica para depois).
@@ -66,7 +76,10 @@ public sealed record VeiculacaoPorTelaDto(long TelaId, string Nome, string? Parc
 /// <param name="QrRastreado">A mídia tem hoje um QR rastreado (link, WhatsApp ou Instagram).</param>
 public sealed record VeiculacaoPorMidiaDto(long MidiaId, string Titulo, int Exibicoes, int LeiturasQr, int LeitoresUnicosQr, bool QrRastreado);
 
-public sealed record VeiculacaoPorDiaDto(DateOnly Data, int Exibicoes, int LeiturasQr);
+public sealed record VeiculacaoPorDiaDto(DateOnly Data, int Exibicoes, int LeiturasQr, int ToquesDiretorio);
+
+/// <summary>Toques num tipo de contato do diretório.</summary>
+public sealed record ToquesContatoDto(TipoQrCode Tipo, string Rotulo, int Toques);
 
 /// <summary>Relatório do próprio cliente (painel do anunciante). Sem datas: do dia 1 do mês até hoje.</summary>
 [Authorize(Policy = BusinessPermissionKeys.Midias.View)]
@@ -161,6 +174,12 @@ public static class RelatorioVeiculacao
             .Select(l => new { l.MidiaId, l.Momento, l.Visitante })
             .ToListAsync(cancellationToken);
 
+        var toques = await context.InteracoesDiretorio
+            .AsNoTracking()
+            .Where(i => i.ClienteId == clienteId && i.Evento == EventoDiretorio.Contato && i.Momento >= inicioUtc && i.Momento < fimUtc)
+            .Select(i => new { i.Contato, i.Momento, i.Visitante })
+            .ToListAsync(cancellationToken);
+
         var telaIds = exibicoes.Select(e => e.TelaId).Distinct().ToList();
         var telas = await context.Telas
             .AsNoTracking()
@@ -182,19 +201,25 @@ public static class RelatorioVeiculacao
             telas.TryGetValue(telaId, out var t) ? Fuso(fusos, t.FusoHorario) : fusoCliente;
 
         var porHora = new int[24];
-        var porDia = new Dictionary<DateOnly, (int Exibicoes, int Leituras)>();
+        var porDia = new Dictionary<DateOnly, (int Exibicoes, int Leituras, int Toques)>();
         foreach (var e in exibicoes)
         {
             var local = TimeZoneInfo.ConvertTime(e.Inicio, FusoDaTela(e.TelaId));
             porHora[local.Hour]++;
             var dia = DateOnly.FromDateTime(local.DateTime);
-            porDia[dia] = porDia.TryGetValue(dia, out var v) ? (v.Exibicoes + 1, v.Leituras) : (1, 0);
+            porDia[dia] = porDia.TryGetValue(dia, out var v) ? (v.Exibicoes + 1, v.Leituras, v.Toques) : (1, 0, 0);
         }
 
         foreach (var l in leituras)
         {
             var dia = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(l.Momento, fusoCliente).DateTime);
-            porDia[dia] = porDia.TryGetValue(dia, out var v) ? (v.Exibicoes, v.Leituras + 1) : (0, 1);
+            porDia[dia] = porDia.TryGetValue(dia, out var v) ? (v.Exibicoes, v.Leituras + 1, v.Toques) : (0, 1, 0);
+        }
+
+        foreach (var t in toques)
+        {
+            var dia = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(t.Momento, fusoCliente).DateTime);
+            porDia[dia] = porDia.TryGetValue(dia, out var v) ? (v.Exibicoes, v.Leituras, v.Toques + 1) : (0, 0, 1);
         }
 
         // O hash do visitante já muda a cada dia: distintos = leitores únicos por dia, somados.
@@ -215,6 +240,14 @@ public static class RelatorioVeiculacao
             SegundosNaTela = exibicoes.Sum(e => (long)e.DuracaoMs) / 1000,
             LeiturasQr = leituras.Count,
             LeitoresUnicosQr = Unicos(leituras, l => l.Visitante),
+            ToquesDiretorio = toques.Count,
+            PessoasDiretorio = Unicos(toques, t => t.Visitante),
+            ToquesPorContato = toques
+                .Where(t => t.Contato is not null)
+                .GroupBy(t => t.Contato!.Value)
+                .Select(g => new ToquesContatoDto(g.Key, RotuloContato(g.Key), g.Count()))
+                .OrderByDescending(c => c.Toques)
+                .ToList(),
             MedeTelaLigada = false,
             PorTela = exibicoes
                 .GroupBy(e => e.TelaId)
@@ -242,11 +275,21 @@ public static class RelatorioVeiculacao
                 .ToList(),
             PorDia = porDia
                 .OrderBy(d => d.Key)
-                .Select(d => new VeiculacaoPorDiaDto(d.Key, d.Value.Exibicoes, d.Value.Leituras))
+                .Select(d => new VeiculacaoPorDiaDto(d.Key, d.Value.Exibicoes, d.Value.Leituras, d.Value.Toques))
                 .ToList(),
             PorHora = porHora,
         };
     }
+
+    public static string RotuloContato(TipoQrCode tipo) => tipo switch
+    {
+        TipoQrCode.WhatsApp => "WhatsApp",
+        TipoQrCode.Instagram => "Instagram",
+        TipoQrCode.Link => "Site",
+        TipoQrCode.Telefone => "Telefone",
+        TipoQrCode.Pix => "Pix",
+        _ => tipo.ToString(),
+    };
 
     private static DateTimeOffset InicioDoDia(DateOnly dia, TimeZoneInfo fuso)
     {

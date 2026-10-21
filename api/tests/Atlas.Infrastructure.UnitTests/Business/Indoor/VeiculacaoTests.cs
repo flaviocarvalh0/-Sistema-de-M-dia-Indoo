@@ -149,8 +149,8 @@ public class VeiculacaoTests : IDisposable
         r.PorHora[7].Should().Be(2, "7h e 7h30 no fuso da academia");
         r.PorHora[20].Should().Be(1);
         r.PorDia.Should().Equal(
-            new VeiculacaoPorDiaDto(new DateOnly(2026, 10, 11), 1, 0),
-            new VeiculacaoPorDiaDto(new DateOnly(2026, 10, 12), 2, 3));
+            new VeiculacaoPorDiaDto(new DateOnly(2026, 10, 11), 1, 0, 0),
+            new VeiculacaoPorDiaDto(new DateOnly(2026, 10, 12), 2, 3, 0));
     }
 
     [Fact]

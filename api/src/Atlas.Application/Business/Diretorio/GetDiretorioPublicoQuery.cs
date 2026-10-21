@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Atlas.Application.Business.Common;
 using Atlas.Domain.Business.Indoor.Entities;
@@ -34,6 +35,13 @@ public sealed record DiretorioPublicoDto
     public string? LinkAnuncie { get; init; }
 
     public DateTimeOffset GeradoEm { get; init; }
+
+    /// <summary>Para contar acessos e toques (ADR-027); fora do JSON público.</summary>
+    [JsonIgnore]
+    public long TelaId { get; init; }
+
+    [JsonIgnore]
+    public long ParceiroId { get; init; }
 }
 
 public sealed record AnuncianteDiretorioDto
@@ -46,6 +54,10 @@ public sealed record AnuncianteDiretorioDto
     public bool Anfitriao { get; init; }
 
     public IReadOnlyList<ContatoDiretorioDto> Contatos { get; init; } = [];
+
+    /// <summary>Para contar os toques nos contatos (ADR-027); fora do JSON público.</summary>
+    [JsonIgnore]
+    public long ClienteId { get; init; }
 }
 
 /// <param name="Tipo">Define o botão: WhatsApp, Instagram, Link (site), Telefone ou Pix.</param>
@@ -82,6 +94,8 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
                 .Where(t => t.CodigoDiretorio == codigo && t.Ativo && t.DiretorioAtivo)
                 .Select(t => new
                 {
+                    t.Id,
+                    t.ParceiroId,
                     Local = t.Parceiro.Nome,
                     ClienteDoLocal = t.Parceiro.ClienteId,
                     t.PlaylistId,
@@ -149,6 +163,7 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
 
                 return new AnuncianteDiretorioDto
                 {
+                    ClienteId = p.Id,
                     Nome = p.Nome,
                     Categoria = p.Categoria,
                     Descricao = p.DescricaoPublica,
@@ -166,6 +181,8 @@ public partial class GetDiretorioPublicoQueryHandler(IApplicationDbContext conte
             Anunciantes = cartoes,
             LinkAnuncie = LinkAnuncie(configuracao?.WhatsAppAnuncie, tela.Local),
             GeradoEm = agora,
+            TelaId = tela.Id,
+            ParceiroId = tela.ParceiroId,
         };
     }
 

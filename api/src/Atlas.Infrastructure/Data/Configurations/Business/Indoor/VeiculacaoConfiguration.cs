@@ -35,6 +35,26 @@ public class LeituraQrConfiguration : IEntityTypeConfiguration<LeituraQr>
     }
 }
 
+/// <summary>Diretório das TVs (ADR-027): sem FKs, como as leituras do QR.</summary>
+public class InteracaoDiretorioConfiguration : IEntityTypeConfiguration<InteracaoDiretorio>
+{
+    public void Configure(EntityTypeBuilder<InteracaoDiretorio> builder)
+    {
+        builder.ToTable("interacao_diretorio", "indoor", table =>
+        {
+            table.HasCheckConstraint("ck_interacao_diretorio_visitante", $"visitante ~ '^[0-9a-f]{{{LeituraQr.TamanhoVisitante}}}$'");
+            table.HasCheckConstraint("ck_interacao_diretorio_evento", "evento IN (1, 2, 3)");
+            // Contato tocado tem dono e tipo; acesso e "anuncie" não têm.
+            table.HasCheckConstraint("ck_interacao_diretorio_contato",
+                "(evento = 2 AND cliente_id IS NOT NULL AND contato IS NOT NULL) OR (evento <> 2 AND cliente_id IS NULL AND contato IS NULL)");
+        });
+
+        builder.Property(i => i.Visitante).HasMaxLength(LeituraQr.TamanhoVisitante).IsRequired();
+        builder.HasIndex(i => new { i.TelaId, i.Momento });
+        builder.HasIndex(i => new { i.ClienteId, i.Momento });
+    }
+}
+
 public class ReservaEnvioConfiguration : IEntityTypeConfiguration<ReservaEnvio>
 {
     public void Configure(EntityTypeBuilder<ReservaEnvio> builder)

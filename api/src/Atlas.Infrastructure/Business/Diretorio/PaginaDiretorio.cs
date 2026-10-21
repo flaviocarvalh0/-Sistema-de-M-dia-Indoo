@@ -22,7 +22,7 @@ public static class PaginaDiretorio
     private const int Cores = 8;
 
     public static string Politica(string nonce) =>
-        $"default-src 'none'; style-src 'nonce-{nonce}'; script-src 'nonce-{nonce}'; img-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+        $"default-src 'none'; style-src 'nonce-{nonce}'; script-src 'nonce-{nonce}'; connect-src 'self'; img-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
     public static string Renderizar(DiretorioPublicoDto diretorio, string nonce)
     {
@@ -58,7 +58,7 @@ public static class PaginaDiretorio
         {
             html.Append("<section class=\"anuncie\"><div><p class=\"anuncie-titulo\">Quer anunciar aqui?</p>")
                 .Append("<p class=\"anuncie-texto\">Seu negócio nesta TV, visto por quem frequenta o local.</p></div>")
-                .Append("<a class=\"anuncie-botao\" href=\"").Append(T(anuncie))
+                .Append("<a class=\"anuncie-botao\" data-toque=\"anuncie\" href=\"").Append(T(anuncie))
                 .Append("\" target=\"_blank\" rel=\"noopener\">Clique aqui e fale com a gente</a></section>");
         }
 
@@ -120,7 +120,7 @@ public static class PaginaDiretorio
             html.Append("<ul class=\"contatos\">");
             foreach (var contato in contatos)
             {
-                Contato(html, contato);
+                Contato(html, contato, anunciante.ClienteId);
             }
 
             html.Append("</ul>");
@@ -133,19 +133,21 @@ public static class PaginaDiretorio
     /// Uma linha por contato: ícone, o que é ("WhatsApp") e para onde vai
     /// ("(92) 99999-0000"). O Pix é botão de copiar; o resto é link.
     /// </summary>
-    private static void Contato(StringBuilder html, ContatoDiretorioDto contato)
+    private static void Contato(StringBuilder html, ContatoDiretorioDto contato, long clienteId)
     {
         var tipo = contato.Tipo.ToString().ToLowerInvariant();
         var detalhe = contato.Tipo == TipoQrCode.Pix ? "Código copia e cola" : contato.Detalhe;
+        // Quem é e qual contato, para a contagem de toques (ADR-027).
+        var toque = $" data-toque=\"contato\" data-cliente=\"{clienteId}\" data-tipo=\"{contato.Tipo}\"";
 
         html.Append("<li>");
         if (contato.Tipo == TipoQrCode.Pix)
         {
-            html.Append("<button type=\"button\" class=\"contato\" data-pix=\"").Append(T(contato.Valor)).Append("\">");
+            html.Append("<button type=\"button\" class=\"contato\"").Append(toque).Append(" data-pix=\"").Append(T(contato.Valor)).Append("\">");
         }
         else
         {
-            html.Append("<a class=\"contato\" href=\"").Append(T(contato.Valor)).Append("\" rel=\"noopener noreferrer\"")
+            html.Append("<a class=\"contato\"").Append(toque).Append(" href=\"").Append(T(contato.Valor)).Append("\" rel=\"noopener noreferrer\"")
                 .Append(contato.Tipo == TipoQrCode.Telefone ? string.Empty : " target=\"_blank\"").Append('>');
         }
 
@@ -221,6 +223,17 @@ public static class PaginaDiretorio
     private static void Script(StringBuilder html, string nonce)
     {
         html.Append("<script nonce=\"").Append(nonce).Append("\">").Append("""
+            // Conta o toque (ADR-027) sem segurar o link: o beacon sai mesmo
+            // com a página indo embora para o WhatsApp ou o Instagram.
+            document.querySelectorAll('[data-toque]').forEach(function (el) {
+              el.addEventListener('click', function () {
+                if (!navigator.sendBeacon) return;
+                var q = 'e=' + encodeURIComponent(el.getAttribute('data-toque'));
+                if (el.hasAttribute('data-cliente')) q += '&c=' + encodeURIComponent(el.getAttribute('data-cliente'));
+                if (el.hasAttribute('data-tipo')) q += '&t=' + encodeURIComponent(el.getAttribute('data-tipo'));
+                try { navigator.sendBeacon(location.pathname.replace(/\/+$/, '') + '/toque?' + q); } catch (e) { }
+              });
+            });
             document.querySelectorAll('[data-pix]').forEach(function (b) {
               b.addEventListener('click', function () {
                 var texto = b.getAttribute('data-pix'), alvo = b.querySelector('.detalhe') || b, antes = alvo.textContent;

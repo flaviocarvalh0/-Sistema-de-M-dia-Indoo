@@ -38,6 +38,7 @@ public interface IApplicationDbContext
     // Prova de veiculação (ADR-023)
     DbSet<RegistroExibicao> RegistrosExibicao { get; }
     DbSet<LeituraQr> LeiturasQr { get; }
+    DbSet<InteracaoDiretorio> InteracoesDiretorio { get; }
 
     // Teto de armazenamento (ADR-025)
     DbSet<ReservaEnvio> ReservasEnvio { get; }

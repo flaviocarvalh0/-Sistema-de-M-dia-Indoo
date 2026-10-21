@@ -620,6 +620,70 @@ namespace Atlas.Infrastructure.Data.Migrations
                     b.ToTable("estado_tela", "indoor");
                 });
 
+            modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.InteracaoDiretorio", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ClienteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cliente_id");
+
+                    b.Property<int?>("Contato")
+                        .HasColumnType("integer")
+                        .HasColumnName("contato");
+
+                    b.Property<int>("Evento")
+                        .HasColumnType("integer")
+                        .HasColumnName("evento");
+
+                    b.Property<DateTimeOffset>("Momento")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("momento");
+
+                    b.Property<long>("ParceiroId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("parceiro_id");
+
+                    b.Property<long>("TelaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tela_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Visitante")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("visitante");
+
+                    b.HasKey("Id")
+                        .HasName("pk_interacao_diretorio");
+
+                    b.HasIndex("ClienteId", "Momento")
+                        .HasDatabaseName("ix_interacao_diretorio_cliente_id_momento");
+
+                    b.HasIndex("TelaId", "Momento")
+                        .HasDatabaseName("ix_interacao_diretorio_tela_id_momento");
+
+                    b.ToTable("interacao_diretorio", "indoor", t =>
+                        {
+                            t.HasCheckConstraint("ck_interacao_diretorio_contato", "(evento = 2 AND cliente_id IS NOT NULL AND contato IS NOT NULL) OR (evento <> 2 AND cliente_id IS NULL AND contato IS NULL)");
+
+                            t.HasCheckConstraint("ck_interacao_diretorio_evento", "evento IN (1, 2, 3)");
+
+                            t.HasCheckConstraint("ck_interacao_diretorio_visitante", "visitante ~ '^[0-9a-f]{16}$'");
+                        });
+                });
+
             modelBuilder.Entity("Atlas.Domain.Business.Indoor.Entities.InventarioArmazenamento", b =>
                 {
                     b.Property<long>("Id")
