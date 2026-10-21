@@ -105,7 +105,7 @@ escolhe a playlist.
 | Copiar | "Clonar" cria outra tela no mesmo parceiro e local |
 | Alerta de TV fora do ar | E-mail para a operadora quando uma TV ativa fica 15 min sem sincronizar, só entre 7 h e 22 h no fuso do estabelecimento, e outro quando ela volta. Um resumo por varredura (5 min), sem repetir a mesma queda (ADR-020) |
 | Versões do app | **Versões do app** (botão na lista): envio do APK, liberação **Só TVs de teste** → **Todas as TVs**, suspensão e exclusão; quantas TVs estão em cada versão. Coluna **App** na lista e **TV de teste** no cadastro (ADR-021) |
-| Diretório de anunciantes | Liga na edição da tela: a TV mostra um QR code fixo que abre uma página pública com os anunciantes da grade de hoje que aceitaram aparecer; o cliente ligado ao parceiro (se ele também anuncia) vem primeiro. **Diretório de anunciantes** na linha mostra o QR (para testar ou imprimir), abre a página e permite **Trocar endereço** (o anterior para de funcionar) |
+| Diretório de anunciantes | Liga na edição da tela: a TV mostra um QR code fixo que abre uma página pública com os anunciantes da grade de hoje que aceitaram aparecer; o cliente ligado ao parceiro (se ele também anuncia) vem primeiro. **Diretório de anunciantes** na linha mostra o QR (para testar ou imprimir), abre a página e permite **Trocar endereço** (o anterior para de funcionar). O quadro mostra os últimos 30 dias: acessos, pessoas por dia, toques nos contatos e em "Quer anunciar aqui?" e toques por anunciante |
 
 ## Onde meus anúncios passam (cliente)
 
@@ -119,9 +119,10 @@ escolhe a playlist.
 |---|---|
 | Exibições | O que as TVs registraram que exibiram: total, concluídas, interrompidas e quantas foram com a TV sem internet (tocou do que já tinha), com o tempo na tela (ADR-023) |
 | Leituras do QR | QR de link, WhatsApp e Instagram passam por um link curto da API que conta a leitura e redireciona. Leituras e leitores únicos por dia, sem guardar IP. Telefone e Pix vão direto (não são contados) |
+| Toques no diretório | Toques nos contatos do anunciante (WhatsApp, Instagram, site) na página que o QR da TV abre, por contato e por dia, com pessoas diferentes por dia (ADR-027) |
 | Quebras | Por horário (hora local de cada TV, com o horário de pico), por TV, por anúncio e por dia |
 | Período | Este mês, mês passado, últimos 7 dias ou datas livres (até 93 dias) |
-| Resumo para o WhatsApp | Copia um texto curto com exibições, leituras e horário de pico para mandar ao anunciante |
+| Resumo para o WhatsApp | Copia um texto curto com exibições, leituras, toques no diretório e horário de pico para mandar ao anunciante |
 | Aviso | O relatório ainda não sabe se a TV estava ligada e na entrada certa |
 
 ## App das TVs
@@ -178,7 +179,6 @@ escolhe a playlist.
 - Saber se a TV estava ligada e na entrada certa (HDMI-CEC ou captura de tela).
 - Envio automático do relatório ao anunciante (hoje: copiar o resumo no painel).
 - Contagem de leituras do QR de telefone e Pix.
-- Diretório: contagem de acessos e de cliques por anunciante, e o logo no
-  cartão (fase 2 da Entrega 5).
+- Diretório: o logo do anunciante no cartão (fase 2 da Entrega 5).
 - Fontes de notícias por playlist (hoje as fontes ativas valem para toda a rede).
 - Agendamento por horário do dia (hoje: dia da semana e período).

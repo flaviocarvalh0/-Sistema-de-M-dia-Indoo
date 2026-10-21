@@ -384,4 +384,5 @@ adicionado"); a fila é montada na TV; notícias da Agência Brasil (CC BY);
   na página `/d/{codigo}`, com o nome do local na mensagem.
 - [x] `INDOOR.URL_PUBLICA` como parâmetro; `localhost` ignorado (o QR rastreado
   com `localhost` nunca contava leitura).
-- [ ] Contar os cliques nos contatos da página do diretório.
+- [x] Contar acessos e toques na página do diretório
+  ([ADR-027](../api/docs/decisions/ADR-027-Contagem-de-Acessos-e-Toques-no-Diretorio.md)).

@@ -241,7 +241,10 @@ da API).
     Wi-Fi, ou o endereço do túnel. Com `INDOOR.ANUNCIE.WHATSAPP` preenchido, a
     TV mostra "Quer anunciar aqui?" no cartão do QR e a página ganha o botão
     **Clique aqui e fale com a gente**, que abre o seu WhatsApp já dizendo de
-    qual local veio o interesse.
+    qual local veio o interesse. Abra a página, toque num contato e em
+    "Quer anunciar aqui?": o quadro **Diretório de anunciantes** da tela mostra
+    os acessos e os toques, e o relatório do cliente mostra **Toques no
+    diretório** (ADR-027). Pré-visualização do WhatsApp não conta.
 
 15. **Carrossel:** em **Rede → Playlists → editar**, ponha **Tamanho da
     volta** = 30 numa grade com 6 imagens de 10 s (e **Embaralhar** ligado).
